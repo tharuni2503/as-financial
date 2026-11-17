@@ -16,8 +16,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261117m">
-  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261117m">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261117n">
+  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261117n">
   <style>
     .tools-hero{position:relative;overflow:hidden;padding:clamp(44px,6vw,84px) 0;background:radial-gradient(900px 400px at 90% 0, rgba(201,162,74,.18), transparent 60%), linear-gradient(180deg,#fff,var(--cream));}
     .tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:28px}
@@ -27,6 +27,10 @@
     .tool-card p{font-size:.86rem;color:var(--muted);margin:0 0 12px}
     .tool-card .ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--amber-soft);color:var(--gold-deep)}
     .calc-section{scroll-margin-top:110px}
+    .calc-suite{display:grid;gap:0}
+    .calc-block{padding:28px 0;border-top:1px solid var(--line)}
+    .calc-block:first-child{border-top:0;padding-top:0}
+    .calc-block:last-child{padding-bottom:0}
     .calc-2col{display:grid;grid-template-columns:1.1fr .9fr;gap:20px}
     .mini-result{background:linear-gradient(160deg,#FBF7EA,#F3EDDA);border:1px solid var(--line);border-radius:18px;padding:22px}
     .mini-result .big{font-family:var(--serif);font-size:2rem;color:var(--navy);line-height:1.1}
@@ -89,8 +93,12 @@
       </div>
     </section>
 
-    <section id="emi" class="section section-white calc-section">
+
+    <section class="section section-white" id="all-calculators">
       <div class="container">
+        <div class="section-head"><div class="eyebrow">All calculators</div><h2>Plan with <span class="serif">one calculator suite.</span></h2><p>Estimate EMI, transfers, prepayments, eligibility, tenure, costs and more — all in one place. Results are indicative and for planning only.</p></div>
+        <div class="calc-suite">
+        <div id="emi" class="calc-block calc-section">
         <div class="section-head"><div class="eyebrow">Calculator</div><h2>EMI <span class="serif">calculator</span></h2><p>Quickly estimate your monthly installment.</p></div>
         <div class="calc-2col">
           <div class="form-card calc-form">
@@ -105,11 +113,9 @@
             <div class="kv"><div><span>Total interest</span><b data-v="interest">₹ 21,98,360</b></div><div><span>Total payable</span><b data-v="total">₹ 46,98,360</b></div></div>
           </div>
         </div>
-      </div>
-    </section>
+        </div>
 
-    <section id="balance-transfer" class="section section-cream calc-section">
-      <div class="container">
+        <div id="balance-transfer" class="calc-block calc-section">
         <div class="section-head"><div class="eyebrow">Calculator</div><h2>Balance transfer <span class="serif">savings</span></h2><p>Compare your current loan with a lower-rate option (indicative).</p></div>
         <div class="calc-2col">
           <div class="form-card calc-form">
@@ -125,11 +131,9 @@
             <div class="kv"><div><span>Current EMI</span><b data-v="old">₹ 33,214</b></div><div><span>New EMI</span><b data-v="new">₹ 29,828</b></div><div><span>Total interest saving</span><b data-v="ints">₹ 6,09,480</b></div></div>
           </div>
         </div>
-      </div>
-    </section>
+        </div>
 
-    <section id="prepayment" class="section section-white calc-section">
-      <div class="container">
+        <div id="prepayment" class="calc-block calc-section">
         <div class="section-head"><div class="eyebrow">Calculator</div><h2>Prepayment <span class="serif">impact</span></h2><p>Estimate how a one-time part payment can reduce interest/tenure.</p></div>
         <div class="calc-2col">
           <div class="form-card calc-form">
@@ -145,11 +149,9 @@
             <div class="kv"><div><span>New balance</span><b data-v="bal">₹ 18,00,000</b></div><div><span>New tenure (same EMI)</span><b data-v="tenure">~ 104 months</b></div><div><span>Months reduced</span><b data-v="months">~ 16 months</b></div></div>
           </div>
         </div>
-      </div>
-    </section>
+        </div>
 
-    <section id="eligibility" class="section section-cream calc-section">
-      <div class="container">
+        <div id="eligibility" class="calc-block calc-section">
         <div class="section-head"><div class="eyebrow">Calculator</div><h2>Loan eligibility <span class="serif">estimate</span></h2><p>A quick affordability estimate based on income and existing EMIs (indicative only).</p></div>
         <div class="calc-2col">
           <div class="form-card calc-form">
@@ -165,11 +167,9 @@
             <div class="kv"><div><span>Suggested max EMI (FOIR ~50%)</span><b data-v="emi">₹ 35,000</b></div><div><span>Note</span><b>Subject to lender policy & credit profile</b></div></div>
           </div>
         </div>
-      </div>
-    </section>
+        </div>
 
-    <section id="tenure" class="section section-white calc-section">
-      <div class="container">
+        <div id="tenure" class="calc-block calc-section">
         <div class="section-head"><div class="eyebrow">Calculator</div><h2>Tenure <span class="serif">calculator</span></h2><p>Find an approximate tenure for a loan amount and target EMI.</p></div>
         <div class="calc-2col">
           <div class="form-card calc-form">
@@ -184,11 +184,9 @@
             <div class="kv"><div><span>Approx. years</span><b data-v="years">~ 13.0 years</b></div><div><span>Total interest (approx.)</span><b data-v="interest">₹ 14,32,000</b></div></div>
           </div>
         </div>
-      </div>
-    </section>
+        </div>
 
-    <section id="tax-saving" class="section section-cream calc-section">
-      <div class="container">
+        <div id="tax-saving" class="calc-block calc-section">
         <div class="section-head"><div class="eyebrow">Calculator</div><h2>Home loan tax saving <span class="serif">estimator</span></h2><p>Indicative annual tax benefit estimate (principal/interest components). Consult a tax advisor for actual eligibility.</p></div>
         <div class="calc-2col">
           <div class="form-card calc-form">
@@ -203,11 +201,9 @@
             <div class="kv"><div><span>Principal benefit (capped)</span><b data-v="p">₹ 45,000</b></div><div><span>Interest benefit (capped)</span><b data-v="i">₹ 60,000</b></div><div><span>Note</span><b>Indicative; rules/limits may apply</b></div></div>
           </div>
         </div>
-      </div>
-    </section>
+        </div>
 
-    <section id="construction-cost" class="section section-white calc-section">
-      <div class="container">
+        <div id="construction-cost" class="calc-block calc-section">
         <div class="section-head"><div class="eyebrow">Calculator</div><h2>Construction cost <span class="serif">estimator</span></h2><p>Estimate a rough construction budget based on built-up area and finish quality.</p></div>
         <div class="calc-2col">
           <div class="form-card calc-form">
@@ -222,11 +218,9 @@
             <div class="kv"><div><span>Base cost</span><b data-v="base">₹ 25,20,000</b></div><div><span>Contingency</span><b data-v="extra">₹ 2,52,000</b></div></div>
           </div>
         </div>
-      </div>
-    </section>
+        </div>
 
-    <section id="insurance-premium" class="section section-cream calc-section">
-      <div class="container">
+        <div id="insurance-premium" class="calc-block calc-section">
         <div class="section-head"><div class="eyebrow">Calculator</div><h2>Loan insurance premium <span class="serif">estimator</span></h2><p>Rough estimate for planning purposes only. Actual premium depends on insurer, age, coverage and terms.</p></div>
         <div class="calc-2col">
           <div class="form-card calc-form">
@@ -241,11 +235,9 @@
             <div class="kv"><div><span>Estimated monthly</span><b data-v="monthly">₹ 750</b></div><div><span>Note</span><b>Illustrative estimate only</b></div></div>
           </div>
         </div>
-      </div>
-    </section>
+        </div>
 
-    <section id="subsidy" class="section section-white calc-section">
-      <div class="container">
+        <div id="subsidy" class="calc-block calc-section">
         <div class="section-head"><div class="eyebrow">Calculator</div><h2>Subsidy / benefit <span class="serif">estimator</span></h2><p>Simple planning estimator for potential interest subsidy/benefit amount. Actual eligibility depends on scheme rules.</p></div>
         <div class="calc-2col">
           <div class="form-card calc-form">
@@ -260,11 +252,9 @@
             <div class="kv"><div><span>Approx. annual benefit</span><b data-v="annual">₹ 27,000</b></div><div><span>Note</span><b>Subject to scheme eligibility</b></div></div>
           </div>
         </div>
-      </div>
-    </section>
+        </div>
 
-    <section id="capital-gains" class="section section-cream calc-section">
-      <div class="container">
+        <div id="capital-gains" class="calc-block calc-section">
         <div class="section-head"><div class="eyebrow">Calculator</div><h2>Capital gains tax <span class="serif">estimator</span></h2><p>Indicative property capital gains estimate (simplified). Exemptions/indexation rules may significantly change actual tax.</p></div>
         <div class="calc-2col">
           <div class="form-card calc-form">
@@ -280,11 +270,9 @@
             <div class="kv"><div><span>Taxable gains</span><b data-v="gain">₹ 31,50,000</b></div><div><span>Note</span><b>Simplified estimate; consult CA</b></div></div>
           </div>
         </div>
-      </div>
-    </section>
+        </div>
 
-    <section id="buy-vs-rent" class="section section-white calc-section">
-      <div class="container">
+        <div id="buy-vs-rent" class="calc-block calc-section">
         <div class="section-head"><div class="eyebrow">Calculator</div><h2>Buy vs rent <span class="serif">comparison</span></h2><p>Compare indicative monthly cost of buying (EMI + maintenance) vs renting.</p></div>
         <div class="calc-2col">
           <div class="form-card calc-form">
@@ -302,9 +290,12 @@
             <div class="kv"><div><span>Buy (EMI + maintenance)</span><b data-v="buy">₹ 42,072</b></div><div><span>Rent</span><b data-v="rent">₹ 25,000</b></div><div><span>Note</span><b>Excludes appreciation/tax benefits</b></div></div>
           </div>
         </div>
+          </div>
+        </div>
+
+        </div>
       </div>
     </section>
-
     <section class="cta-band"><div class="container cta-inner"><div><span class="pill pill-soft"><span class="dot"></span> Need help choosing?</span><h2 style="margin-top:16px">Get personalized <span class="serif">loan guidance.</span></h2><p>Our advisors can compare options across banks and NBFCs for your profile.</p></div><div class="cta-actions"><button class="btn btn-gold btn-lg" data-popup-open="apply-popup">Talk to an advisor <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button><a class="cta-phone" href="tel:+919182703079" data-setting="phone"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg> 91827 03079</a></div></div></section>
   </main>
 
@@ -312,8 +303,8 @@
 
   <div class="popup-overlay" id="apply-popup" role="dialog" aria-modal="true" aria-labelledby="apply-title"><div class="popup"><button class="popup-close" data-popup-close aria-label="Close"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-close"></use></svg></button><h3 id="apply-title">Request a callback</h3><p>Share your details and we'll get in touch.</p><form data-lead-form data-source="Calculators page"><div class="form-grid"><div class="field full"><label for="c-name">Full name <span class="req">*</span></label><input id="c-name" name="name" required></div><div class="field"><label for="c-phone">Mobile <span class="req">*</span></label><input id="c-phone" name="phone" required></div><div class="field"><label for="c-product">Loan type</label><select id="c-product" name="product"><option>Home Loan</option><option>Personal Loan</option><option>Business Loan</option><option>Mortgage / LAP</option><option>Balance Transfer</option><option>Other</option></select></div><div class="full"><label class="consent"><input type="checkbox" required> I agree to be contacted by AS Financial about my enquiry by phone, SMS or WhatsApp and accept the <a href="privacy-policy.html">privacy policy</a>.</label></div><div class="field full"><button class="btn btn-gold btn-block" type="submit">Submit</button></div><div class="form-success full"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Thanks! We'll call you shortly.</span></div></div></form></div></div>
 
-  <script src="assets/js/icons.js?v=20261117m" defer></script>
-  <script src="assets/js/main.js?v=20261117m" defer></script>
+  <script src="assets/js/icons.js?v=20261117n" defer></script>
+  <script src="assets/js/main.js?v=20261117n" defer></script>
     <script>
     (function(){
       const inr = n => '₹ ' + Math.round(Number(n)||0).toLocaleString('en-IN');
