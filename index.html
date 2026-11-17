@@ -16,8 +16,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261117n">
-  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261117n">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261117o">
+  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261117o">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -450,73 +450,24 @@
       </div>
     </section>
 
-    <!-- Tools & calculators -->
-    <section class="section section-white" id="tools">
+    <!-- Calculators -->
+    <section class="section section-cream" id="calculators">
       <div class="container">
         <div class="section-head split reveal">
           <div class="section-head-text">
             <div class="eyebrow">Plan smarter</div>
-            <h2>Financial tools &amp; <span class="serif">calculators.</span></h2>
-            <p>Estimate repayments, compare balance transfer savings, check eligibility and plan prepayments before you apply.</p>
+            <h2>Loan calculators, <span class="serif">all in one place.</span></h2>
+            <p>Estimate EMI, compare balance transfer savings, check eligibility, plan prepayments and more — all on one page. Results are indicative and for planning only.</p>
           </div>
-          <a class="btn btn-outline" href="calculators.html">View all tools <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
+          <a class="btn btn-outline" href="calculators.html">Open all calculators <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
         </div>
         <div class="tools-promo-grid reveal">
           <a class="tools-promo-card" href="calculators.html#emi"><h3>EMI Calculator</h3><p>Know your monthly installment, interest and total payable.</p></a>
-          <a class="tools-promo-card" href="balance-transfer-calculator.html"><h3>Balance Transfer</h3><p>Compare current vs new rate and estimate savings.</p></a>
-          <a class="tools-promo-card" href="prepayment-calculator.html"><h3>Prepayment</h3><p>See how part-payments can reduce interest and tenure.</p></a>
+          <a class="tools-promo-card" href="calculators.html#balance-transfer"><h3>Balance Transfer</h3><p>Compare current vs new rate and estimate savings.</p></a>
+          <a class="tools-promo-card" href="calculators.html#prepayment"><h3>Prepayment</h3><p>See how part-payments can reduce interest and tenure.</p></a>
           <a class="tools-promo-card" href="calculators.html#eligibility"><h3>Eligibility</h3><p>Get an indicative loan amount based on income and EMIs.</p></a>
-          <a class="tools-promo-card" href="home-loan-tax-saving-calculator.html"><h3>Tax Saving</h3><p>Estimate potential home loan tax benefits (indicative).</p></a>
-          <a class="tools-promo-card" href="buy-vs-rent-calculator.html"><h3>Buy vs Rent</h3><p>Compare indicative monthly cost of buying vs renting.</p></a>
-        </div>
-      </div>
-    </section>
-
-    <!-- EMI calculator -->
-    <section class="section section-cream" id="calculator">
-      <div class="container">
-        <div class="section-head center reveal">
-          <div class="eyebrow center">Plan your loan</div>
-          <h2>Estimate your EMI <span class="serif">in seconds.</span></h2>
-          <p>Use the calculator to understand monthly payments before you apply. No sign-up required.</p>
-        </div>
-
-        <div class="calc-card reveal" data-calculator="mini">
-          <div class="calc-inputs">
-            <h3>Home loan EMI calculator</h3>
-            <p>Indicative only. Final rates depend on your profile and lender policy.</p>
-
-            <div class="range-row">
-              <div class="range-top"><label for="mini-amount">Loan amount</label><output data-label="amount">₹40,00,000</output></div>
-              <input id="mini-amount" type="range" min="500000" max="20000000" step="100000" value="4000000" data-calc="amount" aria-label="Loan amount">
-              <div class="range-scale"><span>₹5 L</span><span>₹2 Cr</span></div>
-            </div>
-
-            <div class="range-row">
-              <div class="range-top"><label for="mini-rate">Interest rate</label><output data-label="rate">8.50% p.a.</output></div>
-              <input id="mini-rate" type="range" min="7" max="16" step="0.05" value="8.5" data-calc="rate" aria-label="Interest rate">
-              <div class="range-scale"><span>7%</span><span>16%</span></div>
-            </div>
-
-            <div class="range-row" style="margin-bottom:10px">
-              <div class="range-top"><label for="mini-tenure">Loan tenure</label><output data-label="tenure">20 years</output></div>
-              <input id="mini-tenure" type="range" min="1" max="30" step="1" value="20" data-calc="tenure" aria-label="Loan tenure">
-              <div class="range-scale"><span>1 year</span><span>30 years</span></div>
-            </div>
-          </div>
-
-          <div class="calc-result">
-            <div class="calc-result-label">Your monthly EMI</div>
-            <div class="calc-emi"><span data-out="emi">₹34,713</span><small>/ month</small></div>
-            <div class="calc-breakdown">
-              <div class="calc-row"><span><i class="swatch" style="background:var(--gold)"></i> Principal amount</span><b data-out="principal">₹40,00,000</b></div>
-              <div class="calc-row"><span><i class="swatch" style="background:#6f9ac2"></i> Total interest</span><b data-out="interest">₹43,31,146</b></div>
-              <div class="calc-row" style="border-bottom:0"><span>Total payable</span><b data-out="total">₹83,31,146</b></div>
-              <div class="calc-bar" aria-hidden="true"><span data-out="barPrincipal" style="width:48%"></span><span data-out="barInterest" style="width:52%"></span></div>
-            </div>
-            <a class="btn btn-gold btn-block" href="emi-calculator.html">Open full calculator <svg class="icon icon-sm" aria-hidden="true"><use href="#i-calculator"></use></svg></a>
-            <p class="calc-note">*EMI shown is indicative and rounded. Actual EMI may vary based on lender, processing fee, insurance and disbursement date.</p>
-          </div>
+          <a class="tools-promo-card" href="calculators.html#tax-saving"><h3>Tax Saving</h3><p>Estimate potential home loan tax benefits (indicative).</p></a>
+          <a class="tools-promo-card" href="calculators.html#buy-vs-rent"><h3>Buy vs Rent</h3><p>Compare indicative monthly cost of buying vs renting.</p></a>
         </div>
       </div>
     </section>
@@ -954,8 +905,8 @@
     </div>
   </div>
 
-  <script src="assets/js/icons.js?v=20261117n" defer></script>
-  <script src="assets/js/main.js?v=20261117n" defer></script>
+  <script src="assets/js/icons.js?v=20261117o" defer></script>
+  <script src="assets/js/main.js?v=20261117o" defer></script>
   <script>
     /* Subtle layered-depth parallax for the hero (pure CSS transforms, no WebGL) */
     (function () {
