@@ -227,6 +227,50 @@
     ];
   }
 
+  const CONTENT_IMAGE_SLOTS = [
+    { key: 'home-loan', label: 'Home Loans', fallback: 'assets/img/poster/home-loan.jpg' },
+    { key: 'mortgage', label: 'Mortgage Loans', fallback: 'assets/img/poster/mortgage.jpg' },
+    { key: 'personal-loan', label: 'Personal Loans', fallback: 'assets/img/poster/personal-loan.jpg' },
+    { key: 'business-loan', label: 'Business Loans', fallback: 'assets/img/poster/business-loan.jpg' },
+    { key: 'education-loan', label: 'Education Loans', fallback: 'assets/img/poster/education-loan.jpg' },
+    { key: 'plot-loan', label: 'Plot Loans', fallback: 'assets/img/plot.jpg' },
+    { key: 'car-loan', label: 'Car & Two-Wheeler Loans', fallback: 'icon' },
+    { key: 'doctor-loan', label: 'Doctors Loans', fallback: 'icon' },
+    { key: 'insurance', label: 'Insurance', fallback: 'icon' }
+  ];
+
+  const CONTENT_IMAGE_GROUPS = [
+    { label: 'Loan posters', items: [
+      { src: 'assets/img/poster/home-loan.jpg', label: 'Home loan — family home' },
+      { src: 'assets/img/poster/mortgage.jpg', label: 'Mortgage — house and keys' },
+      { src: 'assets/img/poster/personal-loan.jpg', label: 'Personal loan — couple' },
+      { src: 'assets/img/poster/business-loan.jpg', label: 'Business loan — professional' },
+      { src: 'assets/img/poster/education-loan.jpg', label: 'Education loan — graduate' },
+      { src: 'assets/img/poster/services-strip.jpg', label: 'Services strip' },
+      { src: 'assets/img/poster/bank-partners.jpg', label: 'Bank partners poster' },
+      { src: 'assets/img/poster/nbfc-partners.jpg', label: 'NBFC partners poster' }
+    ] },
+    { label: 'Photos', items: [
+      { src: 'assets/img/home-loan.jpg', label: 'Family home' },
+      { src: 'assets/img/family.jpg', label: 'Family' },
+      { src: 'assets/img/plot.jpg', label: 'Open land' },
+      { src: 'assets/img/car-loan.jpg', label: 'Car' },
+      { src: 'assets/img/keys.jpg', label: 'House keys' },
+      { src: 'assets/img/office.jpg', label: 'Office' },
+      { src: 'assets/img/advisor.jpg', label: 'Advisor' },
+      { src: 'assets/img/hero-house.jpg', label: 'House exterior' }
+    ] },
+    { label: 'Office & gallery', items: [
+      { src: 'assets/img/gallery/storefront.jpg', label: 'Our office in Medipalli' },
+      { src: 'assets/img/gallery/banner.jpg', label: 'Signboard banner' },
+      { src: 'assets/img/gallery/partner.jpg', label: 'Loan types poster' },
+      { src: 'assets/img/gallery/services.jpg', label: 'Services poster' },
+      { src: 'assets/img/gallery/banks.jpg', label: 'Partner banks' },
+      { src: 'assets/img/gallery/dreams.jpg', label: 'Dreams poster' },
+      { src: 'assets/img/gallery/instant.jpg', label: 'Instant loan poster' }
+    ] }
+  ];
+
   function seedTasks() {
     return [
       { id: 'TSK-01', text: 'Call Ramesh Kumar with HDFC Bank rate confirmation', due: 'Today, 11:00 AM', done: false },
@@ -246,12 +290,13 @@
     const legacyThree = Array.isArray(existingTestimonials) && existingTestimonials.length === 3 && existingTestimonials.some(t => t.id === 'TST-01' && t.name === 'D. Pranitha');
     if (force || existingTestimonials === null || legacyThree) store.set('as_testimonials', seedTestimonials());
     if (force || localStorage.getItem('as_posts') === null) store.set('as_posts', seedPosts());
+    if (force || localStorage.getItem('as_content_images') === null) store.set('as_content_images', {});
     if (force || localStorage.getItem('as_tasks') === null) store.set('as_tasks', seedTasks());
     if (force || localStorage.getItem('as_settings') === null) store.set('as_settings', DEFAULT_SETTINGS);
   }
 
   /* ---------------------------------------------------------------- state */
-  let leads = [], apps = [], products = [], partners = [], testimonials = [], posts = [], tasks = [], settings = {};
+  let leads = [], apps = [], products = [], partners = [], testimonials = [], posts = [], contentImages = {}, tasks = [], settings = {};
   let leadPage = 1, appPage = 1;
   const PAGE_SIZE = 8;
   const filters = { leadSearch: '', leadProduct: '', leadStatus: '', leadSource: '', appSearch: '', appLender: '', appStage: 'all', partnerType: '' };
@@ -266,6 +311,7 @@
     partners = store.get('as_partners', []);
     testimonials = store.get('as_testimonials', []);
     posts = store.get('as_posts', []);
+    contentImages = store.get('as_content_images', {}) || {};
     tasks = store.get('as_tasks', []);
     settings = Object.assign({}, DEFAULT_SETTINGS, store.get('as_settings', {}));
     settings.notifications = Object.assign({}, DEFAULT_SETTINGS.notifications, settings.notifications || {});
@@ -279,6 +325,7 @@
     partners: () => store.set('as_partners', partners),
     testimonials: () => store.set('as_testimonials', testimonials),
     posts: () => store.set('as_posts', posts),
+    contentImages: () => store.set('as_content_images', contentImages),
     tasks: () => store.set('as_tasks', tasks),
     settings: () => store.set('as_settings', settings)
   };
@@ -1169,11 +1216,45 @@
         '<div class="ci-main"><b>' + esc(p.title) + '</b><p>' + esc(p.excerpt) + '</p>' +
         '<div class="ci-meta"><span>' + esc(p.category) + '</span><span>' + esc(p.readTime) + ' read</span><span>' + fmtShort(p.date) + '</span><span class="badge badge-' + (p.published ? 'active' : 'inactive') + '">' + (p.published ? 'Published' : 'Draft') + '</span></div></div>' +
         '<div class="ci-actions">' +
-          '<label class="switch" style="margin-top:4px"><input type="checkbox" data-toggle="post" data-id="' + esc(p.id) + '" ' + (p.published ? 'checked' : '') + '><span></span></label>' +
+          '<label class="switch" style="margin-top:4px" title="Publish this article on the website"><input type="checkbox" data-toggle="post" data-id="' + esc(p.id) + '" aria-label="Publish article: ' + esc(p.title) + '" ' + (p.published ? 'checked' : '') + '><span></span></label>' +
           '<button class="a-btn-icon" data-action="edit-post" data-id="' + esc(p.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
           '<button class="a-btn-icon danger" data-action="delete-post" data-id="' + esc(p.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
         '</div></div>'
     ).join('') : '<div class="empty-state"><p>No articles yet.</p></div>';
+
+    const imagesHost = $('#content-images-list');
+    if (imagesHost) {
+      const librarySrcs = [];
+      CONTENT_IMAGE_GROUPS.forEach(group => group.items.forEach(item => librarySrcs.push(item.src)));
+      imagesHost.innerHTML = CONTENT_IMAGE_SLOTS.map(slot => {
+        const selected = contentImages[slot.key] || slot.fallback;
+        const isIcon = selected === 'icon';
+        let options = '<option value="icon"' + (isIcon ? ' selected' : '') + '>Icon only — no photo</option>';
+        options += CONTENT_IMAGE_GROUPS.map(group =>
+          '<optgroup label="' + esc(group.label) + '">' + group.items.map(item =>
+            '<option value="' + esc(item.src) + '"' + (item.src === selected ? ' selected' : '') + '>' + esc(item.label) + '</option>'
+          ).join('') + '</optgroup>'
+        ).join('');
+        if (!isIcon && librarySrcs.indexOf(selected) === -1) {
+          options = '<option value="' + esc(selected) + '" selected>Current selection</option>' + options;
+        }
+        return '<div class="content-item image-item">' +
+          '<span class="img-preview">' + (isIcon
+            ? '<svg class="icon" aria-hidden="true"><use href="#i-image"></use></svg>'
+            : '<img src="' + esc(selected) + '" alt="" loading="lazy">') + '</span>' +
+          '<div class="ci-main"><b>' + esc(slot.label) + '</b>' +
+            '<select class="image-select" data-content-image="' + esc(slot.key) + '" aria-label="Homepage image for ' + esc(slot.label) + '">' + options + '</select>' +
+          '</div></div>';
+      }).join('');
+
+      const imagesSummary = $('#content-images-summary');
+      if (imagesSummary) {
+        const customCount = CONTENT_IMAGE_SLOTS.filter(slot => contentImages[slot.key] && contentImages[slot.key] !== slot.fallback).length;
+        imagesSummary.textContent = customCount
+          ? customCount + ' of ' + CONTENT_IMAGE_SLOTS.length + ' cards customised. Changes show on the homepage in this browser only.'
+          : 'All cards use their default look. Changes show on the homepage in this browser only.';
+      }
+    }
   }
 
   function testimonialModal(id) {
@@ -1469,6 +1550,12 @@
     $('#partner-filter').addEventListener('change', (e) => { filters.partnerType = e.target.value; renderPartners(); });
     $('#add-testimonial-btn').addEventListener('click', () => testimonialModal());
     $('#add-post-btn').addEventListener('click', () => postModal());
+    $('#reset-content-images-btn').addEventListener('click', () => {
+      contentImages = {};
+      save.contentImages();
+      renderContent();
+      toast('Homepage images reset to defaults.');
+    });
     $('#add-task-btn').addEventListener('click', taskModal);
 
     // exports
@@ -1551,6 +1638,17 @@
       if (cb.dataset.toggle === 'post') {
         const p = posts.find(x => x.id === cb.dataset.id);
         if (p) { p.published = cb.checked; save.posts(); renderContent(); toast('Article ' + (p.published ? 'published' : 'moved to draft') + '.'); }
+      }
+      if (cb.matches('[data-content-image]')) {
+        const key = cb.dataset.contentImage;
+        const slot = CONTENT_IMAGE_SLOTS.find(s => s.key === key);
+        if (slot) {
+          if (!cb.value || cb.value === slot.fallback) delete contentImages[key];
+          else contentImages[key] = cb.value;
+          save.contentImages();
+          renderContent();
+          toast('Homepage image updated.');
+        }
       }
     });
 

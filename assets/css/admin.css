@@ -337,7 +337,7 @@ table.a-table { width: 100%; border-collapse: collapse; font-size: .79rem; min-w
 .badge-lost, .badge-rejected { background: var(--red-soft); color: var(--red); }
 .badge-underwriting { background: var(--purple-soft); color: var(--purple); }
 .badge-logged { background: var(--blue-soft); color: var(--blue); }
-.badge-active { background: var(--green-soft); color: var(--green); }
+.badge-active { background: var(--green-soft); color: #0b7a57; }
 .badge-inactive { background: #f0f1f3; color: var(--muted); }
 .badge-high { background: var(--red-soft); color: var(--red); }
 .badge-medium { background: var(--amber-soft); color: var(--amber); }
@@ -465,8 +465,30 @@ table.a-table { width: 100%; border-collapse: collapse; font-size: .79rem; min-w
 .content-item .ci-main { flex: 1; min-width: 0; }
 .content-item .ci-main b { display: block; font-size: .84rem; color: var(--navy); margin-bottom: 2px; }
 .content-item .ci-main p { margin: 0; font-size: .74rem; color: var(--muted); line-height: 1.55; }
-.content-item .ci-meta { display: flex; gap: 10px; font-size: .66rem; color: var(--muted-2); margin-top: 6px; flex-wrap: wrap; }
+.content-item .ci-meta { display: flex; gap: 10px; font-size: .66rem; color: #56657a; margin-top: 6px; flex-wrap: wrap; }
 .content-item .ci-actions { display: flex; gap: 2px; flex: none; }
+
+.content-images-card { margin-top: 18px; }
+.image-list { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.image-item { align-items: center; }
+.img-preview {
+  flex: none; width: 92px; height: 66px; border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--line); background: #eef2f7; display: grid; place-items: center;
+}
+.img-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.img-preview .icon { width: 24px; height: 24px; color: #6b7a8f; }
+.image-item .ci-main { display: flex; flex-direction: column; gap: 7px; }
+.image-item .image-select {
+  width: 100%; max-width: 340px; padding: 8px 10px; font: inherit; font-size: .74rem;
+  color: var(--navy); background: #fff; border: 1px solid var(--line); border-radius: 8px;
+}
+.image-item .image-select:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+@media (max-width: 520px) {
+  .image-list { grid-template-columns: 1fr; }
+  .image-item { flex-direction: column; align-items: stretch; }
+  .img-preview { width: 100%; height: 112px; }
+  .image-item .image-select { max-width: none; }
+}
 
 .stars { color: var(--gold); font-size: .8rem; letter-spacing: 1px; }
 

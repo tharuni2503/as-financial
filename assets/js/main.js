@@ -686,3 +686,81 @@
       '</article>';
   }).join('');
 })();
+
+/* ---------- homepage product images: admin selection ---------- */
+(function () {
+  let images = null;
+  try { images = JSON.parse(localStorage.getItem('as_content_images') || 'null'); } catch (error) { images = null; }
+  if (!images || typeof images !== 'object' || Array.isArray(images)) return;
+
+  const ALT = {
+    'assets/img/poster/home-loan.jpg': 'Modern family home',
+    'assets/img/poster/mortgage.jpg': 'House model with keys',
+    'assets/img/poster/personal-loan.jpg': 'Smiling couple',
+    'assets/img/poster/business-loan.jpg': 'Business professional',
+    'assets/img/poster/education-loan.jpg': 'Graduate in gown',
+    'assets/img/poster/services-strip.jpg': 'Loan services poster',
+    'assets/img/poster/bank-partners.jpg': 'Bank partners poster',
+    'assets/img/poster/nbfc-partners.jpg': 'NBFC partners poster',
+    'assets/img/home-loan.jpg': 'Family home',
+    'assets/img/family.jpg': 'Family outside their home',
+    'assets/img/plot.jpg': 'Open land at sunrise',
+    'assets/img/car-loan.jpg': 'Car on the road',
+    'assets/img/keys.jpg': 'House keys',
+    'assets/img/office.jpg': 'AS Financial office in Medipalli',
+    'assets/img/advisor.jpg': 'Financial advisor at work',
+    'assets/img/hero-house.jpg': 'House exterior',
+    'assets/img/gallery/storefront.jpg': 'Our office in Medipalli',
+    'assets/img/gallery/banner.jpg': 'AS Financial signboard banner',
+    'assets/img/gallery/partner.jpg': 'Loan types poster',
+    'assets/img/gallery/services.jpg': 'Services poster',
+    'assets/img/gallery/banks.jpg': 'Partner banks poster',
+    'assets/img/gallery/dreams.jpg': 'Dreams poster',
+    'assets/img/gallery/instant.jpg': 'Instant loan poster'
+  };
+
+  const safeSrc = (value) => typeof value === 'string' && /^assets\/img\/[a-z0-9\/._-]+$/i.test(value) && value.indexOf('..') === -1;
+
+  function iconHref(card) {
+    const use = card.querySelector('.pcard-head use');
+    const href = use ? (use.getAttribute('href') || use.getAttribute('xlink:href')) : '';
+    return /^#i-[a-z0-9-]+$/.test(href || '') ? href : '';
+  }
+
+  document.querySelectorAll('.pcard[data-content-img]').forEach((card) => {
+    const key = card.getAttribute('data-content-img');
+    if (!Object.prototype.hasOwnProperty.call(images, key)) return;
+    const value = images[key];
+    const media = card.querySelector('.pcard-media');
+    if (!media) return;
+    const heading = (card.querySelector('h3') || {}).textContent || 'Loan';
+
+    if (!value || value === 'icon') {
+      const href = iconHref(card);
+      if (!href) return;
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'icon');
+      svg.setAttribute('aria-hidden', 'true');
+      const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+      use.setAttribute('href', href);
+      svg.appendChild(use);
+      media.classList.add('icon-only');
+      media.textContent = '';
+      media.appendChild(svg);
+      return;
+    }
+
+    if (!safeSrc(value)) return;
+    let img = media.querySelector('img');
+    if (!img) {
+      media.textContent = '';
+      img = document.createElement('img');
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      media.appendChild(img);
+    }
+    media.classList.remove('icon-only');
+    img.src = value;
+    img.alt = ALT[value] || (heading + ' illustration');
+  });
+})();
