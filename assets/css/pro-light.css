@@ -738,3 +738,32 @@ body.lb-open { overflow: hidden; }
   .ambak-chips { gap: 6px; }
   .ambak-chip { padding: 6px 12px; font-size: .74rem; }
 }
+
+/* Hero: tighten for very small screens */
+@media (max-width: 420px) {
+  .hero2 { padding: 22px 0 28px; }
+  .hero2 h1 { font-size: clamp(1.85rem, 8vw, 2.2rem); margin: 10px 0 8px; line-height: 1.12; }
+  .hero2-sub { font-size: .72rem; letter-spacing: .16em; margin-bottom: 12px; }
+  .hero2-lede { font-size: .95rem; line-height: 1.55; margin-bottom: 14px; }
+  .hero-float-cards { gap: 8px; margin: 14px 0 16px; }
+  .hero-float-card { padding: 10px 11px; border-radius: 12px; }
+  .hero-float-card b { font-size: .88rem; }
+  .hero-float-card span { font-size: .74rem; }
+  .hero2-cta { flex-direction: column; align-items: stretch; gap: 10px; }
+  .hero2-cta .btn { width: 100%; justify-content: center; }
+  .hero2-phone { margin-top: 14px; padding-top: 12px; gap: 8px 14px; font-size: .8rem; }
+  .hero2-phone b { font-size: .95rem; }
+  .hero3d-scene { gap: 10px; }
+  .hero3d-main { aspect-ratio: 4 / 3.2; }
+  .hero3d-glass { padding: 10px 12px; gap: 10px; }
+  .hero3d-glass .ico { width: 34px; height: 34px; border-radius: 10px; }
+  .hero3d-glass-copy b { font-size: .9rem; }
+  .hero3d-glass-copy span { font-size: .72rem; }
+  .hero3d-rail { gap: 10px; }
+  .hero3d-stat, .hero3d-contact { padding: 12px; }
+}
+@media (max-width: 360px) {
+  .hero2 h1 { font-size: 1.72rem; }
+  .hero-float-card small { font-size: .58rem; }
+  .hero3d-badge { font-size: .62rem; }
+}
