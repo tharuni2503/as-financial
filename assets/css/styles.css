@@ -1014,6 +1014,8 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
   .reveal { opacity: 1; transform: none; }
+  .marquee-track, .hero-float, .dot-live { animation: none !important; }
+  .tilt-3d, .tilt-live { transform: none !important; transition: none !important; }
   .tilt-3d { transform: none !important; }
 }
 
@@ -1056,3 +1058,7 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
 /* Admin link chip in footer */
 .admin-chip { display: inline-flex; align-items: center; gap: 6px; font-size: .68rem; border: 1px solid rgba(255,255,255,.18); padding: 5px 10px; border-radius: 999px; color: #9fb2c4; }
 .admin-chip:hover { color: var(--gold-light); border-color: var(--gold); }
+
+
+/* focus enhancements */
+.fab:focus-visible, .header-call-btn:focus-visible, .m-link:focus-visible, .m-tools-grid a:focus-visible, .partner-tab:focus-visible, .ambak-chip:focus-visible, .dropdown a:focus-visible { outline: 3px solid rgba(16, 41, 77, .5); outline-offset: 2px; }
