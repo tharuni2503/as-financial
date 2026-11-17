@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | AS Financial Services and Solutions</title>
+  <meta name="description" content="Private demo admin dashboard for AS Financial Services and Solutions.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#10294D">
+  <link rel="icon" href="assets/img/brand/favicon.png" type="image/png">
+  <link rel="alternate icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/img/brand/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
+  <link rel="stylesheet" href="assets/css/admin.css?v=20261117e">
+  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261117e">
+</head>
+<body>
+
+  <!-- ============================ LOGIN ============================ -->
+  <div class="login-screen" id="login-screen">
+    <div class="login-brand">
+      <a class="brand" href="index.html"><img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions — Your Goals, Our Solutions" width="200" height="51" decoding="async" loading="lazy"></a>
+      <div class="login-brand-mid">
+        <span class="brand-sub" style="letter-spacing:.2em">Business control centre</span>
+        <h1>Every lead, loan and lender in <span class="serif" style="color:var(--gold-light)">one place.</span></h1>
+        <p>Track enquiries from first call to disbursal, manage your lending partners and keep the website content fresh.</p>
+        <div class="login-proof">
+          <div><b>AS</b><span>Financial Services</span></div>
+          <div><b>Banks</b><span>and NBFCs</span></div>
+          <div><b>One</b><span>trusted partner</span></div>
+        </div>
+      </div>
+      <div class="login-brand-foot">© <span id="login-year">2026</span> AS Financial Services and Solutions · Medipalli, Hyderabad</div>
+    </div>
+
+    <div class="login-panel">
+      <div class="login-box" role="main" aria-label="Staff sign in">
+        <span class="pill"><span class="icon icon-sm" style="width:12px;height:12px;color:var(--gold-deep)"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg></span> Secure staff access</span>
+        <h2>Welcome back.</h2>
+        <p>Sign in to manage enquiries, applications and your website content.</p>
+
+        <form class="login-form" id="login-form" autocomplete="on">
+          <div class="login-error" id="login-error">That email and password don't match. Try the demo credentials below.</div>
+          <div class="login-field">
+            <label for="login-email">Email address</label>
+            <div class="login-input">
+              <svg class="icon" aria-hidden="true"><use href="#i-mail"></use></svg>
+              <input type="email" id="login-email" name="email" value="admin@asfinancial.in" required autocomplete="username">
+            </div>
+          </div>
+          <div class="login-field">
+            <label for="login-password">Password</label>
+            <div class="login-input">
+              <svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg>
+              <input type="password" id="login-password" name="password" value="AS@2026" required autocomplete="current-password">
+            </div>
+          </div>
+          <div class="login-row">
+            <label><input type="checkbox" checked> Keep me signed in</label>
+            <button type="button" class="link-btn" id="forgot-password-btn" style="background:none;border:0;color:var(--gold-deep);font-weight:700;padding:0">Forgot password?</button>
+          </div>
+          <button class="a-btn a-btn-primary" style="padding:11px 16px;font-size:.85rem" type="submit">Sign in to dashboard <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+        </form>
+
+        <div class="demo-note">
+          <b>Demo credentials</b><br>
+          Email: <b>admin@asfinancial.in</b><br>
+          Password: <b>AS@2026</b>
+        </div>
+        <div class="login-foot"><a href="index.html">← Back to the website</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================ APP ============================ -->
+  <div class="admin-app hidden" id="admin-app">
+    <div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="sidebar-brand">
+        <img class="brand-logo" src="assets/img/brand/logo-mark.png" alt="AS" style="height:40px;width:auto" decoding="async" loading="lazy">
+        <span><span class="brand-name">AS Financial</span><span class="brand-sub">Admin console</span></span>
+        <button class="sidebar-close" id="sidebar-close" aria-label="Close menu"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Dashboard">
+        <div class="sidebar-label">Workspace</div>
+        <button class="sidebar-link active" data-view="overview"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg> Overview</button>
+        <button class="sidebar-link" data-view="leads"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg> Leads <span class="badge-count" id="nav-lead-count">0</span></button>
+        <button class="sidebar-link" data-view="applications"><svg class="icon" aria-hidden="true"><use href="#i-folder"></use></svg> Applications</button>
+        <button class="sidebar-link" data-view="reports"><svg class="icon" aria-hidden="true"><use href="#i-report"></use></svg> Reports</button>
+
+        <div class="sidebar-label">Catalogue</div>
+        <button class="sidebar-link" data-view="products"><svg class="icon" aria-hidden="true"><use href="#i-box"></use></svg> Loan products</button>
+        <button class="sidebar-link" data-view="partners"><svg class="icon" aria-hidden="true"><use href="#i-handshake"></use></svg> Bank partners</button>
+        <button class="sidebar-link" data-view="content"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg> Website content</button>
+
+        <div class="sidebar-label">System</div>
+        <button class="sidebar-link" data-view="settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"></use></svg> Settings</button>
+        <a class="sidebar-link" href="index.html" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="#i-globe"></use></svg> View website <svg class="icon icon-sm" style="margin-left:auto" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a>
+      </nav>
+
+      <div class="sidebar-card">
+        <h5>Website sync is on</h5>
+        <p>Leads from the public site land here instantly. Business contact details update the site from Settings.</p>
+        <a href="index.html" target="_blank" rel="noopener">Open site <svg class="icon" style="width:12px;height:12px" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a>
+      </div>
+
+      <div class="sidebar-user">
+        <span class="avatar" id="sidebar-avatar">AD</span>
+        <span><strong id="sidebar-user-name">Admin</strong><span>Business manager</span></span>
+        <button id="sidebar-logout" aria-label="Sign out"><svg class="icon" aria-hidden="true"><use href="#i-logout"></use></svg></button>
+      </div>
+    </aside>
+
+    <div class="admin-main" role="main" aria-label="Dashboard">
+      <div class="demo-banner" role="note">Demo workspace — sample data only, stored in this browser. Not connected to a backend or real customer records.</div>
+      <header class="admin-topbar">
+        <button class="admin-burger" id="admin-burger" aria-label="Open menu"><svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg></button>
+        <div class="topbar-title">
+          <h1 id="topbar-title">Overview</h1>
+          <span id="topbar-date">Monday, 16 November 2026</span>
+        </div>
+
+        <div class="topbar-search">
+          <svg class="icon" aria-hidden="true"><use href="#i-search"></use></svg>
+          <label class="sr-only" for="global-search">Search leads by name, phone or ID</label>
+          <input type="search" id="global-search" placeholder="Search leads by name, phone or ID…">
+        </div>
+
+        <div class="topbar-actions">
+          <div style="position:relative">
+            <button class="icon-btn" id="notif-btn" aria-label="Notifications">
+              <svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg>
+              <span class="notif-dot"></span>
+            </button>
+            <div class="dropdown-menu notif-menu" id="notif-menu">
+              <div class="notif-head"><strong>Notifications</strong><span>3 new</span></div>
+              <div class="notif-item"><span class="n-icon"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-user"></use></svg></span><span><b>New website lead</b><span>Ramesh Kumar enquired about a home loan</span><time>8m</time></span></div>
+              <div class="notif-item"><span class="n-icon" style="background:var(--green-soft);color:var(--green)"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-check-circle"></use></svg></span><span><b>Sanction received</b><span>HDFC Bank approved ₹48,00,000</span><time>1h</time></span></div>
+              <div class="notif-item"><span class="n-icon" style="background:var(--blue-soft);color:var(--blue)"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-doc"></use></svg></span><span><b>Documents pending</b><span>2 applications need bank statements</span><time>3h</time></span></div>
+            </div>
+          </div>
+
+          <div style="position:relative">
+            <button class="profile-btn" id="profile-btn">
+              <span class="avatar" id="topbar-avatar">AD</span>
+              <span id="topbar-user">Admin</span>
+              <svg class="icon" aria-hidden="true"><use href="#i-chevron"></use></svg>
+            </button>
+            <div class="dropdown-menu" id="profile-menu">
+              <a href="#view-settings" data-view-link="settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"></use></svg> Account settings</a>
+              <a href="index.html" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="#i-globe"></use></svg> View public website</a>
+              <hr>
+              <button class="danger" id="logout-btn"><svg class="icon" aria-hidden="true"><use href="#i-logout"></use></svg> Sign out</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="admin-content">
+
+        <!-- OVERVIEW -->
+        <section class="view active" id="view-overview">
+          <div class="page-head">
+            <div>
+              <h2>Good morning, <span class="serif" id="greeting-name">Admin</span></h2>
+              <p>Here is what is happening across your business today.</p>
+            </div>
+            <div class="page-head-actions">
+              <button class="a-btn a-btn-light" id="download-report-btn"><svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg> Export report</button>
+              <button class="a-btn a-btn-gold" data-add-lead><svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg> Add lead</button>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi">
+              <div class="kpi-top">
+                <span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg></span>
+                <span class="kpi-chip up" id="kpi-leads-chip">↑ 12.5%</span>
+              </div>
+              <div class="kpi-value" id="kpi-new-leads">0</div>
+              <div class="kpi-label">New leads this month</div>
+              <div class="kpi-sub"><b id="kpi-total-leads">0</b> total in pipeline</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-top">
+                <span class="kpi-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-folder"></use></svg></span>
+                <span class="kpi-chip flat">In progress</span>
+              </div>
+              <div class="kpi-value" id="kpi-active-apps">0</div>
+              <div class="kpi-label">Applications being processed</div>
+              <div class="kpi-sub"><b id="kpi-sanctioned-count">0</b> sanctioned this month</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-top">
+                <span class="kpi-icon green"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg></span>
+                <span class="kpi-chip up">↑ 8.2%</span>
+              </div>
+              <div class="kpi-value" id="kpi-sanctioned-amt">₹0</div>
+              <div class="kpi-label">Sanctioned volume</div>
+              <div class="kpi-sub">This calendar month</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-top">
+                <span class="kpi-icon purple"><svg class="icon" aria-hidden="true"><use href="#i-wallet"></use></svg></span>
+                <span class="kpi-chip up">↑ 16.4%</span>
+              </div>
+              <div class="kpi-value" id="kpi-disbursed-amt">₹0</div>
+              <div class="kpi-label">Disbursed volume</div>
+              <div class="kpi-sub">Year to date</div>
+            </div>
+          </div>
+
+          <div class="dash-grid">
+            <div class="card">
+              <div class="card-head">
+                <div><h3>Enquiry &amp; sanction trend</h3><p>Last 8 months</p></div>
+                <div class="chart-legend"><span><i style="background:#c9a227"></i>Leads</span><span><i style="background:#0d2b4e"></i>Sanctions</span></div>
+              </div>
+              <div class="card-body">
+                <div class="chart-wrap chart-tall"><canvas id="chart-leads" role="img" aria-label="Monthly leads and sanctions"></canvas></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><div><h3>Loan mix</h3><p>By sanctioned value</p></div></div>
+              <div class="card-body">
+                <div class="chart-wrap chart-medium" style="height:180px"><canvas id="chart-mix" role="img" aria-label="Loan product mix"></canvas></div>
+                <div class="donut-legend" id="mix-legend"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dash-grid equal">
+            <div class="card">
+              <div class="card-head"><div><h3>Sales pipeline</h3><p>Active leads by stage</p></div><button class="a-btn a-btn-ghost a-btn-sm" data-view-link="leads">View leads <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button></div>
+              <div class="card-body"><div class="pipeline" id="pipeline-list"></div></div>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><div><h3>Today's follow-ups</h3><p>Keep these moving</p></div><button class="a-btn a-btn-ghost a-btn-sm" id="add-task-btn"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"></use></svg> Add</button></div>
+              <div class="card-body" style="padding:8px 18px" id="task-list"></div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:18px">
+            <div class="card-head">
+              <div><h3>Latest enquiries</h3><p>Fresh from the website and phone</p></div>
+              <button class="a-btn a-btn-light a-btn-sm" data-view-link="leads">All leads <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+            </div>
+            <div class="table-wrap">
+              <table class="a-table">
+                <thead><tr><th scope="col">Customer</th><th scope="col">Loan type</th><th scope="col">Amount</th><th scope="col">Source</th><th scope="col">Status</th><th scope="col">Received</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+                <tbody id="recent-leads-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:18px">
+            <div class="card-head">
+              <div><h3>Product performance</h3><p>Sanctioned value and conversion by loan type</p></div>
+              <button class="a-btn a-btn-ghost a-btn-sm" data-view-link="reports">Full report <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+            </div>
+            <div class="table-wrap">
+              <table class="a-table">
+                <thead><tr><th scope="col">Product</th><th scope="col">Leads</th><th scope="col">Sanctioned</th><th scope="col">Conversion</th><th scope="col">Avg. ticket size</th><th scope="col">Trend</th></tr></thead>
+                <tbody id="product-perf-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- LEADS -->
+        <section class="view" id="view-leads">
+          <div class="page-head">
+            <div><h2>Leads</h2><p><span id="leads-count-label">0</span> enquiries across all channels</p></div>
+            <div class="page-head-actions">
+              <button class="a-btn a-btn-light" id="export-leads-btn"><svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg> Export CSV</button>
+              <button class="a-btn a-btn-gold" data-add-lead><svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg> Add lead</button>
+            </div>
+          </div>
+
+          <div class="mini-stats">
+            <div class="mini-stat"><span>Open leads</span><b id="leads-open">0</b></div>
+            <div class="mini-stat"><span>Converted to applications</span><b id="leads-converted">0</b></div>
+            <div class="mini-stat"><span>Pipeline value</span><b id="leads-value">₹0</b></div>
+          </div>
+
+          <div class="card">
+            <div class="toolbar">
+              <div class="search-box">
+                <svg class="icon" aria-hidden="true"><use href="#i-search"></use></svg>
+                <label class="sr-only" for="leads-search">Search leads by name, phone, email or ID</label>
+                <input type="search" id="leads-search" placeholder="Search by name, phone, email or ID…">
+              </div>
+              <label class="sr-only" for="leads-product-filter">Filter by product</label>
+              <select id="leads-product-filter">
+                <option value="">All products</option>
+              </select>
+              <label class="sr-only" for="leads-status-filter">Filter by status</label>
+              <select id="leads-status-filter">
+                <option value="">All statuses</option>
+                <option>New</option><option>Contacted</option><option>Qualified</option><option>Documents</option><option>Sanctioned</option><option>Disbursed</option><option>Lost</option>
+              </select>
+              <label class="sr-only" for="leads-source-filter">Filter by source</label>
+              <select id="leads-source-filter">
+                <option value="">All sources</option>
+                <option>Website form</option><option>Homepage popup</option><option>Phone call</option><option>WhatsApp</option><option>Walk-in</option><option>Referral</option>
+              </select>
+              <button class="a-btn a-btn-ghost a-btn-sm" id="clear-lead-filters">Reset</button>
+            </div>
+            <div class="table-wrap">
+              <table class="a-table">
+                <thead><tr><th scope="col">Customer</th><th scope="col">Loan type</th><th scope="col">Amount</th><th scope="col">Source</th><th scope="col">Status</th><th scope="col">Priority</th><th scope="col">Date</th><th scope="col" style="text-align:right">Actions</th></tr></thead>
+                <tbody id="leads-body"></tbody>
+              </table>
+            </div>
+            <div class="pagination" id="leads-pagination"></div>
+          </div>
+        </section>
+
+        <!-- APPLICATIONS -->
+        <section class="view" id="view-applications">
+          <div class="page-head">
+            <div><h2>Applications</h2><p>Track every file from login to disbursal</p></div>
+            <div class="page-head-actions">
+              <button class="a-btn a-btn-light" id="export-apps-btn"><svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg> Export</button>
+              <button class="a-btn a-btn-gold" id="add-app-btn"><svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg> New application</button>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-folder"></use></svg></span></div><div class="kpi-value" id="app-total">0</div><div class="kpi-label">Total files</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg></span></div><div class="kpi-value" id="app-processing">0</div><div class="kpi-label">In processing</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon green"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg></span></div><div class="kpi-value" id="app-sanctioned">0</div><div class="kpi-label">Sanctioned / disbursed</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon purple"><svg class="icon" aria-hidden="true"><use href="#i-wallet"></use></svg></span></div><div class="kpi-value" id="app-value">₹0</div><div class="kpi-label">Sanctioned value</div></div>
+          </div>
+
+          <div class="card">
+            <div class="stage-tabs" id="app-stage-tabs">
+              <button class="stage-tab active" data-stage="all">All <span id="stage-all-count">0</span></button>
+              <button class="stage-tab" data-stage="Logged">Logged <span id="stage-logged-count">0</span></button>
+              <button class="stage-tab" data-stage="Documents">Documents <span id="stage-docs-count">0</span></button>
+              <button class="stage-tab" data-stage="Underwriting">Underwriting <span id="stage-uw-count">0</span></button>
+              <button class="stage-tab" data-stage="Sanctioned">Sanctioned <span id="stage-sanctioned-count">0</span></button>
+              <button class="stage-tab" data-stage="Disbursed">Disbursed <span id="stage-disbursed-count">0</span></button>
+              <button class="stage-tab" data-stage="Rejected">Rejected <span id="stage-rejected-count">0</span></button>
+            </div>
+            <div class="toolbar">
+              <div class="search-box"><svg class="icon" aria-hidden="true"><use href="#i-search"></use></svg><label class="sr-only" for="apps-search">Search applications by customer, ID or lender</label><input type="search" id="apps-search" placeholder="Search by customer, application ID or lender…"></div>
+              <label class="sr-only" for="apps-lender-filter">Filter by lender</label>
+              <select id="apps-lender-filter"><option value="">All lenders</option></select>
+              <button class="a-btn a-btn-ghost a-btn-sm" id="clear-app-filters">Reset</button>
+            </div>
+            <div class="table-wrap">
+              <table class="a-table">
+                <thead><tr><th scope="col">Application</th><th scope="col">Customer</th><th scope="col">Loan / amount</th><th scope="col">Lender</th><th scope="col">Stage</th><th scope="col">Progress</th><th scope="col" style="text-align:right">Actions</th></tr></thead>
+                <tbody id="apps-body"></tbody>
+              </table>
+            </div>
+            <div class="pagination" id="apps-pagination"></div>
+          </div>
+        </section>
+
+        <!-- PRODUCTS -->
+        <section class="view" id="view-products">
+          <div class="page-head">
+            <div><h2>Loan products</h2><p>Rates and limits shown on the public website</p></div>
+            <div class="page-head-actions"><button class="a-btn a-btn-gold" id="add-product-btn"><svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg> Add product</button></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h3>Product catalogue</h3><p>Toggle visibility to show or hide a product on the site</p></div></div>
+            <div class="table-wrap">
+              <table class="a-table">
+                <thead><tr><th scope="col">Product</th><th scope="col">Interest rate</th><th scope="col">Max amount</th><th scope="col">Max tenure</th><th scope="col">Leads</th><th scope="col">Visible</th><th scope="col" style="text-align:right">Actions</th></tr></thead>
+                <tbody id="products-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- PARTNERS -->
+        <section class="view" id="view-partners">
+          <div class="page-head">
+            <div><h2>Bank &amp; NBFC partners</h2><p>Your active lender panel</p></div>
+            <div class="page-head-actions">
+              <select id="partner-filter" class="a-btn a-btn-light" style="padding:8px 10px"><option value="">All partner types</option><option>Public sector</option><option>Private bank</option><option>NBFC / HFC</option></select>
+              <button class="a-btn a-btn-gold" id="add-partner-btn"><svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg> Add partner</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="partner-grid-admin" id="partners-grid"></div>
+          </div>
+        </section>
+
+        <!-- CONTENT -->
+        <section class="view" id="view-content">
+          <div class="page-head">
+            <div><h2>Website content</h2><p>Testimonials and articles shown on the public site</p></div>
+          </div>
+          <div class="dash-grid equal">
+            <div class="card">
+              <div class="card-head"><div><h3>Client testimonials</h3><p>Published reviews appear on the homepage</p></div><button class="a-btn a-btn-light a-btn-sm" id="add-testimonial-btn"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"></use></svg> Add</button></div>
+              <div class="content-list" id="testimonials-list"></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><div><h3>Guides &amp; articles</h3><p>Helpful content for prospective borrowers</p></div><button class="a-btn a-btn-light a-btn-sm" id="add-post-btn"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"></use></svg> Add</button></div>
+              <div class="content-list" id="posts-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- REPORTS -->
+        <section class="view" id="view-reports">
+          <div class="page-head">
+            <div><h2>Reports</h2><p>Business performance at a glance</p></div>
+            <div class="page-head-actions">
+              <select id="report-period" class="a-btn a-btn-light" style="padding:8px 10px"><option>Last 6 months</option><option>Last 12 months</option><option>This year</option></select>
+              <button class="a-btn a-btn-primary" id="print-report-btn"><svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg> Export report</button>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon green"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg></span><span class="kpi-chip up">↑ 16.4%</span></div><div class="kpi-value" id="report-disbursed">₹0</div><div class="kpi-label">Total disbursed</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-percent"></use></svg></span><span class="kpi-chip up">↑ 2.1%</span></div><div class="kpi-value" id="report-conversion">0%</div><div class="kpi-label">Lead-to-sanction conversion</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-wallet"></use></svg></span></div><div class="kpi-value" id="report-ticket">₹0</div><div class="kpi-label">Average ticket size</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon purple"><svg class="icon" aria-hidden="true"><use href="#i-handshake"></use></svg></span></div><div class="kpi-value" id="report-lenders">0</div><div class="kpi-label">Active lending partners</div></div>
+          </div>
+
+          <div class="dash-grid">
+            <div class="card">
+              <div class="card-head"><div><h3>Monthly disbursements</h3><p>Value in lakhs</p></div></div>
+              <div class="card-body"><div class="chart-wrap chart-tall"><canvas id="chart-disbursement" role="img" aria-label="Monthly disbursements"></canvas></div></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><div><h3>Lead sources</h3><p>Where enquiries come from</p></div></div>
+              <div class="card-body">
+                <div class="chart-wrap chart-medium" style="height:180px"><canvas id="chart-source" role="img" aria-label="Lead sources"></canvas></div>
+                <div class="donut-legend" id="source-legend"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:18px">
+            <div class="card-head"><div><h3>Conversion funnel</h3><p>From enquiry to disbursal</p></div></div>
+            <div class="card-body"><div class="pipeline" id="funnel-list"></div></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><div><h3>Lender performance</h3><p>Sanctioned volume by partner</p></div></div>
+            <div class="table-wrap">
+              <table class="a-table">
+                <thead><tr><th scope="col">Lender</th><th scope="col">Type</th><th scope="col">Applications</th><th scope="col">Sanctioned</th><th scope="col">Avg. rate</th><th scope="col">Approval rate</th></tr></thead>
+                <tbody id="lender-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- SETTINGS -->
+        <section class="view" id="view-settings">
+          <div class="page-head">
+            <div><h2>Settings</h2><p>Business details, notifications and your account</p></div>
+          </div>
+
+          <div class="settings-grid">
+            <div class="card">
+              <div class="card-head"><div><h3>Business profile</h3><p>These details appear across the public website</p></div></div>
+              <form id="settings-form">
+                <div class="setting-block">
+                  <h3>Contact information</h3>
+                  <p>Used in the header, footer, contact page and WhatsApp links.</p>
+                  <div class="form-row">
+                    <div class="a-field"><label for="set-name">Business name</label><input id="set-name" name="businessName" type="text"></div>
+                    <div class="a-field"><label for="set-tagline">Tagline</label><input id="set-tagline" name="tagline" type="text"></div>
+                  </div>
+                  <div class="form-row">
+                    <div class="a-field"><label for="set-phone">Phone (display)</label><input id="set-phone" name="phone" type="text"></div>
+                    <div class="a-field"><label for="set-phoneRaw">Phone (WhatsApp, digits only)</label><input id="set-phoneRaw" name="phoneRaw" type="text"></div>
+                  </div>
+                  <div class="form-row one">
+                    <div class="a-field"><label for="set-email">Email</label><input id="set-email" name="email" type="email"></div>
+                  </div>
+                  <div class="form-row one">
+                    <div class="a-field"><label for="set-address">Office address</label><input id="set-address" name="address" type="text"></div>
+                  </div>
+                  <div class="form-row">
+                    <div class="a-field"><label for="set-hours">Office hours</label><input id="set-hours" name="hours" type="text"></div>
+                    <div class="a-field"><label for="set-whatsapp">WhatsApp number (digits only)</label><input id="set-whatsapp" name="whatsapp" type="text"></div>
+                  </div>
+                </div>
+
+                <div class="setting-block">
+                  <h3>Notifications</h3>
+                  <p>Choose what lands in your inbox.</p>
+                  <div class="toggle-row">
+                    <div><b>New lead alerts</b><span>Email me when a website enquiry arrives</span></div>
+                    <label class="switch"><input type="checkbox" id="notif-leads" checked><span></span></label>
+                  </div>
+                  <div class="toggle-row">
+                    <div><b>Application stage updates</b><span>Notify when a file moves stage</span></div>
+                    <label class="switch"><input type="checkbox" id="notif-apps" checked><span></span></label>
+                  </div>
+                  <div class="toggle-row">
+                    <div><b>Weekly summary</b><span>Monday morning performance digest</span></div>
+                    <label class="switch"><input type="checkbox" id="notif-weekly"><span></span></label>
+                  </div>
+                  <div class="toggle-row">
+                    <div><b>WhatsApp lead alerts</b><span>Instant message to the business number</span></div>
+                    <label class="switch"><input type="checkbox" id="notif-whatsapp" checked><span></span></label>
+                  </div>
+                </div>
+
+                <div class="setting-block" style="display:flex;justify-content:flex-end;gap:8px">
+                  <button type="button" class="a-btn a-btn-light" id="settings-reset">Discard</button>
+                  <button type="submit" class="a-btn a-btn-primary"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg> Save changes</button>
+                </div>
+              </form>
+            </div>
+
+            <div style="display:grid;gap:18px">
+              <div class="card">
+                <div class="card-head"><div><h3>Account</h3><p>Signed-in staff member</p></div></div>
+                <div class="card-body">
+                  <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px">
+                    <span class="cust-avatar" style="width:44px;height:44px;font-size:.9rem">AD</span>
+                    <div><b style="display:block;color:var(--navy)">Administrator</b><span style="font-size:.72rem;color:var(--muted)">admin@asfinancial.in</span></div>
+                  </div>
+                  <div class="detail-box" style="margin-bottom:10px"><small>Role</small><b>Business manager · full access</b></div>
+                  <div class="detail-box"><small>Last sign in</small><b id="last-signin">Today</b></div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-head"><div><h3>Demo data</h3><p>Reset the dashboard to its sample state</p></div></div>
+                <div class="card-body">
+                  <div class="danger-zone">
+                    <h3>Reset all dashboard data</h3>
+                    <p>Removes leads, applications, products, partners and content created in this demo, then restores the sample dataset. Website leads will be cleared too.</p>
+                    <button class="a-btn a-btn-danger" id="reset-data-btn"><svg class="icon" aria-hidden="true"><use href="#i-refresh"></use></svg> Reset demo data</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-body" style="display:flex;gap:10px;align-items:flex-start">
+                  <svg class="icon" aria-hidden="true" style="color:var(--gold-deep);flex:none"><use href="#i-shield"></use></svg>
+                  <p style="margin:0;font-size:.74rem;color:var(--muted)">This dashboard stores data in your browser only (localStorage) for demonstration. Connect a backend and authentication before using it with real customer data.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- Lead drawer -->
+    <div class="drawer-overlay" id="drawer-overlay"></div>
+    <aside class="drawer" id="lead-drawer" aria-label="Lead details">
+      <div class="drawer-head">
+        <div><h3 id="drawer-title">Lead details</h3><p id="drawer-sub">—</p></div>
+        <button class="drawer-close" id="drawer-close" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
+      </div>
+      <div class="drawer-body" id="drawer-body"></div>
+      <div class="drawer-foot" id="drawer-foot"></div>
+    </aside>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-head">
+          <div><h3 id="modal-title">Modal</h3><p id="modal-sub"></p></div>
+          <button class="modal-close" id="modal-close" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
+        </div>
+        <div class="modal-body" id="modal-body"></div>
+        <div class="modal-foot" id="modal-foot"></div>
+      </div>
+    </div>
+
+    <div class="a-toast-host" id="toast-host"></div>
+  </div>
+
+  <script src="assets/js/icons.js?v=20261117e"></script>
+  <script src="assets/js/admin.js?v=20261117e"></script>
+  <script>
+    (function () {
+      var btn = document.getElementById('forgot-password-btn');
+      if (btn) {
+        btn.addEventListener('click', function () {
+          var box = document.getElementById('login-error');
+          if (box) {
+            box.textContent = 'Password reset requires backend authentication (not available in this frontend demo). Please use the demo credentials shown below or contact the administrator.';
+            box.classList.add('show');
+          } else {
+            alert('Password reset requires backend authentication (not available in this frontend demo).');
+          }
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
+
