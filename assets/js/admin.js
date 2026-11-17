@@ -1262,33 +1262,26 @@
   function renderContentImages() {
     const imagesHost = $('#content-images-list');
     if (!imagesHost) return;
-    const librarySrcs = [];
-    CONTENT_IMAGE_GROUPS.forEach(group => group.items.forEach(item => librarySrcs.push(item.src)));
     imagesHost.innerHTML = CONTENT_IMAGE_SLOTS.map(slot => {
       const selected = contentImages[slot.key] || slot.fallback;
       const isIcon = selected === 'icon';
       const isUpload = typeof selected === 'string' && selected.indexOf('data:image/') === 0;
-      let options = '<option value="icon"' + (isIcon ? ' selected' : '') + '>Icon only — no photo</option>';
-      options += CONTENT_IMAGE_GROUPS.map(group =>
-        '<optgroup label="' + esc(group.label) + '">' + group.items.map(item =>
-          '<option value="' + esc(item.src) + '"' + (item.src === selected ? ' selected' : '') + '>' + esc(item.label) + '</option>'
-        ).join('') + '</optgroup>'
-      ).join('');
-      if (isUpload) {
-        options = '<option value="__upload__" selected>Uploaded photo (this browser)</option>' + options;
-      } else if (!isIcon && librarySrcs.indexOf(selected) === -1) {
-        options = '<option value="' + esc(selected) + '" selected>Current selection</option>' + options;
-      }
+      const isCustom = !!contentImages[slot.key] && contentImages[slot.key] !== slot.fallback;
       const previewSrc = isIcon ? '' : selected;
+      let note = 'Using default image.';
+      if (isIcon) note = slot.fallback === 'icon' ? 'Using default icon.' : 'Using icon only.';
+      if (isUpload) note = 'Uploaded photo saved in this browser.';
+
       return '<div class="content-item image-item">' +
         '<span class="img-preview">' + (isIcon
           ? '<svg class="icon" aria-hidden="true"><use href="#i-image"></use></svg>'
           : '<img src="' + esc(previewSrc) + '" alt="" loading="lazy">') + '</span>' +
         '<div class="ci-main"><b>' + esc(slot.label) + '</b>' +
-          '<select class="image-select" data-content-image="' + esc(slot.key) + '" aria-label="Homepage image for ' + esc(slot.label) + '">' + options + '</select>' +
+          '<p class="image-status">' + esc(note) + '</p>' +
           '<div class="image-upload-row">' +
             '<label class="a-btn a-btn-light a-btn-sm image-upload-btn"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"></use></svg> Upload from device<input type="file" accept="image/*" data-upload-image="' + esc(slot.key) + '" class="image-upload-input"></label>' +
-            (isUpload ? '<span class="image-upload-note">Uploaded photo saved in this browser.</span>' : '') +
+            '<button type="button" class="a-btn a-btn-ghost a-btn-sm" data-image-action="icon" data-key="' + esc(slot.key) + '"' + (isIcon ? ' disabled' : '') + '>Icon only</button>' +
+            (isCustom ? '<button type="button" class="a-btn a-btn-ghost a-btn-sm" data-image-action="default" data-key="' + esc(slot.key) + '">Use default</button>' : '') +
           '</div>' +
         '</div></div>';
     }).join('');
@@ -1299,7 +1292,7 @@
       const uploadCount = CONTENT_IMAGE_SLOTS.filter(slot => typeof contentImages[slot.key] === 'string' && contentImages[slot.key].indexOf('data:image/') === 0).length;
       let text = customCount
         ? customCount + ' of ' + CONTENT_IMAGE_SLOTS.length + ' cards customised. Changes show on the homepage in this browser only.'
-        : 'All cards use their default look. Changes show on the homepage in this browser only.';
+        : 'All cards use their default look. Upload a photo or choose icon only for any card.';
       if (uploadCount) text += ' Uploaded photos are stored only in this browser.';
       imagesSummary.textContent = text;
     }
@@ -1687,18 +1680,7 @@
         const p = posts.find(x => x.id === cb.dataset.id);
         if (p) { p.published = cb.checked; save.posts(); renderContent(); toast('Article ' + (p.published ? 'published' : 'moved to draft') + '.'); }
       }
-      if (cb.matches('[data-content-image]')) {
-        const key = cb.dataset.contentImage;
-        const slot = CONTENT_IMAGE_SLOTS.find(s => s.key === key);
-        if (slot) {
-          if (cb.value === '__upload__') return;
-          if (!cb.value || cb.value === slot.fallback) delete contentImages[key];
-          else contentImages[key] = cb.value;
-          try { save.contentImages(); } catch (err) { toast('Could not save image selection (storage full).', 'error'); return; }
-          renderContentImages();
-          toast('Homepage image updated.');
-        }
-      }
+
       if (cb.matches('[data-upload-image]')) {
         const key = cb.dataset.uploadImage;
         const slot = CONTENT_IMAGE_SLOTS.find(s => s.key === key);
@@ -1725,6 +1707,22 @@
 
     // delegated row actions
     document.addEventListener('click', (e) => {
+      const imgBtn = e.target.closest('[data-image-action]');
+      if (imgBtn) {
+        const key = imgBtn.dataset.key;
+        const slot = CONTENT_IMAGE_SLOTS.find(s => s.key === key);
+        if (!slot) return;
+        if (imgBtn.dataset.imageAction === 'icon') {
+          if (slot.fallback === 'icon') delete contentImages[key]; else contentImages[key] = 'icon';
+        }
+        if (imgBtn.dataset.imageAction === 'default') {
+          delete contentImages[key];
+        }
+        try { save.contentImages(); } catch (err) { toast('Could not save image selection.', 'error'); return; }
+        renderContentImages();
+        toast(imgBtn.dataset.imageAction === 'icon' ? 'Card set to icon only.' : 'Card restored to default.');
+        return;
+      }
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
       const id = btn.dataset.id;
