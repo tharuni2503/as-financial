@@ -850,3 +850,23 @@
     try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
   });
 })();
+/* ---------- back to top ---------- */
+(function () {
+  if (document.querySelector('.back-to-top')) return;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'back-to-top';
+  btn.setAttribute('aria-label', 'Back to top');
+  btn.innerHTML = '<svg class="icon" aria-hidden="true" style="transform:rotate(180deg)"><use href="#i-chevron"></use></svg>';
+  document.body.appendChild(btn);
+  const toggle = () => {
+    if (window.scrollY > 420) btn.classList.add('is-visible');
+    else btn.classList.remove('is-visible');
+  };
+  window.addEventListener('scroll', toggle, { passive: true });
+  toggle();
+  btn.addEventListener('click', () => {
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  });
+})();
