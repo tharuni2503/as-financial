@@ -1094,6 +1094,7 @@
           '<button class="a-btn-icon danger" data-action="delete-product" data-id="' + esc(p.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
         '</div></td></tr>';
     }).join('');
+    renderContentImages();
   }
 
   function productModal(id) {
@@ -1256,50 +1257,51 @@
           '<button class="a-btn-icon danger" data-action="delete-post" data-id="' + esc(p.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
         '</div></div>'
     ).join('') : '<div class="empty-state"><p>No articles yet.</p></div>';
+  }
 
+  function renderContentImages() {
     const imagesHost = $('#content-images-list');
-    if (imagesHost) {
-      const librarySrcs = [];
-      CONTENT_IMAGE_GROUPS.forEach(group => group.items.forEach(item => librarySrcs.push(item.src)));
-      imagesHost.innerHTML = CONTENT_IMAGE_SLOTS.map(slot => {
-        const selected = contentImages[slot.key] || slot.fallback;
-        const isIcon = selected === 'icon';
-        const isUpload = typeof selected === 'string' && selected.indexOf('data:image/') === 0;
-        let options = '<option value="icon"' + (isIcon ? ' selected' : '') + '>Icon only — no photo</option>';
-        options += CONTENT_IMAGE_GROUPS.map(group =>
-          '<optgroup label="' + esc(group.label) + '">' + group.items.map(item =>
-            '<option value="' + esc(item.src) + '"' + (item.src === selected ? ' selected' : '') + '>' + esc(item.label) + '</option>'
-          ).join('') + '</optgroup>'
-        ).join('');
-        if (isUpload) {
-          options = '<option value="__upload__" selected>Uploaded photo (this browser)</option>' + options;
-        } else if (!isIcon && librarySrcs.indexOf(selected) === -1) {
-          options = '<option value="' + esc(selected) + '" selected>Current selection</option>' + options;
-        }
-        const previewSrc = isIcon ? '' : selected;
-        return '<div class="content-item image-item">' +
-          '<span class="img-preview">' + (isIcon
-            ? '<svg class="icon" aria-hidden="true"><use href="#i-image"></use></svg>'
-            : '<img src="' + esc(previewSrc) + '" alt="" loading="lazy">') + '</span>' +
-          '<div class="ci-main"><b>' + esc(slot.label) + '</b>' +
-            '<select class="image-select" data-content-image="' + esc(slot.key) + '" aria-label="Homepage image for ' + esc(slot.label) + '">' + options + '</select>' +
-            '<div class="image-upload-row">' +
-              '<label class="a-btn a-btn-light a-btn-sm image-upload-btn"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"></use></svg> Upload from device<input type="file" accept="image/*" data-upload-image="' + esc(slot.key) + '" class="image-upload-input"></label>' +
-              (isUpload ? '<span class="image-upload-note">Uploaded photo saved in this browser.</span>' : '') +
-            '</div>' +
-          '</div></div>';
-      }).join('');
-
-      const imagesSummary = $('#content-images-summary');
-      if (imagesSummary) {
-        const customCount = CONTENT_IMAGE_SLOTS.filter(slot => contentImages[slot.key] && contentImages[slot.key] !== slot.fallback).length;
-        const uploadCount = CONTENT_IMAGE_SLOTS.filter(slot => typeof contentImages[slot.key] === 'string' && contentImages[slot.key].indexOf('data:image/') === 0).length;
-        let text = customCount
-          ? customCount + ' of ' + CONTENT_IMAGE_SLOTS.length + ' cards customised. Changes show on the homepage in this browser only.'
-          : 'All cards use their default look. Changes show on the homepage in this browser only.';
-        if (uploadCount) text += ' Uploaded photos are stored only in this browser.';
-        imagesSummary.textContent = text;
+    if (!imagesHost) return;
+    const librarySrcs = [];
+    CONTENT_IMAGE_GROUPS.forEach(group => group.items.forEach(item => librarySrcs.push(item.src)));
+    imagesHost.innerHTML = CONTENT_IMAGE_SLOTS.map(slot => {
+      const selected = contentImages[slot.key] || slot.fallback;
+      const isIcon = selected === 'icon';
+      const isUpload = typeof selected === 'string' && selected.indexOf('data:image/') === 0;
+      let options = '<option value="icon"' + (isIcon ? ' selected' : '') + '>Icon only — no photo</option>';
+      options += CONTENT_IMAGE_GROUPS.map(group =>
+        '<optgroup label="' + esc(group.label) + '">' + group.items.map(item =>
+          '<option value="' + esc(item.src) + '"' + (item.src === selected ? ' selected' : '') + '>' + esc(item.label) + '</option>'
+        ).join('') + '</optgroup>'
+      ).join('');
+      if (isUpload) {
+        options = '<option value="__upload__" selected>Uploaded photo (this browser)</option>' + options;
+      } else if (!isIcon && librarySrcs.indexOf(selected) === -1) {
+        options = '<option value="' + esc(selected) + '" selected>Current selection</option>' + options;
       }
+      const previewSrc = isIcon ? '' : selected;
+      return '<div class="content-item image-item">' +
+        '<span class="img-preview">' + (isIcon
+          ? '<svg class="icon" aria-hidden="true"><use href="#i-image"></use></svg>'
+          : '<img src="' + esc(previewSrc) + '" alt="" loading="lazy">') + '</span>' +
+        '<div class="ci-main"><b>' + esc(slot.label) + '</b>' +
+          '<select class="image-select" data-content-image="' + esc(slot.key) + '" aria-label="Homepage image for ' + esc(slot.label) + '">' + options + '</select>' +
+          '<div class="image-upload-row">' +
+            '<label class="a-btn a-btn-light a-btn-sm image-upload-btn"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"></use></svg> Upload from device<input type="file" accept="image/*" data-upload-image="' + esc(slot.key) + '" class="image-upload-input"></label>' +
+            (isUpload ? '<span class="image-upload-note">Uploaded photo saved in this browser.</span>' : '') +
+          '</div>' +
+        '</div></div>';
+    }).join('');
+
+    const imagesSummary = $('#content-images-summary');
+    if (imagesSummary) {
+      const customCount = CONTENT_IMAGE_SLOTS.filter(slot => contentImages[slot.key] && contentImages[slot.key] !== slot.fallback).length;
+      const uploadCount = CONTENT_IMAGE_SLOTS.filter(slot => typeof contentImages[slot.key] === 'string' && contentImages[slot.key].indexOf('data:image/') === 0).length;
+      let text = customCount
+        ? customCount + ' of ' + CONTENT_IMAGE_SLOTS.length + ' cards customised. Changes show on the homepage in this browser only.'
+        : 'All cards use their default look. Changes show on the homepage in this browser only.';
+      if (uploadCount) text += ' Uploaded photos are stored only in this browser.';
+      imagesSummary.textContent = text;
     }
   }
 
@@ -1599,7 +1601,7 @@
     $('#reset-content-images-btn').addEventListener('click', () => {
       contentImages = {};
       save.contentImages();
-      renderContent();
+      renderContentImages();
       toast('Homepage images reset to defaults.');
     });
     $('#add-task-btn').addEventListener('click', taskModal);
@@ -1693,7 +1695,7 @@
           if (!cb.value || cb.value === slot.fallback) delete contentImages[key];
           else contentImages[key] = cb.value;
           try { save.contentImages(); } catch (err) { toast('Could not save image selection (storage full).', 'error'); return; }
-          renderContent();
+          renderContentImages();
           toast('Homepage image updated.');
         }
       }
@@ -1709,10 +1711,10 @@
           } catch (err) {
             delete contentImages[key];
             toast('Image is too large to save in this browser. Try a smaller photo.', 'error');
-            renderContent();
+            renderContentImages();
             return;
           }
-          renderContent();
+          renderContentImages();
           toast('Uploaded photo saved for ' + slot.label + '.');
         }).catch(() => {
           toast('Could not read that image. Please choose a different file.', 'error');
