@@ -983,6 +983,7 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
 .field.full { grid-column: 1 / -1; }
 .field label { font-size: .78rem; font-weight: 700; color: var(--navy); }
 .field label .req { color: var(--red); }
+.field-hint { display: block; margin-top: 2px; font-size: .72rem; color: #5f7186; line-height: 1.4; }
 .field input, .field select, .field textarea {
   width: 100%; min-width: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px;
   background: #fffdf9; color: var(--ink); font-size: .9rem; transition: border-color .15s, box-shadow .15s;
