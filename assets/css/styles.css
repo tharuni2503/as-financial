@@ -330,7 +330,10 @@ p:last-child { margin-bottom: 0; }
 }
 @media (max-width: 560px) {
   :root { --header-h: 72px; }
-  .header-actions .btn-gold { display: none; }
+  .header-actions .btn-gold { padding: 8px 10px; font-size: .75rem; gap: 4px; border-radius: 10px; min-height: 40px; }
+  .header-actions .btn-gold .icon { width: 14px; height: 14px; }
+  .header-actions { gap: 6px; }
+  .menu-toggle, .header-call-btn { width: 40px; height: 40px; border-radius: 10px; }
   .brand-mark { width: 42px; height: 42px; font-size: 22px; }
   .brand-name { font-size: 1.15rem; }
   .brand-sub { font-size: .48rem; }
