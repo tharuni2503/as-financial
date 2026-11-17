@@ -292,11 +292,13 @@ p:last-child { margin-bottom: 0; }
 .header-phone small { display: block; font-size: .64rem; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 700; line-height: 1; }
 .header-phone strong { font-size: .87rem; color: var(--navy); letter-spacing: -.01em; }
 
-.menu-toggle {
+.menu-toggle, .header-call-btn {
   display: none; width: 44px; height: 44px; border-radius: 12px;
   border: 1px solid var(--line); background: #fff; color: var(--navy);
   align-items: center; justify-content: center; cursor: pointer;
+  flex: none;
 }
+.header-call-btn .icon, .menu-toggle .icon { width: 20px; height: 20px; }
 .mobile-nav {
   display: none; position: fixed; inset: 0; z-index: 150;
   background: var(--cream); padding: 22px; overflow-y: auto;
@@ -317,11 +319,13 @@ p:last-child { margin-bottom: 0; }
 @media (max-width: 1080px) {
   .nav { display: none; }
   .menu-toggle { display: inline-flex; }
+  .header-call-btn { display: inline-flex; }
   .header-phone { display: none; }
 }
 @media (max-width: 1240px) {
   .nav-link { padding: 10px 8px; font-size: .82rem; }
   .header-phone { display: none; }
+  .header-call-btn { display: inline-flex; }
   .header-actions .btn { padding-inline: 20px; }
 }
 @media (max-width: 560px) {
