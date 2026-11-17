@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" href="assets/img/brand/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261118d"><link rel="stylesheet" href="assets/css/pro-light.css?v=20261118d">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261118e"><link rel="stylesheet" href="assets/css/pro-light.css?v=20261118e">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -28,7 +28,7 @@
         <div class="range-field"><div class="top"><label for="tn-emi">Target monthly EMI</label><output id="tn-emi-out">₹ 22,000</output></div><input id="tn-emi" type="range" min="1000" max="300000" step="500" value="22000"></div>
         <div class="calc-note-box">If the EMI is too low for the interest, repayment may not be feasible. Increase EMI or adjust inputs.</div>
       </div>
-      <div class="result-box"><div style="font-size:.8rem;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">Estimated tenure</div><div class="result-big" id="res-tenure">~ 156 months</div><div class="result-kv"><div class="row"><span>Approx. years</span><b id="res-years">~ 13.0 years</b></div><div class="row"><span>Total payable (approx.)</span><b id="res-total">₹ 34,32,000</b></div><div class="row"><span>Total interest (approx.)</span><b id="res-int">₹ 14,32,000</b></div></div><button class="btn btn-gold btn-block" data-popup-open="apply-popup" style="margin-top:16px">Talk to an advisor</button></div>
+      <div class="result-box"><div style="font-size:.8rem;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">Estimated tenure</div><div class="result-big" id="res-tenure">~ 156 months</div><div class="result-kv"><div class="row"><span>Approx. years</span><b id="res-years">~ 13.0 years</b></div><div class="row"><span>Total payable (approx.)</span><b id="res-total">₹ 34,32,000</b></div><div class="row"><span>Total interest (approx.)</span><b id="res-int">₹ 14,32,000</b></div></div><p class="calc-note" style="margin-top:14px">Indicative only. Estimates are based on values entered and may exclude fees, charges, taxes, or other costs unless shown. Actual figures depend on lender policy and your profile.</p><button class="btn btn-gold btn-block" data-popup-open="apply-popup" style="margin-top:16px">Talk to an advisor</button></div>
     </div></section>
     <section class="section section-white"><div class="container"><div class="section-head"><div class="eyebrow">More tools</div><h2>Explore other <span class="serif">calculators</span></h2></div><div class="tools-nav-grid"><a href="emi-calculator.html">EMI Calculator <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a><a href="balance-transfer-calculator.html">Balance Transfer <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a><a href="prepayment-calculator.html">Prepayment Calculator <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a><a href="emi-calculator.html">All calculators <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a></div></div></section>
   </main>
@@ -40,7 +40,7 @@
     <a class="fab" href="tel:+919182703079" data-setting="phone" aria-label="Call AS Financial"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg></a>
   </div>
   <div class="popup-overlay" id="apply-popup" role="dialog" aria-modal="true" aria-labelledby="apply-title"><div class="popup"><button class="popup-close" data-popup-close aria-label="Close"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-close"></use></svg></button><h3 id="apply-title">Request a callback</h3><form data-lead-form data-source="Tenure calculator"><div class="form-grid"><div class="field full"><label for="n">Full name <span class="req">*</span></label><input id="n" name="name" required></div><div class="field"><label for="p">Mobile <span class="req">*</span></label><input id="p" name="phone" required></div><div class="full"><label class="consent"><input type="checkbox" required> I agree to be contacted by AS Financial by phone, SMS or WhatsApp and accept the <a href="privacy-policy.html">privacy policy</a>.</label></div><div class="field full"><button class="btn btn-gold btn-block" type="submit">Submit</button></div><div class="form-success full"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Thanks! We’ll call you shortly.</span></div></div></form></div></div>
-  <script src="assets/js/icons.js?v=20261118d" defer></script><script src="assets/js/main.js?v=20261118d" defer></script>
+  <script src="assets/js/icons.js?v=20261118e" defer></script><script src="assets/js/main.js?v=20261118e" defer></script>
   <script>(function(){
     const inr=n=>'₹ '+Math.round(n).toLocaleString('en-IN');
     const A=document.getElementById('tn-amt'),R=document.getElementById('tn-rate'),E=document.getElementById('tn-emi');
