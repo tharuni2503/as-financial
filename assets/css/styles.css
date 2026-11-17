@@ -684,7 +684,7 @@ p:last-child { margin-bottom: 0; }
 .split { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(36px, 5vw, 72px); align-items: center; }
 .split-media { position: relative; }
 .split-media img { border-radius: var(--r-lg); width: 100%; aspect-ratio: 5 / 4.2; object-fit: cover; box-shadow: var(--shadow); }
-#why-us .split-media { max-width: 460px; justify-self: center; width: 100%; }
+#why-us .split-media { max-width: 320px; justify-self: center; width: 100%; }
 .split-media .frame-accent {
   position: absolute; inset: 22px -22px -22px 22px; border: 1.5px solid var(--gold);
   border-radius: var(--r-lg); z-index: -1;
