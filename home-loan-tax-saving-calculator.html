@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" href="assets/img/brand/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261117j"><link rel="stylesheet" href="assets/css/pro-light.css?v=20261117j">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261117k"><link rel="stylesheet" href="assets/css/pro-light.css?v=20261117k">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -34,6 +34,6 @@
   </main>
   <footer class="site-footer"><div class="container"><div class="footer-bottom" style="border-top:0;padding-top:0"><span>© <span data-year>2026</span> AS Financial Services and Solutions.</span></div></div></footer>
   <div class="popup-overlay" id="apply-popup" role="dialog" aria-modal="true" aria-labelledby="apply-title"><div class="popup"><button class="popup-close" data-popup-close aria-label="Close"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-close"></use></svg></button><h3 id="apply-title">Request a callback</h3><form data-lead-form data-source="Tax saving calculator"><div class="form-grid"><div class="field full"><label for="n">Full name <span class="req">*</span></label><input id="n" name="name" required></div><div class="field"><label for="ph">Mobile <span class="req">*</span></label><input id="ph" name="phone" required></div><div class="full"><label class="consent"><input type="checkbox" required> I agree to be contacted by AS Financial by phone, SMS or WhatsApp and accept the <a href="privacy-policy.html">privacy policy</a>.</label></div><div class="field full"><button class="btn btn-gold btn-block" type="submit">Submit</button></div><div class="form-success full"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Thanks! We’ll call you shortly.</span></div></div></form></div></div>
-  <script src="assets/js/icons.js?v=20261117j" defer></script><script src="assets/js/main.js?v=20261117j" defer></script>
+  <script src="assets/js/icons.js?v=20261117k" defer></script><script src="assets/js/main.js?v=20261117k" defer></script>
   <script>(function(){const inr=n=>'₹ '+Math.round(n).toLocaleString('en-IN');const P=document.getElementById('tx-p'),I=document.getElementById('tx-i'),S=document.getElementById('tx-s');function calc(){const p=Math.min(150000,+P.value||0),i=Math.min(200000,+I.value||0),s=(+S.value||0)/100;document.getElementById('tx-p-out').textContent=inr(+P.value||0);document.getElementById('tx-i-out').textContent=inr(+I.value||0);document.getElementById('tx-s-out').textContent=(+S.value||0)+'%';const pb=p*s,ib=i*s;document.getElementById('res-p').textContent=inr(pb);document.getElementById('res-i').textContent=inr(ib);document.getElementById('res-s').textContent=(+S.value||0)+'%';document.getElementById('res-save').textContent=inr(pb+ib);} [P,I,S].forEach(x=>x.addEventListener('input',calc)); calc();})();</script>
 </body></html>
