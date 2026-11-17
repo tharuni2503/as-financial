@@ -930,7 +930,7 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
 
 /* ---------- Footer ---------- */
 .site-footer { background: #f0f6fc; color: #5f7388; padding-top: 66px; font-size: .87rem; border-top: 1px solid #dce7f3; }
-.footer-grid { display: grid; grid-template-columns: 1.5fr .8fr .9fr 1.2fr; gap: 40px; padding-bottom: 48px; }
+.footer-grid { display: grid; grid-template-columns: 1.3fr .75fr .85fr .85fr 1.1fr; gap: 32px; padding-bottom: 48px; }
 .footer-brand .brand-mark { box-shadow: none; }
 .footer-brand .brand-name { color: var(--navy-deep); }
 .footer-brand .brand-sub { color: var(--gold-deep); }
