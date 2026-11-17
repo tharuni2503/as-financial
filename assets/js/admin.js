@@ -271,6 +271,18 @@
     ] }
   ];
 
+  function seedGallery() {
+    return [
+      { id: 'GAL-01', src: 'assets/img/gallery/banner.jpg', caption: 'Signboard & services banner', alt: 'AS Financial Services and Solutions signboard banner' },
+      { id: 'GAL-02', src: 'assets/img/gallery/storefront.jpg', caption: 'Our office in Medipalli', alt: 'Our office in Medipalli, Hyderabad' },
+      { id: 'GAL-03', src: 'assets/img/gallery/instant.jpg', caption: 'Instant loan support', alt: 'Instant loan support poster' },
+      { id: 'GAL-04', src: 'assets/img/gallery/dreams.jpg', caption: 'Your dreams, our financial support', alt: 'Your dreams, our financial support poster' },
+      { id: 'GAL-05', src: 'assets/img/gallery/partner.jpg', caption: 'Loan types we arrange', alt: 'Your trusted financial partner: loan types' },
+      { id: 'GAL-06', src: 'assets/img/gallery/services.jpg', caption: 'Services & specialised profiles', alt: 'All loan services and specialised profiles' },
+      { id: 'GAL-07', src: 'assets/img/gallery/banks.jpg', caption: 'Bank & NBFC partners', alt: 'Our bank and NBFC partners' }
+    ];
+  }
+
   function seedTasks() {
     return [
       { id: 'TSK-01', text: 'Call Ramesh Kumar with HDFC Bank rate confirmation', due: 'Today, 11:00 AM', done: false },
@@ -291,12 +303,13 @@
     if (force || existingTestimonials === null || legacyThree) store.set('as_testimonials', seedTestimonials());
     if (force || localStorage.getItem('as_posts') === null) store.set('as_posts', seedPosts());
     if (force || localStorage.getItem('as_content_images') === null) store.set('as_content_images', {});
+    if (force || localStorage.getItem('as_gallery') === null) store.set('as_gallery', seedGallery());
     if (force || localStorage.getItem('as_tasks') === null) store.set('as_tasks', seedTasks());
     if (force || localStorage.getItem('as_settings') === null) store.set('as_settings', DEFAULT_SETTINGS);
   }
 
   /* ---------------------------------------------------------------- state */
-  let leads = [], apps = [], products = [], partners = [], testimonials = [], posts = [], contentImages = {}, tasks = [], settings = {};
+  let leads = [], apps = [], products = [], partners = [], testimonials = [], posts = [], contentImages = {}, gallery = [], tasks = [], settings = {};
   let leadPage = 1, appPage = 1;
   const PAGE_SIZE = 8;
   const filters = { leadSearch: '', leadProduct: '', leadStatus: '', leadSource: '', appSearch: '', appLender: '', appStage: 'all', partnerType: '' };
@@ -312,6 +325,8 @@
     testimonials = store.get('as_testimonials', []);
     posts = store.get('as_posts', []);
     contentImages = store.get('as_content_images', {}) || {};
+    gallery = store.get('as_gallery', []);
+    if (!Array.isArray(gallery)) gallery = [];
     tasks = store.get('as_tasks', []);
     settings = Object.assign({}, DEFAULT_SETTINGS, store.get('as_settings', {}));
     settings.notifications = Object.assign({}, DEFAULT_SETTINGS.notifications, settings.notifications || {});
@@ -326,6 +341,7 @@
     testimonials: () => store.set('as_testimonials', testimonials),
     posts: () => store.set('as_posts', posts),
     contentImages: () => store.set('as_content_images', contentImages),
+    gallery: () => store.set('as_gallery', gallery),
     tasks: () => store.set('as_tasks', tasks),
     settings: () => store.set('as_settings', settings)
   };
@@ -1257,6 +1273,42 @@
           '<button class="a-btn-icon danger" data-action="delete-post" data-id="' + esc(p.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
         '</div></div>'
     ).join('') : '<div class="empty-state"><p>No articles yet.</p></div>';
+
+    renderGalleryAdmin();
+  }
+
+  function renderGalleryAdmin() {
+    const host = $('#gallery-admin-list');
+    if (!host) return;
+    if (!gallery.length) {
+      host.innerHTML = '<div class="empty-state"><p>No posters yet. Add a poster to show it in the homepage gallery.</p></div>';
+    } else {
+      host.innerHTML = gallery.map(item => {
+        const src = item.src || '';
+        const isUpload = src.indexOf('data:image/') === 0;
+        return '<div class="content-item gallery-admin-item" data-gallery-id="' + esc(item.id) + '">' +
+          '<span class="img-preview gallery-admin-preview">' + (src
+            ? '<img src="' + esc(src) + '" alt="" loading="lazy">'
+            : '<svg class="icon" aria-hidden="true"><use href="#i-image"></use></svg>') + '</span>' +
+          '<div class="ci-main">' +
+            '<label class="sr-only" for="gal-cap-' + esc(item.id) + '">Poster caption</label>' +
+            '<input id="gal-cap-' + esc(item.id) + '" class="gallery-caption-input" type="text" value="' + esc(item.caption || '') + '" placeholder="Poster caption" data-gallery-caption="' + esc(item.id) + '">' +
+            '<p class="image-status">' + (isUpload ? 'Uploaded photo (this browser).' : 'Using image file.') + '</p>' +
+            '<div class="image-upload-row">' +
+              '<label class="a-btn a-btn-light a-btn-sm image-upload-btn"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-image"></use></svg> Change image<input type="file" accept="image/*" data-gallery-upload="' + esc(item.id) + '" class="image-upload-input"></label>' +
+              '<button type="button" class="a-btn a-btn-ghost a-btn-sm" data-gallery-action="delete" data-id="' + esc(item.id) + '">Remove</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+    const summary = $('#gallery-summary');
+    if (summary) {
+      const uploads = gallery.filter(g => typeof g.src === 'string' && g.src.indexOf('data:image/') === 0).length;
+      let text = gallery.length + ' poster' + (gallery.length === 1 ? '' : 's') + ' in the homepage gallery. Changes show on the homepage in this browser only.';
+      if (uploads) text += ' Uploaded photos are stored only in this browser.';
+      summary.textContent = text;
+    }
   }
 
   function renderContentImages() {
@@ -1591,6 +1643,22 @@
     $('#partner-filter').addEventListener('change', (e) => { filters.partnerType = e.target.value; renderPartners(); });
     $('#add-testimonial-btn').addEventListener('click', () => testimonialModal());
     $('#add-post-btn').addEventListener('click', () => postModal());
+    $('#add-gallery-btn').addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        readImageFileAsDataUrl(file, 1600, 0.84).then((dataUrl) => {
+          gallery.push({ id: uid('GAL-', 2), src: dataUrl, caption: 'New poster', alt: 'Poster' });
+          try { save.gallery(); } catch (err) { gallery.pop(); toast('Image is too large to save in this browser. Try a smaller photo.', 'error'); renderGalleryAdmin(); return; }
+          renderGalleryAdmin();
+          toast('Poster added to the gallery.');
+        }).catch(() => toast('Could not read that image. Please choose a different file.', 'error'));
+      };
+      input.click();
+    });
     $('#reset-content-images-btn').addEventListener('click', () => {
       contentImages = {};
       save.contentImages();
@@ -1703,6 +1771,30 @@
           cb.value = '';
         });
       }
+      if (cb.matches('[data-gallery-upload]')) {
+        const id = cb.dataset.galleryUpload;
+        const item = gallery.find(g => g.id === id);
+        const file = cb.files && cb.files[0];
+        if (!item || !file) return;
+        readImageFileAsDataUrl(file, 1600, 0.84).then((dataUrl) => {
+          item.src = dataUrl;
+          try { save.gallery(); } catch (err) { toast('Image is too large to save in this browser. Try a smaller photo.', 'error'); renderGalleryAdmin(); return; }
+          renderGalleryAdmin();
+          toast('Poster image updated.');
+        }).catch(() => {
+          toast('Could not read that image. Please choose a different file.', 'error');
+          cb.value = '';
+        });
+      }
+      if (cb.matches('[data-gallery-caption]')) {
+        const id = cb.dataset.galleryCaption;
+        const item = gallery.find(g => g.id === id);
+        if (!item) return;
+        const val = String(cb.value || '').trim() || 'Poster';
+        item.caption = val;
+        item.alt = val;
+        try { save.gallery(); } catch (err) { return; }
+      }
     });
 
     // delegated row actions
@@ -1721,6 +1813,21 @@
         try { save.contentImages(); } catch (err) { toast('Could not save image selection.', 'error'); return; }
         renderContentImages();
         toast(imgBtn.dataset.imageAction === 'icon' ? 'Card set to icon only.' : 'Card restored to default.');
+        return;
+      }
+      const galBtn = e.target.closest('[data-gallery-action]');
+      if (galBtn) {
+        const id = galBtn.dataset.id;
+        const idx = gallery.findIndex(g => g.id === id);
+        if (idx < 0) return;
+        if (galBtn.dataset.galleryAction === 'delete') {
+          confirmDialog('Remove this poster?', 'It will be removed from the homepage gallery in this browser.', () => {
+            gallery.splice(idx, 1);
+            save.gallery();
+            renderGalleryAdmin();
+            toast('Poster removed.');
+          });
+        }
         return;
       }
       const btn = e.target.closest('[data-action]');

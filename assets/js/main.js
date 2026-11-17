@@ -620,6 +620,36 @@
   });
 })();
 
+/* ---------- homepage gallery: admin content ---------- */
+(function () {
+  const grid = document.querySelector('.gal-grid[data-gallery]');
+  if (!grid) return;
+
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem('as_gallery') || 'null'); } catch (error) { saved = null; }
+  if (!Array.isArray(saved) || !saved.length) return;
+
+  const esc = (value) => String(value).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  const safeSrc = (value) => {
+    if (typeof value !== 'string') return false;
+    if (/^assets\/img\/[a-z0-9\/._-]+$/i.test(value) && value.indexOf('..') === -1) return true;
+    return /^data:image\/(png|jpe?g|webp);base64,[a-z0-9+/=\s]+$/i.test(value);
+  };
+
+  const items = saved.filter((item) => item && safeSrc(item.src));
+  if (!items.length) return;
+
+  grid.innerHTML = items.map((item) => {
+    const caption = esc(item.caption || item.alt || 'Poster');
+    const alt = esc(item.alt || item.caption || 'Poster');
+    const src = item.src;
+    return '<button class="gal-item reveal" type="button" data-full="' + esc(src) + '" aria-label="View larger: ' + caption + '">' +
+      '<img src="' + esc(src) + '" alt="' + alt + '" loading="lazy">' +
+      '<span>' + caption + '</span>' +
+      '</button>';
+  }).join('');
+})();
+
 /* ---------- gallery lightbox ---------- */
 (function () {
   const dialog = document.getElementById('gallery-lightbox');
