@@ -282,7 +282,7 @@
       if (out.principalPct2) out.principalPct2.textContent = (100 - interestPct).toFixed(0) + '%';
       if (out.barPrincipal) out.barPrincipal.style.width = (100 - interestPct) + '%';
       if (out.barInterest) out.barInterest.style.width = interestPct + '%';
-      if (out.amountLabel) out.amountLabel.textContent = compact(P);
+      if (out.amountLabel) out.amountLabel.textContent = inr(P);
       if (out.rateLabel) out.rateLabel.textContent = annualRate.toFixed(2) + '% p.a.';
       if (out.tenureLabel) out.tenureLabel.textContent = unit === 'months'
         ? rawTenure + (rawTenure === 1 ? ' month' : ' months')
@@ -685,6 +685,39 @@
       '<span><strong>' + esc(item.name) + '</strong><span>' + meta + '</span></span></div>' +
       '</article>';
   }).join('');
+})();
+
+/* ---------- calculator amount chips ---------- */
+(function () {
+  document.addEventListener('click', (event) => {
+    const chip = event.target.closest('[data-amount-chip]');
+    if (!chip) return;
+    const root = chip.closest('[data-calculator]');
+    if (!root) return;
+    const amount = root.querySelector('[data-calc="amount"]');
+    if (!amount) return;
+    const val = chip.getAttribute('data-amount-chip');
+    amount.value = val;
+    amount.dispatchEvent(new Event('input', { bubbles: true }));
+    root.querySelectorAll('[data-amount-chip]').forEach(c => c.classList.toggle('active', c === chip));
+  });
+
+  document.querySelectorAll('[data-calculator]').forEach(root => {
+    const amount = root.querySelector('[data-calc="amount"]');
+    const chips = root.querySelectorAll('[data-amount-chip]');
+    if (!amount || !chips.length) return;
+    const sync = () => {
+      const v = parseFloat(amount.value);
+      let best = null, bestDiff = Infinity;
+      chips.forEach(c => {
+        const d = Math.abs(parseFloat(c.getAttribute('data-amount-chip')) - v);
+        if (d < bestDiff) { bestDiff = d; best = c; }
+      });
+      chips.forEach(c => c.classList.toggle('active', c === best && bestDiff < 1));
+    };
+    amount.addEventListener('input', sync);
+    sync();
+  });
 })();
 
 /* ---------- homepage product images: admin selection ---------- */

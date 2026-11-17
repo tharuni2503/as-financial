@@ -16,8 +16,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261117p">
-  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261117p">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261117q">
+  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261117q">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -477,45 +477,58 @@
       <div class="container">
         <div class="section-head center reveal">
           <div class="eyebrow center">Plan your loan</div>
-          <h2>Estimate your EMI <span class="serif">in seconds.</span></h2>
-          <p>Use the calculator to understand monthly payments before you apply. No sign-up required.</p>
+          <h2>Home loan EMI <span class="serif">calculator</span></h2>
+          <p>Estimate your monthly EMI instantly. Adjust the amount, interest rate and tenure to plan your loan.</p>
         </div>
 
-        <div class="calc-card reveal" data-calculator="mini">
-          <div class="calc-inputs">
-            <h3>Home loan EMI calculator</h3>
-            <p>Indicative only. Final rates depend on your profile and lender policy.</p>
-
-            <div class="range-row">
-              <div class="range-top"><label for="mini-amount">Loan amount</label><output data-label="amount">Γé╣40,00,000</output></div>
-              <input id="mini-amount" type="range" min="500000" max="20000000" step="100000" value="4000000" data-calc="amount" aria-label="Loan amount">
-              <div class="range-scale"><span>Γé╣5 L</span><span>Γé╣2 Cr</span></div>
+        <div class="ambak-calc reveal" data-calculator="mini">
+          <div class="ambak-calc-inputs">
+            <div class="ambak-field">
+              <div class="ambak-field-top">
+                <label for="mini-amount">Loan amount</label>
+                <output data-label="amount">₹40,00,000</output>
+              </div>
+              <div class="ambak-chips" role="group" aria-label="Quick loan amounts">
+                <button type="button" class="ambak-chip" data-amount-chip="5000000">50L</button>
+                <button type="button" class="ambak-chip" data-amount-chip="7500000">75L</button>
+                <button type="button" class="ambak-chip" data-amount-chip="10000000">1Cr</button>
+                <button type="button" class="ambak-chip" data-amount-chip="30000000">3Cr</button>
+                <button type="button" class="ambak-chip" data-amount-chip="50000000">5Cr</button>
+              </div>
+              <input id="mini-amount" type="range" min="100000" max="50000000" step="50000" value="4000000" data-calc="amount" aria-label="Loan amount">
+              <div class="ambak-scale"><span>₹1L</span><span>₹5Cr</span></div>
             </div>
 
-            <div class="range-row">
-              <div class="range-top"><label for="mini-rate">Interest rate</label><output data-label="rate">8.50% p.a.</output></div>
-              <input id="mini-rate" type="range" min="7" max="16" step="0.05" value="8.5" data-calc="rate" aria-label="Interest rate">
-              <div class="range-scale"><span>7%</span><span>16%</span></div>
+            <div class="ambak-field">
+              <div class="ambak-field-top">
+                <label for="mini-rate">Interest rate (% p.a.)</label>
+                <output data-label="rate">8.50% p.a.</output>
+              </div>
+              <input id="mini-rate" type="range" min="5" max="20" step="0.05" value="8.5" data-calc="rate" aria-label="Interest rate">
+              <div class="ambak-scale"><span>5%</span><span>20%</span></div>
             </div>
 
-            <div class="range-row" style="margin-bottom:10px">
-              <div class="range-top"><label for="mini-tenure">Loan tenure</label><output data-label="tenure">20 years</output></div>
+            <div class="ambak-field">
+              <div class="ambak-field-top">
+                <label for="mini-tenure">Loan tenure (years)</label>
+                <output data-label="tenure">20 years</output>
+              </div>
               <input id="mini-tenure" type="range" min="1" max="30" step="1" value="20" data-calc="tenure" aria-label="Loan tenure">
-              <div class="range-scale"><span>1 year</span><span>30 years</span></div>
+              <div class="ambak-scale"><span>1 yr</span><span>30 yrs</span></div>
             </div>
           </div>
 
-          <div class="calc-result">
-            <div class="calc-result-label">Your monthly EMI</div>
-            <div class="calc-emi"><span data-out="emi">Γé╣34,713</span><small>/ month</small></div>
-            <div class="calc-breakdown">
-              <div class="calc-row"><span><i class="swatch" style="background:var(--gold)"></i> Principal amount</span><b data-out="principal">Γé╣40,00,000</b></div>
-              <div class="calc-row"><span><i class="swatch" style="background:#6f9ac2"></i> Total interest</span><b data-out="interest">Γé╣43,31,146</b></div>
-              <div class="calc-row" style="border-bottom:0"><span>Total payable</span><b data-out="total">Γé╣83,31,146</b></div>
-              <div class="calc-bar" aria-hidden="true"><span data-out="barPrincipal" style="width:48%"></span><span data-out="barInterest" style="width:52%"></span></div>
+          <div class="ambak-calc-result">
+            <div class="ambak-result-label">Monthly EMI</div>
+            <div class="ambak-emi"><span data-out="emi">₹ 34,713</span></div>
+            <div class="ambak-result-grid">
+              <div><span>Principal amount</span><b data-out="principal">₹40,00,000</b></div>
+              <div><span>Total interest</span><b data-out="interest">₹43,31,146</b></div>
+              <div class="ambak-total"><span>Total payable</span><b data-out="total">₹83,31,146</b></div>
             </div>
-            <a class="btn btn-gold btn-block" href="emi-calculator.html">Open full calculator <svg class="icon icon-sm" aria-hidden="true"><use href="#i-calculator"></use></svg></a>
-            <p class="calc-note">*EMI shown is indicative and rounded. Actual EMI may vary based on lender, processing fee, insurance and disbursement date.</p>
+            <button class="btn btn-gold btn-block" type="button" data-popup-open="apply-popup">Talk to a loan advisor <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+            <a class="ambak-full-link" href="emi-calculator.html">Open full EMI calculator <svg class="icon icon-sm" aria-hidden="true"><use href="#i-calculator"></use></svg></a>
+            <p class="ambak-note">Indicative only. Actual EMI, rates and eligibility depend on lender policy and your profile.</p>
           </div>
         </div>
       </div>
@@ -954,8 +967,8 @@
     </div>
   </div>
 
-  <script src="assets/js/icons.js?v=20261117p" defer></script>
-  <script src="assets/js/main.js?v=20261117p" defer></script>
+  <script src="assets/js/icons.js?v=20261117q" defer></script>
+  <script src="assets/js/main.js?v=20261117q" defer></script>
   <script>
     /* Subtle layered-depth parallax for the hero (pure CSS transforms, no WebGL) */
     (function () {
