@@ -52,6 +52,7 @@ body {
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  padding-top: calc(38px + var(--header-h));
 }
 
 img { max-width: 100%; display: block; }
@@ -214,7 +215,7 @@ p:last-child { margin-bottom: 0; }
 .topbar {
   background: #edf5ff; color: #355777;
   font-size: .78rem; letter-spacing: .01em; border-bottom: 1px solid #dce7f3;
-  position: sticky; top: 0; z-index: 101;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 101;
 }
 .topbar .container { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 38px; }
 .topbar-left { display: flex; align-items: center; gap: 20px; }
@@ -227,7 +228,7 @@ p:last-child { margin-bottom: 0; }
 @media (max-width: 560px) { .topbar { font-size: .72rem; } .topbar-left .topbar-item span.full { display: none; } }
 
 .site-header {
-  position: sticky; top: 38px; z-index: 100;
+  position: fixed; top: 38px; left: 0; right: 0; z-index: 100;
   background: rgba(255, 255, 255, .9);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid #e3edf8;
