@@ -655,3 +655,34 @@
   dialog.addEventListener('cancel', (event) => { event.preventDefault(); close(); });
   dialog.addEventListener('click', (event) => { if (event.target === dialog) close(); });
 })();
+
+/* ---------- homepage testimonials: admin selection ---------- */
+(function () {
+  const grid = document.querySelector('.testi-grid[data-testimonials]');
+  if (!grid) return;
+
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem('as_testimonials') || 'null'); } catch (error) { saved = null; }
+  if (!Array.isArray(saved) || !saved.length) return;
+
+  const published = saved.filter((item) => item && item.published && item.name && item.quote);
+  const section = grid.closest('section');
+
+  if (!published.length) {
+    if (section) section.hidden = true;
+    return;
+  }
+
+  const esc = (value) => String(value).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  const initials = (name) => name.trim().split(/\s+/).slice(0, 2).map((word) => word.charAt(0)).join('').toUpperCase();
+
+  grid.innerHTML = published.map((item) => {
+    const meta = [item.product, item.location].filter(Boolean).map(esc).join(' · ');
+    return '<article class="testi-card">' +
+      '<svg class="icon testi-mark" aria-hidden="true"><use href="#i-quote"></use></svg>' +
+      '<p class="testi-quote">“' + esc(item.quote) + '”</p>' +
+      '<div class="testi-person"><span class="testi-avatar">' + esc(initials(item.name)) + '</span>' +
+      '<span><strong>' + esc(item.name) + '</strong><span>' + meta + '</span></span></div>' +
+      '</article>';
+  }).join('');
+})();

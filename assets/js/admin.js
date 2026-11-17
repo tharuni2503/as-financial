@@ -206,9 +206,15 @@
 
   function seedTestimonials() {
     return [
-      { id: 'TST-01', name: 'D. Pranitha', location: 'Google review', product: 'Home loan', quote: 'I had a very good experience with AS Finance the staff were friendly and helpful, and the home loan process was smooth and easy', rating: 5, published: true, date: daysAgo(30) },
-      { id: 'TST-02', name: 'Donthuri Aravind Goud', location: 'Google review', product: 'Personal loan', quote: 'I had a very good experience with their service. They provided excellent support and helped me process my personal loan very quickly. The process was smooth, simple, and hassle-free. The staff were very helpful and responsive throughout the process. Highly recommended for their fast and professional service.', rating: 4, published: true, date: daysAgo(30) },
-      { id: 'TST-03', name: 'Radhika Mahesh', location: 'Google review', product: 'Financial services', quote: 'Well experienced team with excellent customer support.highly recommended 👍', rating: 5, published: true, date: daysAgo(28) }
+      { id: 'TST-01', name: 'Donthuri Aravind Goud', location: 'Google review', product: 'Personal loan', quote: 'I had a very good experience with their service. They provided excellent support and helped me process my personal loan very quickly. The process was smooth, simple, and hassle-free. The staff were very helpful and responsive throughout the process. Highly recommended for their fast and professional service.', published: true, date: daysAgo(30) },
+      { id: 'TST-02', name: 'Asarla Kumar', location: 'Google review', product: 'Home loan', quote: 'Very happy with the home loan service. The team explained everything clearly, handled the documentation properly and completed the process much faster than I expected. Good communication and professional support from start to finish — thank you for the excellent service.', published: true, date: daysAgo(34) },
+      { id: 'TST-03', name: 'Sudhakar Sindhu', location: 'Google review', product: 'Financial services', quote: 'Excellent Financial Services & Solutions! I had a very positive experience with their services. The team is professional, supportive, and provides clear and honest guidance throughout the process.', published: true, date: daysAgo(38) },
+      { id: 'TST-04', name: 'Rakhi Rakesh', location: 'Google review', product: 'Loan assistance', quote: 'Excellent DSA office with professional staff and quick service. Good support throughout the loan process. Highly recommended.', published: false, date: daysAgo(46) },
+      { id: 'TST-05', name: 'Tharuni Lodi', location: 'Google review', product: 'Loan assistance', quote: 'Excellent service! Friendly team, clear guidance, and professional support. Highly recommended!', published: false, date: daysAgo(54) },
+      { id: 'TST-06', name: 'D. Pranitha', location: 'Google review', product: 'Home loan', quote: 'I had a very good experience with AS Finance. The staff were friendly and helpful, and the home loan process was smooth and easy.', published: false, date: daysAgo(63) },
+      { id: 'TST-07', name: 'Radhika Mahesh', location: 'Google review', product: 'Financial services', quote: 'Well experienced team with excellent customer support. Highly recommended.', published: false, date: daysAgo(78) },
+      { id: 'TST-08', name: 'Sukanya Lodi', location: 'Google review', product: 'Financial guidance', quote: 'Very helpful team with professional service and good customer support. A great place for financial guidance!', published: false, date: daysAgo(95) },
+      { id: 'TST-09', name: 'Santhosh Kumar', location: 'Google review', product: 'Loan assistance', quote: 'Best service.', published: false, date: daysAgo(120) }
     ];
   }
 
@@ -237,8 +243,8 @@
     if (force || localStorage.getItem('as_products') === null) store.set('as_products', seedProducts());
     if (force || localStorage.getItem('as_partners') === null) store.set('as_partners', seedPartners());
     const existingTestimonials = store.get('as_testimonials', null);
-    const hasThreeReviews = Array.isArray(existingTestimonials) && existingTestimonials.length === 3 && existingTestimonials.some(t => t.id === 'TST-03' && t.name === 'Radhika Mahesh');
-    if (force || existingTestimonials === null || !hasThreeReviews) store.set('as_testimonials', seedTestimonials());
+    const legacyThree = Array.isArray(existingTestimonials) && existingTestimonials.length === 3 && existingTestimonials.some(t => t.id === 'TST-01' && t.name === 'D. Pranitha');
+    if (force || existingTestimonials === null || legacyThree) store.set('as_testimonials', seedTestimonials());
     if (force || localStorage.getItem('as_posts') === null) store.set('as_posts', seedPosts());
     if (force || localStorage.getItem('as_tasks') === null) store.set('as_tasks', seedTasks());
     if (force || localStorage.getItem('as_settings') === null) store.set('as_settings', DEFAULT_SETTINGS);
@@ -710,7 +716,7 @@
     host.innerHTML = tasks.map(t =>
       '<label style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #f2eee4;cursor:pointer">' +
       '<input type="checkbox" data-task="' + esc(t.id) + '" ' + (t.done ? 'checked' : '') + ' style="margin-top:3px;accent-color:#c9a227;width:15px;height:15px;flex:none">' +
-      '<span style="flex:1"><b style="font-size:.78rem;color:' + (t.done ? '#94a0ad' : '#0d2b4e') + ';text-decoration:' + (t.done ? 'line-through' : 'none') + ';font-weight:600;display:block">' + esc(t.text) + '</b><span style="font-size:.66rem;color:#5b6b7e">' + esc(t.due) + '</span></span>' +
+      '<span style="flex:1"><b style="font-size:.78rem;color:' + (t.done ? '#5b6b7e' : '#0d2b4e') + ';text-decoration:' + (t.done ? 'line-through' : 'none') + ';font-weight:600;display:block">' + esc(t.text) + '</b><span style="font-size:.66rem;color:#5b6b7e">' + esc(t.due) + '</span></span>' +
       '</label>'
     ).join('');
   }
@@ -1142,15 +1148,21 @@
   function renderContent() {
     $('#testimonials-list').innerHTML = testimonials.length ? testimonials.map(t =>
       '<div class="content-item">' +
-        '<div class="ci-main"><b>' + esc(t.name) + ' <span class="stars">' + '★'.repeat(t.rating) + '☆'.repeat(5 - t.rating) + '</span></b>' +
+        '<div class="ci-main"><b>' + esc(t.name) + '</b>' +
         '<p>' + esc(t.quote) + '</p>' +
         '<div class="ci-meta"><span>' + esc(t.product) + '</span><span>' + esc(t.location) + '</span><span>' + fmtShort(t.date) + '</span><span class="badge badge-' + (t.published ? 'active' : 'inactive') + '">' + (t.published ? 'Published' : 'Hidden') + '</span></div></div>' +
         '<div class="ci-actions">' +
-          '<label class="switch" style="margin-top:4px"><input type="checkbox" data-toggle="testimonial" data-id="' + esc(t.id) + '" ' + (t.published ? 'checked' : '') + '><span></span></label>' +
+          '<label class="switch" style="margin-top:4px" title="Show this review on the homepage"><input type="checkbox" data-toggle="testimonial" data-id="' + esc(t.id) + '" aria-label="Show review from ' + esc(t.name) + ' on the homepage" ' + (t.published ? 'checked' : '') + '><span></span></label>' +
           '<button class="a-btn-icon" data-action="edit-testimonial" data-id="' + esc(t.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
           '<button class="a-btn-icon danger" data-action="delete-testimonial" data-id="' + esc(t.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
         '</div></div>'
     ).join('') : '<div class="empty-state"><p>No testimonials yet.</p></div>';
+
+    const summary = $('#testimonials-summary');
+    if (summary) {
+      const publishedCount = testimonials.filter(t => t.published).length;
+      summary.textContent = publishedCount + ' of ' + testimonials.length + ' reviews published. The homepage shows published reviews in this list order. Selections are saved in this browser only.';
+    }
 
     $('#posts-list').innerHTML = posts.length ? posts.map(p =>
       '<div class="content-item">' +
@@ -1168,20 +1180,19 @@
     const t = id ? testimonials.find(x => x.id === id) : null;
     openModal({
       title: t ? 'Edit testimonial' : 'Add testimonial',
-      sub: 'Published reviews appear on the public homepage.',
+      sub: 'Published reviews appear on the homepage in this browser.',
       body:
         '<div class="form-row"><div class="a-field"><label>Client name <span class="req">*</span></label><input name="name" required value="' + esc(t ? t.name : '') + '"></div>' +
         '<div class="a-field"><label>Location</label><input name="location" value="' + esc(t ? t.location : 'Hyderabad') + '"></div></div>' +
-        '<div class="form-row"><div class="a-field"><label>Loan product</label><input name="product" value="' + esc(t ? t.product : 'Home loan') + '"></div>' +
-        '<div class="a-field"><label>Rating (1–5)</label><input name="rating" type="number" min="1" max="5" value="' + esc(t ? t.rating : 5) + '"></div></div>' +
+        '<div class="form-row one"><div class="a-field"><label>Loan product</label><input name="product" value="' + esc(t ? t.product : 'Home loan') + '"></div></div>' +
         '<div class="form-row one"><div class="a-field"><label>Quote</label><textarea name="quote" required>' + esc(t ? t.quote : '') + '</textarea></div></div>' +
-        '<div class="form-row one"><div class="a-field"><label>Visibility</label><select name="published"><option value="true" ' + (!t || t.published ? 'selected' : '') + '>Published</option><option value="false" ' + (t && !t.published ? 'selected' : '') + '>Draft</option></select></div></div>',
+        '<div class="form-row one"><div class="a-field"><label>Visibility</label><select name="published"><option value="true" ' + (!t || t.published ? 'selected' : '') + '>Published</option><option value="false" ' + (t && !t.published ? 'selected' : '') + '>Hidden</option></select></div></div>',
       submitLabel: t ? 'Save changes' : 'Add testimonial',
       onSubmit: (data) => {
         const name = String(data.get('name') || '').trim();
         const quote = String(data.get('quote') || '').trim();
         if (!name || !quote) { toast('Name and quote are required.', 'error'); return false; }
-        const payload = { name, location: String(data.get('location') || ''), product: String(data.get('product') || ''), rating: Math.min(5, Math.max(1, Number(data.get('rating')) || 5)), quote, published: data.get('published') === 'true', date: t ? t.date : new Date().toISOString() };
+        const payload = { name, location: String(data.get('location') || ''), product: String(data.get('product') || ''), quote, published: data.get('published') === 'true', date: t ? t.date : new Date().toISOString() };
         if (t) { Object.assign(t, payload); toast('Testimonial updated.'); }
         else { testimonials.unshift(Object.assign({ id: uid('TST-', 2) }, payload)); toast('Testimonial added.'); }
         save.testimonials();
