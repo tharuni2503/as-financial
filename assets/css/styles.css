@@ -810,7 +810,7 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
 .page-hero {
   position: relative; overflow: hidden;
   background: linear-gradient(180deg, #fffdf8, var(--cream));
-  padding: clamp(42px, 5vw, 68px) 0 clamp(38px, 4vw, 54px);
+  padding: clamp(30px, 4vw, 48px) 0 clamp(26px, 3.5vw, 40px);
   border-bottom: 1px solid var(--line);
 }
 .page-hero::after {
@@ -818,9 +818,9 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
   border-radius: 50%; border: 1px solid rgba(201, 162, 39, .26);
 }
 .page-hero .eyebrow { justify-content: flex-start; }
-.page-hero h1 { font-size: clamp(2.2rem, 4.2vw, 3.4rem); margin-bottom: 14px; }
+.page-hero h1 { font-size: clamp(2.2rem, 4.2vw, 3.4rem); margin-bottom: 10px; }
 .page-hero p { color: var(--muted); max-width: 640px; font-size: 1.02rem; }
-.breadcrumb { display: flex; gap: 8px; font-size: .76rem; color: var(--muted); margin-bottom: 18px; flex-wrap: wrap; }
+.breadcrumb { display: flex; gap: 8px; font-size: .76rem; color: var(--muted); margin-bottom: 12px; flex-wrap: wrap; }
 .breadcrumb a:hover { color: var(--gold-deep); }
 .breadcrumb span { color: #aab4c0; }
 
