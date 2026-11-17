@@ -719,7 +719,11 @@
     'assets/img/gallery/instant.jpg': 'Instant loan poster'
   };
 
-  const safeSrc = (value) => typeof value === 'string' && /^assets\/img\/[a-z0-9\/._-]+$/i.test(value) && value.indexOf('..') === -1;
+  const safeSrc = (value) => {
+    if (typeof value !== 'string') return false;
+    if (/^assets\/img\/[a-z0-9\/._-]+$/i.test(value) && value.indexOf('..') === -1) return true;
+    return /^data:image\/(png|jpe?g|webp);base64,[a-z0-9+/=\s]+$/i.test(value);
+  };
 
   function iconHref(card) {
     const use = card.querySelector('.pcard-head use');

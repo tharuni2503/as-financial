@@ -483,6 +483,10 @@ table.a-table { width: 100%; border-collapse: collapse; font-size: .79rem; min-w
   color: var(--navy); background: #fff; border: 1px solid var(--line); border-radius: 8px;
 }
 .image-item .image-select:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.image-upload-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.image-upload-btn { position: relative; overflow: hidden; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.image-upload-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; opacity: 0; }
+.image-upload-note { font-size: .66rem; color: #526176; }
 @media (max-width: 520px) {
   .image-list { grid-template-columns: 1fr; }
   .image-item { flex-direction: column; align-items: stretch; }

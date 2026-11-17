@@ -1192,6 +1192,41 @@
   }
 
   /* ---------------------------------------------------------------- content */
+  function readImageFileAsDataUrl(file, maxDim, quality) {
+    return new Promise((resolve, reject) => {
+      if (!file || !/^image\//i.test(file.type)) { reject(new Error('not-image')); return; }
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('read-failed'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('load-failed'));
+        img.onload = () => {
+          try {
+            let w = img.naturalWidth || img.width;
+            let h = img.naturalHeight || img.height;
+            const limit = maxDim || 1200;
+            if (w > limit || h > limit) {
+              const scale = Math.min(limit / w, limit / h);
+              w = Math.max(1, Math.round(w * scale));
+              h = Math.max(1, Math.round(h * scale));
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) { reject(new Error('canvas')); return; }
+            ctx.drawImage(img, 0, 0, w, h);
+            const type = file.type === 'image/png' ? 'image/png' : (file.type === 'image/webp' ? 'image/webp' : 'image/jpeg');
+            const q = type === 'image/png' ? undefined : (quality || 0.82);
+            resolve(canvas.toDataURL(type, q));
+          } catch (err) { reject(err); }
+        };
+        img.src = String(reader.result || '');
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   function renderContent() {
     $('#testimonials-list').innerHTML = testimonials.length ? testimonials.map(t =>
       '<div class="content-item">' +
@@ -1229,30 +1264,41 @@
       imagesHost.innerHTML = CONTENT_IMAGE_SLOTS.map(slot => {
         const selected = contentImages[slot.key] || slot.fallback;
         const isIcon = selected === 'icon';
+        const isUpload = typeof selected === 'string' && selected.indexOf('data:image/') === 0;
         let options = '<option value="icon"' + (isIcon ? ' selected' : '') + '>Icon only — no photo</option>';
         options += CONTENT_IMAGE_GROUPS.map(group =>
           '<optgroup label="' + esc(group.label) + '">' + group.items.map(item =>
             '<option value="' + esc(item.src) + '"' + (item.src === selected ? ' selected' : '') + '>' + esc(item.label) + '</option>'
           ).join('') + '</optgroup>'
         ).join('');
-        if (!isIcon && librarySrcs.indexOf(selected) === -1) {
+        if (isUpload) {
+          options = '<option value="__upload__" selected>Uploaded photo (this browser)</option>' + options;
+        } else if (!isIcon && librarySrcs.indexOf(selected) === -1) {
           options = '<option value="' + esc(selected) + '" selected>Current selection</option>' + options;
         }
+        const previewSrc = isIcon ? '' : selected;
         return '<div class="content-item image-item">' +
           '<span class="img-preview">' + (isIcon
             ? '<svg class="icon" aria-hidden="true"><use href="#i-image"></use></svg>'
-            : '<img src="' + esc(selected) + '" alt="" loading="lazy">') + '</span>' +
+            : '<img src="' + esc(previewSrc) + '" alt="" loading="lazy">') + '</span>' +
           '<div class="ci-main"><b>' + esc(slot.label) + '</b>' +
             '<select class="image-select" data-content-image="' + esc(slot.key) + '" aria-label="Homepage image for ' + esc(slot.label) + '">' + options + '</select>' +
+            '<div class="image-upload-row">' +
+              '<label class="a-btn a-btn-light a-btn-sm image-upload-btn"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"></use></svg> Upload from device<input type="file" accept="image/*" data-upload-image="' + esc(slot.key) + '" class="image-upload-input"></label>' +
+              (isUpload ? '<span class="image-upload-note">Uploaded photo saved in this browser.</span>' : '') +
+            '</div>' +
           '</div></div>';
       }).join('');
 
       const imagesSummary = $('#content-images-summary');
       if (imagesSummary) {
         const customCount = CONTENT_IMAGE_SLOTS.filter(slot => contentImages[slot.key] && contentImages[slot.key] !== slot.fallback).length;
-        imagesSummary.textContent = customCount
+        const uploadCount = CONTENT_IMAGE_SLOTS.filter(slot => typeof contentImages[slot.key] === 'string' && contentImages[slot.key].indexOf('data:image/') === 0).length;
+        let text = customCount
           ? customCount + ' of ' + CONTENT_IMAGE_SLOTS.length + ' cards customised. Changes show on the homepage in this browser only.'
           : 'All cards use their default look. Changes show on the homepage in this browser only.';
+        if (uploadCount) text += ' Uploaded photos are stored only in this browser.';
+        imagesSummary.textContent = text;
       }
     }
   }
@@ -1643,12 +1689,35 @@
         const key = cb.dataset.contentImage;
         const slot = CONTENT_IMAGE_SLOTS.find(s => s.key === key);
         if (slot) {
+          if (cb.value === '__upload__') return;
           if (!cb.value || cb.value === slot.fallback) delete contentImages[key];
           else contentImages[key] = cb.value;
-          save.contentImages();
+          try { save.contentImages(); } catch (err) { toast('Could not save image selection (storage full).', 'error'); return; }
           renderContent();
           toast('Homepage image updated.');
         }
+      }
+      if (cb.matches('[data-upload-image]')) {
+        const key = cb.dataset.uploadImage;
+        const slot = CONTENT_IMAGE_SLOTS.find(s => s.key === key);
+        const file = cb.files && cb.files[0];
+        if (!slot || !file) return;
+        readImageFileAsDataUrl(file, 1200, 0.82).then((dataUrl) => {
+          contentImages[key] = dataUrl;
+          try {
+            save.contentImages();
+          } catch (err) {
+            delete contentImages[key];
+            toast('Image is too large to save in this browser. Try a smaller photo.', 'error');
+            renderContent();
+            return;
+          }
+          renderContent();
+          toast('Uploaded photo saved for ' + slot.label + '.');
+        }).catch(() => {
+          toast('Could not read that image. Please choose a different file.', 'error');
+          cb.value = '';
+        });
       }
     });
 
