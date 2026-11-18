@@ -13,8 +13,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/admin.css?v=20261118z20">
-  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261118z20">
+  <link rel="stylesheet" href="assets/css/admin.css?v=20261118z21">
+  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261118z21">
 </head>
 <body>
 
@@ -618,6 +618,14 @@
                 </div>
               </div>
 
+              <div class="card" id="audit-log-card" style="display:none">
+                <div class="card-head"><div><h3>Audit log</h3><p>Recent security and account activity</p></div><button class="a-btn a-btn-light a-btn-sm" id="refresh-audit-btn" type="button">Refresh</button></div>
+                <div class="card-body" style="display:grid;gap:10px">
+                  <div id="audit-msg" class="demo-note" style="display:none;margin:0"></div>
+                  <div class="table-wrap"><table class="table"><thead><tr><th>Time</th><th>Event</th><th>Actor</th><th>Details</th></tr></thead><tbody id="audit-table-body"><tr><td colspan="4" class="table-empty">No audit entries loaded.</td></tr></tbody></table></div>
+                </div>
+              </div>
+
               <div class="card">
                 <div class="card-head"><div><h3>Demo data</h3><p>Reset the dashboard to its sample state</p></div></div>
                 <div class="card-body">
@@ -668,8 +676,8 @@
     <div class="a-toast-host" id="toast-host"></div>
   </div>
 
-  <script src="assets/js/icons.js?v=20261118z20"></script>
-  <script src="assets/js/backend.js?v=20261118z20"></script><script src="assets/js/admin.js?v=20261118z20"></script><script src="assets/js/admin-sync.js?v=20261118z20"></script>
+  <script src="assets/js/icons.js?v=20261118z21"></script>
+  <script src="assets/js/backend.js?v=20261118z21"></script><script src="assets/js/admin.js?v=20261118z21"></script><script src="assets/js/admin-sync.js?v=20261118z21"></script>
 </body>
 </html>
 

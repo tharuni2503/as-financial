@@ -691,8 +691,9 @@
     const nm = $('#account-name'); if (nm) nm.textContent = niceName || email || 'Administrator';
     const em = $('#account-email'); if (em) em.textContent = email || 'Signed in';
     const rl = $('#account-role'); if (rl) rl.textContent = roleLabel(user.role);
-    const um = $('#user-management-card');
-    if (um) um.style.display = (user.role === 'super_admin' || user.role === 'admin') ? '' : 'none';
+    const isAdmin = user.role === 'super_admin' || user.role === 'admin';
+    const um = $('#user-management-card'); if (um) um.style.display = isAdmin ? '' : 'none';
+    const ac = $('#audit-log-card'); if (ac) ac.style.display = isAdmin ? '' : 'none';
   }
 
   function enterApp(user, remember) {
@@ -721,7 +722,7 @@
     renderAll();
     syncServerEnquiries();
     setView('overview', true);
-    if (currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin')) loadUsers();
+    if (currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin')) { loadUsers(); loadAudit(); }
     document.dispatchEvent(new Event('as:auth-ready'));
   }
 
@@ -772,6 +773,30 @@
           '</div>'
         : '<span style="color:var(--muted);font-size:.75rem">View only</span>';
       return '<tr><td>' + esc(u.name || '—') + '</td><td>' + esc(u.email || '') + '</td><td>' + esc(roleLabel(u.role)) + '</td><td>' + status + '</td><td>' + actions + '</td></tr>';
+    }).join('');
+  }
+
+  async function loadAudit() {
+    const api = window.ASBackend;
+    if (!api || !currentUser || (currentUser.role !== 'super_admin' && currentUser.role !== 'admin')) return;
+    try {
+      const data = await api.request('api/audit?limit=50');
+      renderAudit((data && data.entries) || []);
+    } catch (e) {
+      renderAudit([], e && e.message ? e.message : 'Could not load audit log.');
+    }
+  }
+
+  function renderAudit(entries, error) {
+    const tbody = $('#audit-table-body');
+    if (!tbody) return;
+    if (error) { tbody.innerHTML = '<tr><td colspan="4" class="table-empty">' + esc(error) + '</td></tr>'; return; }
+    if (!entries || !entries.length) { tbody.innerHTML = '<tr><td colspan="4" class="table-empty">No audit entries yet.</td></tr>'; return; }
+    tbody.innerHTML = entries.map(e => {
+      const when = e.at ? new Date(e.at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+      const actor = (e.actorEmail || '—') + (e.actorRole ? ' (' + esc(roleLabel(e.actorRole)) + ')' : '');
+      const details = (e.summary || '') + (e.targetId ? ' [' + esc(e.targetId) + ']' : '');
+      return '<tr><td>' + esc(when) + '</td><td>' + esc(e.type || 'event') + '</td><td>' + actor + '</td><td>' + esc(details || '—') + '</td></tr>';
     }).join('');
   }
 
@@ -1598,7 +1623,7 @@
     const toggles = { 'notif-leads': n.leads, 'notif-apps': n.apps, 'notif-weekly': n.weekly, 'notif-whatsapp': n.whatsapp };
     Object.entries(toggles).forEach(([id, val]) => { const el = $('#' + id); if (el) el.checked = !!val; });
     renderAccount();
-    if (currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin')) loadUsers();
+    if (currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin')) { loadUsers(); loadAudit(); }
   }
 
   /* ---------------------------------------------------------------- modal */
@@ -1823,6 +1848,8 @@
     // user management
     const refreshUsersBtn = $('#refresh-users-btn');
     if (refreshUsersBtn) refreshUsersBtn.addEventListener('click', () => loadUsers());
+    const refreshAuditBtn = $('#refresh-audit-btn');
+    if (refreshAuditBtn) refreshAuditBtn.addEventListener('click', () => loadAudit());
     const createUserForm = $('#create-user-form');
     if (createUserForm) createUserForm.addEventListener('submit', (ev) => {
       ev.preventDefault();
