@@ -41,7 +41,27 @@ if (!process.env.ADMIN_PASSWORD) {
   console.warn('[auth] Using the default demo admin password. Set ADMIN_PASSWORD before going live.');
 }
 
-const credential = auth.createCredential(ADMIN_EMAIL, ADMIN_PASSWORD);
+async function ensureBootstrapUser() {
+  if (typeof store.listUsers !== 'function') return;
+  const users = await store.listUsers();
+  if (users.length > 0) return;
+  const user = {
+    id: auth.randomId('USR'),
+    email: ADMIN_EMAIL,
+    name: 'Admin',
+    role: 'super_admin',
+    active: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    lastLoginAt: null,
+    resetToken: null,
+    resetExpiresAt: null,
+    passwordChangedAt: null
+  };
+  auth.setPassword(user, ADMIN_PASSWORD);
+  await store.upsertUser(user);
+  console.log('[auth] Bootstrapped super_admin user:', ADMIN_EMAIL);
+}
 
 function cookieSecure(req) {
   return Boolean(req.secure || (req.headers && req.headers['x-forwarded-proto'] === 'https') || IS_PRODUCTION);
@@ -142,7 +162,7 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true, service: 'as-financial', backend: desc.backend, time: new Date().toISOString() });
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', asyncRoute(async (req, res) => {
   const ip = req.ip || 'unknown';
   if (auth.tooManyAttempts(ip)) {
     res.status(429).json({ error: 'Too many attempts. Please try again in a few minutes.' });
@@ -152,40 +172,61 @@ app.post('/api/login', (req, res) => {
   const email = String((req.body && req.body.email) || '').trim().toLowerCase();
   const password = String((req.body && req.body.password) || '');
 
-  const emailMatches = email === credential.email;
-  const passwordMatches = auth.verifyPassword(credential, password);
+  let user = null;
+  if (store.findUserByEmail) user = await store.findUserByEmail(email);
 
-  if (!emailMatches || !passwordMatches) {
+  // Backward compat: if store has no user but env bootstrap would match (edge case before bootstrap ran)
+  if (!user && email === ADMIN_EMAIL && auth.verifyPassword(auth.createCredential(ADMIN_EMAIL, ADMIN_PASSWORD), password)) {
+    // ensure bootstrap exists
+    await ensureBootstrapUser();
+    user = await store.findUserByEmail(email);
+  }
+
+  const ok = user && user.active !== false && auth.verifyPassword(user, password);
+  if (!ok) {
     auth.noteFailedAttempt(ip);
     res.status(401).json({ error: 'Those details do not match our records.' });
     return;
   }
 
   auth.clearAttempts(ip);
-  const issued = auth.issue(credential.email, 'super_admin');
-  res.setHeader('Set-Cookie', auth.cookieHeader(issued.token, { maxAgeMs: auth.SESSION_TTL_MS, secure: cookieSecure(req) }));
-  res.json({ ok: true, email: credential.email, role: 'super_admin', csrfToken: issued.csrfToken, expiresIn: auth.SESSION_TTL_MS });
-});
+  user.lastLoginAt = new Date().toISOString();
+  if (store.upsertUser) await store.upsertUser(user);
 
-app.post('/api/logout', requireSession, requireCsrf, (req, res) => {
-  auth.revoke(auth.tokenFrom(req));
+  const issued = await auth.issue(user.email, user.role || 'admin', {
+    userId: user.id,
+    ip,
+    userAgent: req.get('user-agent') || ''
+  });
+  res.setHeader('Set-Cookie', auth.cookieHeader(issued.token, { maxAgeMs: auth.SESSION_TTL_MS, secure: cookieSecure(req) }));
+  const pub = auth.publicUser ? auth.publicUser(user) : { email: user.email, role: user.role };
+  res.json(Object.assign({ ok: true, csrfToken: issued.csrfToken, expiresIn: auth.SESSION_TTL_MS }, pub));
+}));
+
+app.post('/api/logout', requireSession, requireCsrf, asyncRoute(async (req, res) => {
+  await auth.revoke(auth.tokenFrom(req));
   res.setHeader('Set-Cookie', auth.clearCookieHeader(cookieSecure(req)));
   res.json({ ok: true });
-});
+}));
 
-app.get('/api/session', (req, res) => {
+app.get('/api/session', asyncRoute(async (req, res) => {
   const session = auth.read(auth.tokenFrom(req));
   if (!session) {
     res.status(401).json({ error: 'Not signed in.' });
     return;
   }
+  let user = null;
+  if (session.userId && store.findUserById) user = await store.findUserById(session.userId);
+  if (!user && store.findUserByEmail) user = await store.findUserByEmail(session.email);
   res.json({
     email: session.email,
     role: session.role || 'admin',
+    userId: session.userId || (user && user.id) || null,
+    name: user ? (user.name || '') : '',
     csrfToken: session.csrfToken || '',
     expiresAt: new Date(session.expiresAt).toISOString()
   });
-});
+}));
 
 app.get('/api/content', asyncRoute(async (req, res) => {
   const session = auth.read(auth.tokenFrom(req));
@@ -294,6 +335,198 @@ app.put('/api/admin/store/:name', requireSession, requireRole('staff', 'admin', 
   });
 }));
 
+/* --------------------------------------------------- password & users */
+
+const pwAttemptsByIp = new Map();
+function pwRateLimited(ip, limit, windowMs) {
+  const now = Date.now();
+  const key = ip || 'unknown';
+  const rec = pwAttemptsByIp.get(key) || { hits: [] };
+  rec.hits = rec.hits.filter((t) => now - t < (windowMs || 15 * 60 * 1000));
+  rec.hits.push(now);
+  pwAttemptsByIp.set(key, rec);
+  if (pwAttemptsByIp.size > 5000) pwAttemptsByIp.clear();
+  return rec.hits.length > (limit || 10);
+}
+
+function validatePassword(pw) {
+  const s = String(pw || '');
+  if (s.length < 6) return 'Password must be at least 6 characters.';
+  if (s.length > 200) return 'Password is too long.';
+  return null;
+}
+
+function normalizeRole(role) {
+  const r = String(role || '').toLowerCase();
+  return ['advisor', 'staff', 'admin', 'super_admin'].includes(r) ? r : null;
+}
+
+function userPublic(user) {
+  return auth.publicUser ? auth.publicUser(user) : { id: user.id, email: user.email, role: user.role, active: user.active !== false };
+}
+
+app.post('/api/change-password', requireSession, requireCsrf, asyncRoute(async (req, res) => {
+  const ip = req.ip || 'unknown';
+  if (pwRateLimited(ip, 12, 15 * 60 * 1000)) {
+    res.status(429).json({ error: 'Too many attempts. Please try again later.' });
+    return;
+  }
+  const currentPassword = String((req.body && req.body.currentPassword) || '');
+  const newPassword = String((req.body && req.body.newPassword) || '');
+  const pwErr = validatePassword(newPassword);
+  if (pwErr) { res.status(400).json({ error: pwErr }); return; }
+
+  let user = req.session.userId && store.findUserById ? await store.findUserById(req.session.userId) : null;
+  if (!user && store.findUserByEmail) user = await store.findUserByEmail(req.session.email);
+  if (!user || user.active === false) { res.status(401).json({ error: 'User account not found.' }); return; }
+  if (!auth.verifyPassword(user, currentPassword)) {
+    auth.noteFailedAttempt(ip);
+    res.status(401).json({ error: 'Current password is incorrect.' });
+    return;
+  }
+  if (auth.verifyPassword(user, newPassword)) {
+    res.status(400).json({ error: 'New password must be different from the current password.' });
+    return;
+  }
+  auth.setPassword(user, newPassword);
+  await store.upsertUser(user);
+  await auth.revokeAllForEmail(user.email);
+  const issued = await auth.issue(user.email, user.role || 'admin', { userId: user.id, ip, userAgent: req.get('user-agent') || '' });
+  res.setHeader('Set-Cookie', auth.cookieHeader(issued.token, { maxAgeMs: auth.SESSION_TTL_MS, secure: cookieSecure(req) }));
+  res.json(Object.assign({ ok: true, csrfToken: issued.csrfToken, expiresIn: auth.SESSION_TTL_MS }, userPublic(user)));
+}));
+
+app.post('/api/forgot-password', asyncRoute(async (req, res) => {
+  const ip = req.ip || 'unknown';
+  if (pwRateLimited('forgot:' + ip, 6, 15 * 60 * 1000)) {
+    res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    return;
+  }
+  const email = String((req.body && req.body.email) || '').trim().toLowerCase();
+  const generic = { ok: true, message: 'If an account exists for that email, password reset instructions have been prepared.' };
+  if (!email || !store.findUserByEmail) { res.json(generic); return; }
+  const user = await store.findUserByEmail(email);
+  if (!user || user.active === false) { res.json(generic); return; }
+  const rt = auth.makeResetToken();
+  user.resetToken = rt.token;
+  user.resetExpiresAt = rt.expiresAt;
+  await store.upsertUser(user);
+  const resetUrl = '/admin.html?reset=' + encodeURIComponent(rt.token);
+  console.log('[auth] Password reset requested for', user.email, 'token expires', rt.expiresAt, 'url', resetUrl);
+  if (!IS_PRODUCTION) {
+    res.json(Object.assign({}, generic, { devResetToken: rt.token, devResetUrl: resetUrl, expiresAt: rt.expiresAt }));
+  } else {
+    res.json(generic);
+  }
+}));
+
+app.post('/api/reset-password', asyncRoute(async (req, res) => {
+  const ip = req.ip || 'unknown';
+  if (pwRateLimited('reset:' + ip, 10, 15 * 60 * 1000)) {
+    res.status(429).json({ error: 'Too many attempts. Please try again later.' });
+    return;
+  }
+  const token = String((req.body && req.body.token) || '').trim();
+  const newPassword = String((req.body && req.body.newPassword) || '');
+  const pwErr = validatePassword(newPassword);
+  if (pwErr) { res.status(400).json({ error: pwErr }); return; }
+  if (!token || !store.findUserByResetToken) { res.status(400).json({ error: 'Invalid or expired reset link.' }); return; }
+  const user = await store.findUserByResetToken(token);
+  if (!user || user.active === false) { res.status(400).json({ error: 'Invalid or expired reset link.' }); return; }
+  const exp = user.resetExpiresAt ? Date.parse(user.resetExpiresAt) : 0;
+  if (!exp || exp <= Date.now()) {
+    user.resetToken = null; user.resetExpiresAt = null;
+    await store.upsertUser(user);
+    res.status(400).json({ error: 'This reset link has expired. Please request a new one.' });
+    return;
+  }
+  auth.setPassword(user, newPassword);
+  await store.upsertUser(user);
+  await auth.revokeAllForEmail(user.email);
+  res.json({ ok: true, message: 'Password updated. You can now sign in.' });
+}));
+
+app.get('/api/users', requireSession, requireRole('super_admin', 'admin'), asyncRoute(async (req, res) => {
+  const users = store.listUsers ? await store.listUsers() : [];
+  res.json({ users: users.map(userPublic) });
+}));
+
+app.post('/api/users', requireSession, requireRole('super_admin'), requireCsrf, asyncRoute(async (req, res) => {
+  const body = req.body || {};
+  const email = String(body.email || '').trim().toLowerCase();
+  const name = String(body.name || '').trim().slice(0, 120);
+  const role = normalizeRole(body.role) || 'advisor';
+  const password = String(body.password || '');
+  const pwErr = validatePassword(password);
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { res.status(400).json({ error: 'A valid email address is required.' }); return; }
+  if (pwErr) { res.status(400).json({ error: pwErr }); return; }
+  const existing = await store.findUserByEmail(email);
+  if (existing) { res.status(409).json({ error: 'A user with this email already exists.' }); return; }
+  const user = {
+    id: auth.randomId('USR'),
+    email,
+    name,
+    role,
+    active: body.active !== false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    lastLoginAt: null,
+    resetToken: null,
+    resetExpiresAt: null,
+    passwordChangedAt: null
+  };
+  auth.setPassword(user, password);
+  await store.upsertUser(user);
+  res.status(201).json({ ok: true, user: userPublic(user) });
+}));
+
+app.patch('/api/users/:id', requireSession, requireRole('super_admin'), requireCsrf, asyncRoute(async (req, res) => {
+  const user = await store.findUserById(String(req.params.id || ''));
+  if (!user) { res.status(404).json({ error: 'User not found.' }); return; }
+  const body = req.body || {};
+  if (typeof body.name === 'string') user.name = body.name.trim().slice(0, 120);
+  if (typeof body.role === 'string') {
+    const role = normalizeRole(body.role);
+    if (!role) { res.status(400).json({ error: 'Invalid role.' }); return; }
+    // prevent demoting the last super_admin
+    if (user.role === 'super_admin' && role !== 'super_admin') {
+      const users = await store.listUsers();
+      const supers = users.filter((u) => u.role === 'super_admin' && u.active !== false && u.id !== user.id);
+      if (supers.length === 0) { res.status(400).json({ error: 'At least one active super admin is required.' }); return; }
+    }
+    user.role = role;
+  }
+  if (typeof body.active === 'boolean') {
+    if (user.active !== false && body.active === false) {
+      const users = await store.listUsers();
+      const supers = users.filter((u) => u.role === 'super_admin' && u.active !== false && u.id !== user.id);
+      if (user.role === 'super_admin' && supers.length === 0) { res.status(400).json({ error: 'At least one active super admin is required.' }); return; }
+      await auth.revokeAllForEmail(user.email);
+    }
+    user.active = body.active;
+  }
+  if (typeof body.password === 'string' && body.password) {
+    const pwErr = validatePassword(body.password);
+    if (pwErr) { res.status(400).json({ error: pwErr }); return; }
+    auth.setPassword(user, body.password);
+    await auth.revokeAllForEmail(user.email);
+  }
+  await store.upsertUser(user);
+  res.json({ ok: true, user: userPublic(user) });
+}));
+
+app.post('/api/users/:id/reset-token', requireSession, requireRole('super_admin'), requireCsrf, asyncRoute(async (req, res) => {
+  const user = await store.findUserById(String(req.params.id || ''));
+  if (!user) { res.status(404).json({ error: 'User not found.' }); return; }
+  const rt = auth.makeResetToken();
+  user.resetToken = rt.token;
+  user.resetExpiresAt = rt.expiresAt;
+  await store.upsertUser(user);
+  const resetUrl = '/admin.html?reset=' + encodeURIComponent(rt.token);
+  console.log('[auth] Reset token generated for', user.email, 'expires', rt.expiresAt);
+  res.json({ ok: true, user: userPublic(user), resetToken: rt.token, resetUrl, expiresAt: rt.expiresAt });
+}));
+
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Unknown API route.' });
 });
@@ -350,6 +583,23 @@ app.use((error, req, res, next) => {
 
 async function boot() {
   await store.load();
+
+  if (typeof store.listUsers === 'function') {
+    await ensureBootstrapUser();
+  }
+
+  if (typeof auth.init === 'function') {
+    const sessionPersistence = (store.allSessions && store.saveSession && store.deleteSession)
+      ? {
+          loadAll: () => store.allSessions(),
+          save: (token, session) => store.saveSession(token, session),
+          remove: (token) => store.deleteSession(token),
+          removeExpired: () => store.deleteExpiredSessions ? store.deleteExpiredSessions() : Promise.resolve()
+        }
+      : null;
+    await auth.init(sessionPersistence);
+  }
+
   const stats = await store.stats();
   const desc = typeof store.describe === 'function' ? store.describe() : { backend: store.BACKEND || 'unknown', location: '' };
 
@@ -362,7 +612,7 @@ async function boot() {
     console.log('  Storage:     ' + desc.backend + (desc.location ? ' (' + desc.location + ')' : ''));
     console.log('  Content:     ' + stats.publishedTestimonials + ' published testimonials, ' +
       stats.gallery + ' posters, ' + stats.images + ' image overrides, ' + stats.enquiries + ' enquiries');
-    console.log('  Admin data:  ' + stats.leads + ' leads, ' + stats.applications + ' applications');
+    console.log('  Admin data:  ' + stats.leads + ' leads, ' + stats.applications + ' applications, ' + (stats.users || 0) + ' users');
     console.log('');
   });
 }

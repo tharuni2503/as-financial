@@ -13,8 +13,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/admin.css?v=20261118z19">
-  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261118z19">
+  <link rel="stylesheet" href="assets/css/admin.css?v=20261118z20">
+  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261118z20">
 </head>
 <body>
 
@@ -66,6 +66,46 @@
       <div class="demo-note">
         Sign in with your administrator account. A running backend server is required.
       </div>
+      <div class="login-panel-alt hidden" id="forgot-panel" style="margin-top:14px">
+        <div class="card" style="padding:16px">
+          <h3 style="margin:0 0 6px;font-size:1rem">Reset password</h3>
+          <p style="margin:0 0 12px;color:var(--muted);font-size:.82rem">Enter your account email. If reset email delivery is not configured, a development reset link may be shown.</p>
+          <form id="forgot-form" class="login-form" autocomplete="on">
+            <div class="login-field">
+              <label for="forgot-email">Email address</label>
+              <div class="login-input"><svg class="icon" aria-hidden="true"><use href="#i-mail"></use></svg><input type="email" id="forgot-email" name="email" required autocomplete="username" placeholder="name@example.com"></div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="a-btn a-btn-primary" type="submit" style="padding:10px 14px;font-size:.82rem">Request reset</button>
+              <button class="a-btn a-btn-light" type="button" id="forgot-back-btn" style="padding:10px 14px;font-size:.82rem">Back to sign in</button>
+            </div>
+          </form>
+          <div id="forgot-result" class="demo-note" style="margin-top:10px;display:none"></div>
+        </div>
+      </div>
+
+      <div class="login-panel-alt hidden" id="reset-panel" style="margin-top:14px">
+        <div class="card" style="padding:16px">
+          <h3 style="margin:0 0 6px;font-size:1rem">Set a new password</h3>
+          <p style="margin:0 0 12px;color:var(--muted);font-size:.82rem">Choose a new password for your account (at least 6 characters).</p>
+          <form id="reset-form" class="login-form" autocomplete="off">
+            <div class="login-field">
+              <label for="reset-password">New password</label>
+              <div class="login-input"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg><input type="password" id="reset-password" name="password" required minlength="6" autocomplete="new-password" placeholder="New password"></div>
+            </div>
+            <div class="login-field">
+              <label for="reset-password-confirm">Confirm new password</label>
+              <div class="login-input"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg><input type="password" id="reset-password-confirm" name="confirm" required minlength="6" autocomplete="new-password" placeholder="Confirm new password"></div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="a-btn a-btn-primary" type="submit" style="padding:10px 14px;font-size:.82rem">Update password</button>
+              <button class="a-btn a-btn-light" type="button" id="reset-back-btn" style="padding:10px 14px;font-size:.82rem">Back to sign in</button>
+            </div>
+          </form>
+          <div id="reset-result" class="demo-note" style="margin-top:10px;display:none"></div>
+        </div>
+      </div>
+
         <div class="login-foot"><a href="index.html">← Back to the website</a></div>
       </div>
     </div>
@@ -542,11 +582,39 @@
                 <div class="card-head"><div><h3>Account</h3><p>Signed-in staff member</p></div></div>
                 <div class="card-body">
                   <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px">
-                    <span class="cust-avatar" style="width:44px;height:44px;font-size:.9rem">AD</span>
-                    <div><b style="display:block;color:var(--navy)">Administrator</b><span style="font-size:.72rem;color:var(--muted)">Signed in</span></div>
+                    <span class="cust-avatar" id="account-avatar" style="width:44px;height:44px;font-size:.9rem">AD</span>
+                    <div><b style="display:block;color:var(--navy)" id="account-name">Administrator</b><span style="font-size:.72rem;color:var(--muted)" id="account-email">Signed in</span></div>
                   </div>
-                  <div class="detail-box" style="margin-bottom:10px"><small>Role</small><b>Business manager · full access</b></div>
-                  <div class="detail-box"><small>Last sign in</small><b id="last-signin">Today</b></div>
+                  <div class="detail-box" style="margin-bottom:10px"><small>Role</small><b id="account-role">—</b></div>
+                  <div class="detail-box" style="margin-bottom:10px"><small>Last sign in</small><b id="last-signin">Today</b></div>
+
+                  <form id="change-password-form" style="margin-top:14px;display:grid;gap:10px">
+                    <h4 style="margin:0;font-size:.9rem;color:var(--navy)">Change password</h4>
+                    <div class="a-field"><label for="cp-current">Current password</label><input id="cp-current" name="currentPassword" type="password" autocomplete="current-password" required></div>
+                    <div class="a-field"><label for="cp-new">New password</label><input id="cp-new" name="newPassword" type="password" autocomplete="new-password" minlength="6" required></div>
+                    <div class="a-field"><label for="cp-confirm">Confirm new password</label><input id="cp-confirm" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" required></div>
+                    <div id="change-password-msg" class="demo-note" style="display:none;margin:0"></div>
+                    <button type="submit" class="a-btn a-btn-primary a-btn-sm">Update password</button>
+                  </form>
+                </div>
+              </div>
+
+              <div class="card" id="user-management-card" style="display:none">
+                <div class="card-head"><div><h3>User management</h3><p>Manage staff accounts and roles (super admin)</p></div><button class="a-btn a-btn-light a-btn-sm" id="refresh-users-btn" type="button">Refresh</button></div>
+                <div class="card-body" style="display:grid;gap:12px">
+                  <form id="create-user-form" style="display:grid;gap:8px">
+                    <div class="form-row">
+                      <div class="a-field"><label for="nu-name">Name</label><input id="nu-name" name="name" type="text" placeholder="Full name"></div>
+                      <div class="a-field"><label for="nu-email">Email</label><input id="nu-email" name="email" type="email" required placeholder="user@example.com"></div>
+                    </div>
+                    <div class="form-row">
+                      <div class="a-field"><label for="nu-role">Role</label><select id="nu-role" name="role"><option value="advisor">Advisor</option><option value="staff">Staff</option><option value="admin">Admin</option><option value="super_admin">Super admin</option></select></div>
+                      <div class="a-field"><label for="nu-password">Password</label><input id="nu-password" name="password" type="password" minlength="6" required placeholder="At least 6 characters"></div>
+                    </div>
+                    <div><button type="submit" class="a-btn a-btn-primary a-btn-sm">Create user</button></div>
+                  </form>
+                  <div id="users-msg" class="demo-note" style="display:none;margin:0"></div>
+                  <div class="table-wrap"><table class="table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody id="users-table-body"><tr><td colspan="5" class="table-empty">No users loaded.</td></tr></tbody></table></div>
                 </div>
               </div>
 
@@ -600,24 +668,8 @@
     <div class="a-toast-host" id="toast-host"></div>
   </div>
 
-  <script src="assets/js/icons.js?v=20261118z19"></script>
-  <script src="assets/js/backend.js?v=20261118z19"></script><script src="assets/js/admin.js?v=20261118z19"></script><script src="assets/js/admin-sync.js?v=20261118z19"></script>
-  <script>
-    (function () {
-      var btn = document.getElementById('forgot-password-btn');
-      if (btn) {
-        btn.addEventListener('click', function () {
-          var box = document.getElementById('login-error');
-          if (box) {
-            box.textContent = 'Password reset is not yet available. Please contact your administrator to reset access.';
-            box.classList.add('show');
-          } else {
-            alert('Password reset is not yet available. Please contact your administrator.');
-          }
-        });
-      }
-    })();
-  </script>
+  <script src="assets/js/icons.js?v=20261118z20"></script>
+  <script src="assets/js/backend.js?v=20261118z20"></script><script src="assets/js/admin.js?v=20261118z20"></script><script src="assets/js/admin-sync.js?v=20261118z20"></script>
 </body>
 </html>
 

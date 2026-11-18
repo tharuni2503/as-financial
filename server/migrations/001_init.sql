@@ -41,6 +41,41 @@ CREATE INDEX IF NOT EXISTS idx_enquiries_received_at ON enquiries (received_at D
 CREATE INDEX IF NOT EXISTS idx_enquiries_handled ON enquiries (handled);
 CREATE INDEX IF NOT EXISTS idx_enquiries_phone ON enquiries (phone);
 
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL DEFAULT '',
+  role TEXT NOT NULL DEFAULT 'advisor',
+  salt TEXT NOT NULL,
+  hash TEXT NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_login_at TIMESTAMPTZ,
+  reset_token TEXT,
+  reset_expires_at TIMESTAMPTZ,
+  password_changed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users (LOWER(email));
+CREATE INDEX IF NOT EXISTS idx_users_reset_token ON users (reset_token);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  token TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'admin',
+  csrf_token TEXT NOT NULL DEFAULT '',
+  user_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  ip TEXT NOT NULL DEFAULT '',
+  user_agent TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions (expires_at);
+CREATE INDEX IF NOT EXISTS idx_sessions_email ON sessions (email);
+
 -- Seed default rows for known keys
 INSERT INTO app_content (key, value) VALUES
   ('testimonials', '[]'::jsonb),
@@ -58,5 +93,5 @@ INSERT INTO app_admin (key, value) VALUES
   ('settings', '{}'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
-INSERT INTO app_meta (key, value) VALUES ('schema_version', '1')
-ON CONFLICT (key) DO NOTHING;
+INSERT INTO app_meta (key, value) VALUES ('schema_version', '2')
+ON CONFLICT (key) DO UPDATE SET value = '2';

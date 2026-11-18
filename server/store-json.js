@@ -36,7 +36,7 @@ function emptyAdmin() {
 }
 
 function emptyDb() {
-  return { version: 2, updatedAt: null, content: emptyContent(), enquiries: [], admin: emptyAdmin() };
+  return { version: 3, updatedAt: null, content: emptyContent(), enquiries: [], admin: emptyAdmin(), users: [], sessions: {} };
 }
 
 let db = emptyDb();
@@ -61,12 +61,17 @@ function normalise(parsed) {
     admin.settings = adminSrc.settings;
   }
 
+  const sessions = parsed && parsed.sessions && typeof parsed.sessions === 'object' && !Array.isArray(parsed.sessions)
+    ? parsed.sessions : {};
+
   return {
-    version: 2,
+    version: 3,
     updatedAt: parsed && typeof parsed.updatedAt === 'string' ? parsed.updatedAt : null,
     content,
     enquiries: parsed && Array.isArray(parsed.enquiries) ? parsed.enquiries : [],
-    admin
+    admin,
+    users: parsed && Array.isArray(parsed.users) ? parsed.users : [],
+    sessions
   };
 }
 
@@ -154,6 +159,86 @@ async function setAdminCollection(name, value) {
   return db.admin[name];
 }
 
+/* ---------------------------------------------------------------- users */
+
+async function listUsers() {
+  return db.users.slice();
+}
+
+async function findUserByEmail(email) {
+  const needle = String(email || '').toLowerCase();
+  return db.users.find((u) => u && String(u.email || '').toLowerCase() === needle) || null;
+}
+
+async function findUserById(id) {
+  return db.users.find((u) => u && u.id === id) || null;
+}
+
+async function findUserByResetToken(token) {
+  if (!token) return null;
+  return db.users.find((u) => u && u.resetToken === token) || null;
+}
+
+async function upsertUser(user) {
+  if (!user || !user.id) throw new Error('User must have an id.');
+  const index = db.users.findIndex((u) => u && u.id === user.id);
+  const now = new Date().toISOString();
+  const next = Object.assign({}, user, { updatedAt: now });
+  if (!next.createdAt) next.createdAt = now;
+  if (index === -1) db.users.push(next); else db.users[index] = Object.assign({}, db.users[index], next);
+  await save();
+  return db.users[index === -1 ? db.users.length - 1 : index];
+}
+
+async function deleteUser(id) {
+  const index = db.users.findIndex((u) => u && u.id === id);
+  if (index === -1) return false;
+  db.users.splice(index, 1);
+  await save();
+  return true;
+}
+
+/* ------------------------------------------------------------- sessions */
+
+async function getSession(token) {
+  if (!token) return null;
+  const session = db.sessions[token];
+  return session || null;
+}
+
+async function allSessions() {
+  return Object.assign({}, db.sessions);
+}
+
+async function saveSession(token, session) {
+  if (!token || !session) return;
+  db.sessions[token] = session;
+  await save();
+}
+
+async function deleteSession(token) {
+  if (!token) return false;
+  if (!db.sessions[token]) return false;
+  delete db.sessions[token];
+  await save();
+  return true;
+}
+
+async function deleteExpiredSessions() {
+  const now = Date.now();
+  let changed = false;
+  Object.keys(db.sessions).forEach((token) => {
+    const s = db.sessions[token];
+    const exp = s && s.expiresAt ? Date.parse(s.expiresAt) : 0;
+    if (!exp || exp <= now) {
+      delete db.sessions[token];
+      changed = true;
+    }
+  });
+  if (changed) await save();
+  return changed;
+}
+
 async function stats() {
   const publishedTestimonials = db.content.testimonials.filter((item) => item && item.published).length;
   return {
@@ -166,6 +251,7 @@ async function stats() {
     unreadEnquiries: db.enquiries.filter((item) => item && !item.handled).length,
     leads: db.admin.leads.length,
     applications: db.admin.applications.length,
+    users: db.users.length,
     updatedAt: db.updatedAt
   };
 }
@@ -191,6 +277,17 @@ module.exports = {
   findEnquiry,
   updateEnquiry,
   removeEnquiry,
+  listUsers,
+  findUserByEmail,
+  findUserById,
+  findUserByResetToken,
+  upsertUser,
+  deleteUser,
+  getSession,
+  allSessions,
+  saveSession,
+  deleteSession,
+  deleteExpiredSessions,
   stats,
   describe
 };

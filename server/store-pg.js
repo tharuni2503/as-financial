@@ -205,12 +205,150 @@ async function setAdminCollection(name, value) {
   return value;
 }
 
+/* ---------------------------------------------------------------- users */
+
+function rowToUser(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name || '',
+    role: row.role || 'advisor',
+    salt: row.salt,
+    hash: row.hash,
+    active: row.active !== false,
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+    updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at,
+    lastLoginAt: row.last_login_at instanceof Date ? row.last_login_at.toISOString() : (row.last_login_at || null),
+    resetToken: row.reset_token || null,
+    resetExpiresAt: row.reset_expires_at instanceof Date ? row.reset_expires_at.toISOString() : (row.reset_expires_at || null),
+    passwordChangedAt: row.password_changed_at instanceof Date ? row.password_changed_at.toISOString() : (row.password_changed_at || null)
+  };
+}
+
+async function listUsers() {
+  const res = await getPool().query('SELECT * FROM users ORDER BY created_at ASC');
+  return res.rows.map(rowToUser);
+}
+
+async function findUserByEmail(email) {
+  const res = await getPool().query('SELECT * FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1', [String(email || '')]);
+  return res.rows[0] ? rowToUser(res.rows[0]) : null;
+}
+
+async function findUserById(id) {
+  const res = await getPool().query('SELECT * FROM users WHERE id = $1', [id]);
+  return res.rows[0] ? rowToUser(res.rows[0]) : null;
+}
+
+async function findUserByResetToken(token) {
+  if (!token) return null;
+  const res = await getPool().query('SELECT * FROM users WHERE reset_token = $1 LIMIT 1', [token]);
+  return res.rows[0] ? rowToUser(res.rows[0]) : null;
+}
+
+async function upsertUser(user) {
+  if (!user || !user.id) throw new Error('User must have an id.');
+  const now = new Date();
+  await getPool().query(
+    `INSERT INTO users (id, email, name, role, salt, hash, active, created_at, updated_at, last_login_at, reset_token, reset_expires_at, password_changed_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,COALESCE($8::timestamptz,NOW()),NOW(),$9::timestamptz,$10,$11::timestamptz,$12::timestamptz)
+     ON CONFLICT (id) DO UPDATE SET
+       email=EXCLUDED.email, name=EXCLUDED.name, role=EXCLUDED.role, salt=EXCLUDED.salt, hash=EXCLUDED.hash,
+       active=EXCLUDED.active, updated_at=NOW(), last_login_at=EXCLUDED.last_login_at,
+       reset_token=EXCLUDED.reset_token, reset_expires_at=EXCLUDED.reset_expires_at, password_changed_at=EXCLUDED.password_changed_at`,
+    [
+      user.id, String(user.email || '').toLowerCase(), String(user.name || ''), String(user.role || 'advisor'),
+      String(user.salt || ''), String(user.hash || ''), user.active !== false,
+      user.createdAt || null, user.lastLoginAt || null, user.resetToken || null, user.resetExpiresAt || null, user.passwordChangedAt || null
+    ]
+  );
+  await touchUpdatedAt();
+  return findUserById(user.id);
+}
+
+async function deleteUser(id) {
+  const res = await getPool().query('DELETE FROM users WHERE id = $1', [id]);
+  if (res.rowCount > 0) await touchUpdatedAt();
+  return res.rowCount > 0;
+}
+
+/* ------------------------------------------------------------- sessions */
+
+function rowToSession(row) {
+  if (!row) return null;
+  return {
+    token: row.token,
+    email: row.email,
+    role: row.role || 'admin',
+    csrfToken: row.csrf_token || '',
+    userId: row.user_id || null,
+    createdAt: row.created_at instanceof Date ? row.created_at.getTime() : Date.parse(row.created_at),
+    expiresAt: row.expires_at instanceof Date ? row.expires_at.getTime() : Date.parse(row.expires_at),
+    lastSeenAt: row.last_seen_at instanceof Date ? row.last_seen_at.getTime() : Date.parse(row.last_seen_at),
+    ip: row.ip || '',
+    userAgent: row.user_agent || ''
+  };
+}
+
+async function getSession(token) {
+  if (!token) return null;
+  const res = await getPool().query('SELECT * FROM sessions WHERE token = $1', [token]);
+  return res.rows[0] ? rowToSession(res.rows[0]) : null;
+}
+
+async function allSessions() {
+  const res = await getPool().query('SELECT * FROM sessions WHERE expires_at > NOW()');
+  const out = {};
+  res.rows.forEach((row) => { out[row.token] = rowToSession(row); });
+  return out;
+}
+
+async function saveSession(token, session) {
+  if (!token || !session) return;
+  await getPool().query(
+    `INSERT INTO sessions (token, email, role, csrf_token, user_id, created_at, expires_at, last_seen_at, ip, user_agent)
+     VALUES ($1,$2,$3,$4,$5,to_timestamp($6/1000.0),to_timestamp($7/1000.0),to_timestamp($8/1000.0),$9,$10)
+     ON CONFLICT (token) DO UPDATE SET
+       email=EXCLUDED.email, role=EXCLUDED.role, csrf_token=EXCLUDED.csrf_token, user_id=EXCLUDED.user_id,
+       expires_at=EXCLUDED.expires_at, last_seen_at=EXCLUDED.last_seen_at, ip=EXCLUDED.ip, user_agent=EXCLUDED.user_agent`,
+    [
+      token,
+      String(session.email || ''),
+      String(session.role || 'admin'),
+      String(session.csrfToken || ''),
+      session.userId || null,
+      Number(session.createdAt || Date.now()),
+      Number(session.expiresAt || Date.now()),
+      Number(session.lastSeenAt || Date.now()),
+      String(session.ip || '').slice(0, 120),
+      String(session.userAgent || '').slice(0, 400)
+    ]
+  );
+}
+
+async function deleteSession(token) {
+  if (!token) return false;
+  const res = await getPool().query('DELETE FROM sessions WHERE token = $1', [token]);
+  return res.rowCount > 0;
+}
+
+async function deleteExpiredSessions() {
+  const res = await getPool().query('DELETE FROM sessions WHERE expires_at <= NOW()');
+  return res.rowCount > 0;
+}
+
 async function stats() {
   const c = await content();
   const a = await adminData();
   const eq = await getPool().query(
     'SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE NOT handled)::int AS unread FROM enquiries'
   );
+  let userCount = 0;
+  try {
+    const ur = await getPool().query('SELECT COUNT(*)::int AS n FROM users');
+    userCount = (ur.rows[0] && ur.rows[0].n) || 0;
+  } catch (e) { /* table may not exist yet in old db */ }
   const publishedTestimonials = c.testimonials.filter((item) => item && item.published).length;
   const row = eq.rows[0] || { total: 0, unread: 0 };
   return {
@@ -223,6 +361,7 @@ async function stats() {
     unreadEnquiries: row.unread || 0,
     leads: a.leads.length,
     applications: a.applications.length,
+    users: userCount,
     updatedAt: await getMetaUpdatedAt()
   };
 }
@@ -248,6 +387,17 @@ module.exports = {
   findEnquiry,
   updateEnquiry,
   removeEnquiry,
+  listUsers,
+  findUserByEmail,
+  findUserById,
+  findUserByResetToken,
+  upsertUser,
+  deleteUser,
+  getSession,
+  allSessions,
+  saveSession,
+  deleteSession,
+  deleteExpiredSessions,
   stats,
   describe
 };

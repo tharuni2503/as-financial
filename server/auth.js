@@ -1,21 +1,23 @@
 'use strict';
 
 /*
- * Admin authentication: scrypt password hashing (no plaintext on disk) and
- * random session tokens held in memory for the life of the server process.
- * Tokens are issued as HttpOnly cookies (and also accepted via Authorization
- * header for non-browser clients).
+ * Admin authentication: scrypt password hashing and session tokens.
+ * Sessions are cached in memory for fast sync reads and optionally persisted
+ * via a store adapter so they survive server restarts.
  */
 
 const crypto = require('node:crypto');
 
 const COOKIE_NAME = 'as_session';
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
+const SESSION_REFRESH_MS = 30 * 60 * 1000; // extend when older than this
 const MAX_ATTEMPTS = 8;
 const ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
+const RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 const sessions = new Map();
 const attempts = new Map();
+let persistence = null; // { loadAll, save, remove, removeExpired }
 
 function createCredential(email, password) {
   const salt = crypto.randomBytes(16);
@@ -27,25 +29,82 @@ function createCredential(email, password) {
   };
 }
 
-function verifyPassword(credential, password) {
-  if (!credential || typeof password !== 'string' || !password) return false;
-  const salt = Buffer.from(credential.salt, 'hex');
-  const expected = Buffer.from(credential.hash, 'hex');
-  const actual = crypto.scryptSync(password, salt, expected.length);
-  return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
+function setPassword(user, password) {
+  const cred = createCredential(user.email || '', password);
+  user.salt = cred.salt;
+  user.hash = cred.hash;
+  user.passwordChangedAt = new Date().toISOString();
+  user.resetToken = null;
+  user.resetExpiresAt = null;
+  return user;
 }
 
-function issue(email, role) {
+function verifyPassword(credential, password) {
+  if (!credential || typeof password !== 'string' || !password) return false;
+  if (!credential.salt || !credential.hash) return false;
+  try {
+    const salt = Buffer.from(credential.salt, 'hex');
+    const expected = Buffer.from(credential.hash, 'hex');
+    const actual = crypto.scryptSync(password, salt, expected.length);
+    return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
+  } catch (error) {
+    return false;
+  }
+}
+
+function persistSave(token, session) {
+  if (!persistence || !persistence.save) return Promise.resolve();
+  return Promise.resolve(persistence.save(token, session)).catch((err) => {
+    console.warn('[auth] session persist failed:', err && err.message ? err.message : err);
+  });
+}
+
+function persistRemove(token) {
+  if (!persistence || !persistence.remove) return Promise.resolve();
+  return Promise.resolve(persistence.remove(token)).catch((err) => {
+    console.warn('[auth] session remove failed:', err && err.message ? err.message : err);
+  });
+}
+
+async function init(storePersistence) {
+  persistence = storePersistence || null;
+  sessions.clear();
+  if (!persistence || !persistence.loadAll) return;
+  try {
+    const all = await persistence.loadAll();
+    const now = Date.now();
+    Object.keys(all || {}).forEach((token) => {
+      const s = all[token];
+      if (!s) return;
+      const exp = typeof s.expiresAt === 'number' ? s.expiresAt : Date.parse(s.expiresAt);
+      if (!exp || exp <= now) return;
+      sessions.set(token, Object.assign({}, s, { expiresAt: exp, createdAt: typeof s.createdAt === 'number' ? s.createdAt : Date.parse(s.createdAt) || now }));
+    });
+    if (persistence.removeExpired) {
+      await persistence.removeExpired().catch(() => {});
+    }
+  } catch (err) {
+    console.warn('[auth] could not load persisted sessions:', err && err.message ? err.message : err);
+  }
+}
+
+async function issue(email, role, meta) {
   const token = crypto.randomBytes(32).toString('base64url');
   const csrfToken = crypto.randomBytes(32).toString('base64url');
+  const now = Date.now();
   const session = {
-    email,
+    email: String(email || '').toLowerCase(),
     role: role || 'admin',
     csrfToken,
-    createdAt: Date.now(),
-    expiresAt: Date.now() + SESSION_TTL_MS
+    userId: meta && meta.userId ? meta.userId : null,
+    createdAt: now,
+    expiresAt: now + SESSION_TTL_MS,
+    lastSeenAt: now,
+    ip: meta && meta.ip ? String(meta.ip).slice(0, 120) : '',
+    userAgent: meta && meta.userAgent ? String(meta.userAgent).slice(0, 400) : ''
   };
   sessions.set(token, session);
+  await persistSave(token, session);
   return { token, csrfToken, session };
 }
 
@@ -53,22 +112,43 @@ function read(token) {
   if (!token) return null;
   const session = sessions.get(token);
   if (!session) return null;
-  if (session.expiresAt <= Date.now()) {
+  const now = Date.now();
+  if (session.expiresAt <= now) {
     sessions.delete(token);
+    persistRemove(token);
     return null;
+  }
+  // Sliding refresh: extend expiry if session is active and nearing end/aging
+  const last = session.lastSeenAt || session.createdAt || now;
+  if (now - last > SESSION_REFRESH_MS || session.expiresAt - now < SESSION_REFRESH_MS) {
+    session.lastSeenAt = now;
+    session.expiresAt = now + SESSION_TTL_MS;
+    persistSave(token, session);
+  } else {
+    session.lastSeenAt = now;
   }
   return session;
 }
 
-function rotate(token) {
+async function rotate(token, meta) {
   const current = read(token);
   if (!current) return null;
   sessions.delete(token);
-  return issue(current.email, current.role);
+  await persistRemove(token);
+  return issue(current.email, current.role, Object.assign({ userId: current.userId }, meta || {}));
 }
 
-function revoke(token) {
-  if (token) sessions.delete(token);
+async function revoke(token) {
+  if (!token) return;
+  sessions.delete(token);
+  await persistRemove(token);
+}
+
+async function revokeAllForEmail(email) {
+  const needle = String(email || '').toLowerCase();
+  const tokens = [];
+  sessions.forEach((s, t) => { if (String(s.email || '').toLowerCase() === needle) tokens.push(t); });
+  await Promise.all(tokens.map((t) => revoke(t)));
 }
 
 function parseCookies(header) {
@@ -130,12 +210,41 @@ function clearAttempts(ip) {
   attempts.delete(ip);
 }
 
-// Drop expired sessions every 15 minutes.
+function makeResetToken() {
+  const token = crypto.randomBytes(24).toString('base64url');
+  return { token, expiresAt: new Date(Date.now() + RESET_TTL_MS).toISOString() };
+}
+
+function randomId(prefix) {
+  return (prefix || 'USR') + '-' + crypto.randomBytes(6).toString('hex').toUpperCase();
+}
+
+function publicUser(user) {
+  if (!user) return null;
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name || '',
+    role: user.role || 'advisor',
+    active: user.active !== false,
+    createdAt: user.createdAt || null,
+    updatedAt: user.updatedAt || null,
+    lastLoginAt: user.lastLoginAt || null,
+    passwordChangedAt: user.passwordChangedAt || null
+  };
+}
+
+// Sweep expired sessions (memory + persisted) every 15 minutes.
 const sweeper = setInterval(() => {
   const now = Date.now();
+  const expired = [];
   sessions.forEach((session, token) => {
-    if (session.expiresAt <= now) sessions.delete(token);
+    if (session.expiresAt <= now) { sessions.delete(token); expired.push(token); }
   });
+  if (persistence) {
+    expired.forEach((t) => persistRemove(t));
+    if (persistence.removeExpired) persistence.removeExpired().catch(() => {});
+  }
   attempts.forEach((record, ip) => {
     if (record.resetAt <= now) attempts.delete(ip);
   });
@@ -145,16 +254,23 @@ if (sweeper.unref) sweeper.unref();
 module.exports = {
   COOKIE_NAME,
   SESSION_TTL_MS,
+  RESET_TTL_MS,
   createCredential,
+  setPassword,
   verifyPassword,
+  init,
   issue,
   read,
   rotate,
   revoke,
+  revokeAllForEmail,
   tokenFrom,
   cookieHeader,
   clearCookieHeader,
   tooManyAttempts,
   noteFailedAttempt,
-  clearAttempts
+  clearAttempts,
+  makeResetToken,
+  randomId,
+  publicUser
 };

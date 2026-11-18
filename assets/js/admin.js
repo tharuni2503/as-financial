@@ -317,6 +317,8 @@
   let currentView = 'overview';
   let activeLeadId = null;
   let charts = {};
+  let currentUser = null;
+  let pendingResetToken = '';
 
   function loadData() {
     leads = store.get('as_leads', []);
@@ -653,10 +655,20 @@
   }
 
   /* ---------------------------------------------------------------- auth */
+  function showLoginPanel(which) {
+    const loginForm = $('#login-form');
+    const forgot = $('#forgot-panel');
+    const reset = $('#reset-panel');
+    if (loginForm) loginForm.classList.toggle('hidden', which !== 'login');
+    if (forgot) forgot.classList.toggle('hidden', which !== 'forgot');
+    if (reset) reset.classList.toggle('hidden', which !== 'reset');
+  }
+
   function showLogin(message) {
     $('#login-screen').classList.remove('hidden');
     $('#admin-app').classList.add('hidden');
     document.body.style.overflow = '';
+    showLoginPanel(pendingResetToken ? 'reset' : 'login');
     const err = $('#login-error');
     if (err) {
       if (message) { err.textContent = message; err.classList.add('show'); }
@@ -665,10 +677,29 @@
     try { sessionStorage.removeItem('as_admin_ui'); localStorage.removeItem('as_admin_ui'); } catch (e) {}
   }
 
+  function roleLabel(role) {
+    const map = { super_admin: 'Super admin', admin: 'Admin', staff: 'Staff', advisor: 'Advisor' };
+    return map[role] || role || 'User';
+  }
+
+  function renderAccount() {
+    const user = currentUser || {};
+    const email = user.email || '';
+    const displayName = user.name || (email.indexOf('@') > 0 ? email.split('@')[0] : 'Admin');
+    const niceName = displayName ? displayName.charAt(0).toUpperCase() + displayName.slice(1) : 'Admin';
+    const av = $('#account-avatar'); if (av) av.textContent = initials(niceName || email || 'A');
+    const nm = $('#account-name'); if (nm) nm.textContent = niceName || email || 'Administrator';
+    const em = $('#account-email'); if (em) em.textContent = email || 'Signed in';
+    const rl = $('#account-role'); if (rl) rl.textContent = roleLabel(user.role);
+    const um = $('#user-management-card');
+    if (um) um.style.display = (user.role === 'super_admin' || user.role === 'admin') ? '' : 'none';
+  }
+
   function enterApp(user, remember) {
+    currentUser = user || null;
     const email = (user && user.email) || 'admin';
-    const name = email.indexOf('@') > 0 ? email.split('@')[0] : 'Admin';
-    const display = name.charAt(0).toUpperCase() + name.slice(1);
+    const rawName = (user && user.name) || (email.indexOf('@') > 0 ? email.split('@')[0] : 'Admin');
+    const display = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1) : 'Admin';
     $('#login-screen').classList.add('hidden');
     $('#admin-app').classList.remove('hidden');
     $('#login-error').classList.remove('show');
@@ -680,6 +711,7 @@
     const d = new Date();
     $('#topbar-date').textContent = d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     $('#last-signin').textContent = 'Today, ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    renderAccount();
     try {
       if (remember) localStorage.setItem('as_admin_ui', email);
       else localStorage.removeItem('as_admin_ui');
@@ -689,11 +721,13 @@
     renderAll();
     syncServerEnquiries();
     setView('overview', true);
+    if (currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin')) loadUsers();
     document.dispatchEvent(new Event('as:auth-ready'));
   }
 
   function logout() {
     const finish = () => {
+      currentUser = null;
       try { sessionStorage.removeItem('as_admin_ui'); localStorage.removeItem('as_admin_ui'); } catch (e) {}
       showLogin();
       toast('You have been signed out.');
@@ -703,6 +737,42 @@
     } else {
       finish();
     }
+  }
+
+  function showMsg(el, text, tone) {
+    if (!el) return;
+    el.textContent = text || '';
+    el.style.display = text ? '' : 'none';
+    el.dataset.tone = tone || 'info';
+  }
+
+  async function loadUsers() {
+    const api = window.ASBackend;
+    if (!api || !currentUser || (currentUser.role !== 'super_admin' && currentUser.role !== 'admin')) return;
+    try {
+      const data = await api.request('api/users');
+      renderUsers((data && data.users) || []);
+    } catch (e) {
+      renderUsers([], e && e.message ? e.message : 'Could not load users.');
+    }
+  }
+
+  function renderUsers(users, error) {
+    const tbody = $('#users-table-body');
+    if (!tbody) return;
+    if (error) { tbody.innerHTML = '<tr><td colspan="5" class="table-empty">' + esc(error) + '</td></tr>'; return; }
+    if (!users || !users.length) { tbody.innerHTML = '<tr><td colspan="5" class="table-empty">No users found.</td></tr>'; return; }
+    const canManage = currentUser && currentUser.role === 'super_admin';
+    tbody.innerHTML = users.map(u => {
+      const status = u.active === false ? '<span class="badge">Inactive</span>' : '<span class="badge badge-active">Active</span>';
+      const actions = canManage
+        ? '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+            '<button class="a-btn a-btn-light a-btn-sm" data-user-action="toggle" data-id="' + esc(u.id) + '" data-active="' + (u.active === false ? '0' : '1') + '">' + (u.active === false ? 'Activate' : 'Deactivate') + '</button>' +
+            '<button class="a-btn a-btn-light a-btn-sm" data-user-action="reset-token" data-id="' + esc(u.id) + '">Reset link</button>' +
+          '</div>'
+        : '<span style="color:var(--muted);font-size:.75rem">View only</span>';
+      return '<tr><td>' + esc(u.name || '—') + '</td><td>' + esc(u.email || '') + '</td><td>' + esc(roleLabel(u.role)) + '</td><td>' + status + '</td><td>' + actions + '</td></tr>';
+    }).join('');
   }
 
   /* ---------------------------------------------------------------- navigation */
@@ -1527,6 +1597,8 @@
     const n = settings.notifications || {};
     const toggles = { 'notif-leads': n.leads, 'notif-apps': n.apps, 'notif-weekly': n.weekly, 'notif-whatsapp': n.whatsapp };
     Object.entries(toggles).forEach(([id, val]) => { const el = $('#' + id); if (el) el.checked = !!val; });
+    renderAccount();
+    if (currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin')) loadUsers();
   }
 
   /* ---------------------------------------------------------------- modal */
@@ -1677,6 +1749,121 @@
     ['logout-btn', 'sidebar-logout'].forEach(id => {
       const el = $('#' + id);
       if (el) el.addEventListener('click', logout);
+    });
+
+    // forgot / reset password
+    const forgotBtn = $('#forgot-password-btn');
+    if (forgotBtn) forgotBtn.addEventListener('click', () => { showLoginPanel('forgot'); const e = $('#login-error'); if (e) e.classList.remove('show'); });
+    const forgotBack = $('#forgot-back-btn');
+    if (forgotBack) forgotBack.addEventListener('click', () => showLoginPanel('login'));
+    const resetBack = $('#reset-back-btn');
+    if (resetBack) resetBack.addEventListener('click', () => { pendingResetToken = ''; history.replaceState(null, '', location.pathname + location.hash); showLoginPanel('login'); });
+    const forgotForm = $('#forgot-form');
+    if (forgotForm) forgotForm.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const api = window.ASBackend;
+      const resultEl = $('#forgot-result');
+      const email = ($('#forgot-email') && $('#forgot-email').value || '').trim().toLowerCase();
+      if (!api || !email) return;
+      showMsg(resultEl, 'Requesting reset…', 'info');
+      api.request('api/forgot-password', { method: 'POST', body: { email } }).then((res) => {
+        let msg = (res && res.message) || 'If an account exists for that email, reset instructions have been prepared.';
+        if (res && res.devResetUrl) {
+          msg += ' Development reset link: ' + location.origin + res.devResetUrl;
+          if (res.devResetToken) { pendingResetToken = res.devResetToken; }
+        }
+        showMsg(resultEl, msg, 'ok');
+        if (res && res.devResetToken) { showLoginPanel('reset'); }
+      }).catch((err) => showMsg(resultEl, (err && err.message) || 'Could not request password reset.', 'error'));
+    });
+    const resetForm = $('#reset-form');
+    if (resetForm) resetForm.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const api = window.ASBackend;
+      const resultEl = $('#reset-result');
+      const pw = ($('#reset-password') && $('#reset-password').value) || '';
+      const confirm = ($('#reset-password-confirm') && $('#reset-password-confirm').value) || '';
+      if (!pendingResetToken) { showMsg(resultEl, 'Reset link is missing or invalid. Please request a new one.', 'error'); return; }
+      if (pw.length < 6) { showMsg(resultEl, 'Password must be at least 6 characters.', 'error'); return; }
+      if (pw !== confirm) { showMsg(resultEl, 'Passwords do not match.', 'error'); return; }
+      showMsg(resultEl, 'Updating password…', 'info');
+      api.request('api/reset-password', { method: 'POST', body: { token: pendingResetToken, newPassword: pw } }).then((res) => {
+        showMsg(resultEl, (res && res.message) || 'Password updated. You can now sign in.', 'ok');
+        pendingResetToken = '';
+        history.replaceState(null, '', location.pathname + location.hash);
+        if ($('#reset-password')) $('#reset-password').value = '';
+        if ($('#reset-password-confirm')) $('#reset-password-confirm').value = '';
+        setTimeout(() => showLoginPanel('login'), 800);
+      }).catch((err) => showMsg(resultEl, (err && err.message) || 'Could not reset password.', 'error'));
+    });
+
+    // change password (settings)
+    const cpForm = $('#change-password-form');
+    if (cpForm) cpForm.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const api = window.ASBackend;
+      const msg = $('#change-password-msg');
+      const currentPassword = ($('#cp-current') && $('#cp-current').value) || '';
+      const newPassword = ($('#cp-new') && $('#cp-new').value) || '';
+      const confirm = ($('#cp-confirm') && $('#cp-confirm').value) || '';
+      if (newPassword.length < 6) { showMsg(msg, 'New password must be at least 6 characters.', 'error'); return; }
+      if (newPassword !== confirm) { showMsg(msg, 'New passwords do not match.', 'error'); return; }
+      showMsg(msg, 'Updating password…', 'info');
+      api.request('api/change-password', { method: 'POST', body: { currentPassword, newPassword } }).then((res) => {
+        showMsg(msg, 'Password updated. Other sessions were signed out.', 'ok');
+        if (res) currentUser = Object.assign({}, currentUser || {}, res);
+        if ($('#cp-current')) $('#cp-current').value = '';
+        if ($('#cp-new')) $('#cp-new').value = '';
+        if ($('#cp-confirm')) $('#cp-confirm').value = '';
+        renderAccount();
+        toast('Password updated.');
+      }).catch((err) => showMsg(msg, (err && err.message) || 'Could not change password.', 'error'));
+    });
+
+    // user management
+    const refreshUsersBtn = $('#refresh-users-btn');
+    if (refreshUsersBtn) refreshUsersBtn.addEventListener('click', () => loadUsers());
+    const createUserForm = $('#create-user-form');
+    if (createUserForm) createUserForm.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      if (!currentUser || currentUser.role !== 'super_admin') return;
+      const api = window.ASBackend;
+      const msg = $('#users-msg');
+      const body = {
+        name: ($('#nu-name') && $('#nu-name').value || '').trim(),
+        email: ($('#nu-email') && $('#nu-email').value || '').trim().toLowerCase(),
+        role: ($('#nu-role') && $('#nu-role').value) || 'advisor',
+        password: ($('#nu-password') && $('#nu-password').value) || ''
+      };
+      showMsg(msg, 'Creating user…', 'info');
+      api.request('api/users', { method: 'POST', body }).then((res) => {
+        showMsg(msg, 'User created: ' + ((res && res.user && res.user.email) || body.email), 'ok');
+        createUserForm.reset();
+        loadUsers();
+      }).catch((err) => showMsg(msg, (err && err.message) || 'Could not create user.', 'error'));
+    });
+    const usersTbody = $('#users-table-body');
+    if (usersTbody) usersTbody.addEventListener('click', (ev) => {
+      const btn = ev.target && ev.target.closest ? ev.target.closest('[data-user-action]') : null;
+      if (!btn || !currentUser || currentUser.role !== 'super_admin') return;
+      const action = btn.getAttribute('data-user-action');
+      const id = btn.getAttribute('data-id');
+      const api = window.ASBackend;
+      const msg = $('#users-msg');
+      if (action === 'toggle') {
+        const isActive = btn.getAttribute('data-active') === '1';
+        showMsg(msg, (isActive ? 'Deactivating…' : 'Activating…'), 'info');
+        api.request('api/users/' + encodeURIComponent(id), { method: 'PATCH', body: { active: !isActive } }).then(() => {
+          showMsg(msg, isActive ? 'User deactivated.' : 'User activated.', 'ok');
+          loadUsers();
+        }).catch((err) => showMsg(msg, (err && err.message) || 'Could not update user.', 'error'));
+      } else if (action === 'reset-token') {
+        showMsg(msg, 'Generating reset link…', 'info');
+        api.request('api/users/' + encodeURIComponent(id) + '/reset-token', { method: 'POST', body: {} }).then((res) => {
+          const url = res && res.resetUrl ? (location.origin + res.resetUrl) : '';
+          showMsg(msg, 'Reset link generated' + (url ? ': ' + url : '.') + (res && res.expiresAt ? ' (expires ' + new Date(res.expiresAt).toLocaleString() + ')' : ''), 'ok');
+        }).catch((err) => showMsg(msg, (err && err.message) || 'Could not generate reset link.', 'error'));
+      }
     });
 
     // nav
@@ -2017,6 +2204,9 @@
     loadData();
     bindEvents();
     $('#login-year').textContent = new Date().getFullYear();
+    try {
+      pendingResetToken = (new URLSearchParams(location.search).get('reset') || '').trim();
+    } catch (e) { pendingResetToken = ''; }
     showLogin();
 
     const api = window.ASBackend;
