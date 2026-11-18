@@ -660,55 +660,6 @@
   }).join('');
 })();
 
-/* ---------- gallery show more ---------- */
-(function () {
-  const grid = document.querySelector('.gal-grid[data-gallery]');
-  const btn = document.querySelector('[data-gallery-more]');
-  if (!grid || !btn) return;
-
-  const LIMIT = 6;
-  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  function sync() {
-    const total = grid.querySelectorAll('.gal-item').length;
-    if (total <= LIMIT) {
-      grid.classList.remove('is-collapsed');
-      btn.hidden = true;
-      btn.setAttribute('aria-expanded', 'true');
-      return;
-    }
-    btn.hidden = false;
-    const expanded = !grid.classList.contains('is-collapsed');
-    btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-    btn.textContent = expanded ? 'Show fewer posters' : 'Show all posters (' + total + ')';
-  }
-
-  function start() {
-    if (grid.querySelectorAll('.gal-item').length > LIMIT) grid.classList.add('is-collapsed');
-    sync();
-  }
-
-  btn.addEventListener('click', () => {
-    const collapsing = !grid.classList.contains('is-collapsed');
-    grid.classList.toggle('is-collapsed', collapsing);
-    if (!collapsing) {
-      // Newly revealed tiles must not wait for the reveal observer.
-      grid.querySelectorAll('.gal-item:not(.in)').forEach((el) => el.classList.add('in'));
-    }
-    sync();
-    if (collapsing) {
-      const offset = grid.getBoundingClientRect().top + window.scrollY - 110;
-      window.scrollTo({ top: Math.max(0, offset), behavior: reduce ? 'auto' : 'smooth' });
-    }
-  });
-
-  start();
-  // Admin content re-renders this grid, so re-apply whenever items change.
-  if ('MutationObserver' in window) {
-    new MutationObserver(sync).observe(grid, { childList: true });
-  }
-})();
-
 /* ---------- gallery lightbox ---------- */
 (function () {
   const dialog = document.getElementById('gallery-lightbox');
