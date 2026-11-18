@@ -642,19 +642,28 @@ input, select, textarea { max-width: 100%; }
 
 
 /* ---------- Gallery & Google reviews ---------- */
-.gal-grid { columns: 3 260px; column-gap: 18px; margin-top: 20px; }
+.gal-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 22px; }
+.gal-grid.is-collapsed .gal-item:nth-child(n+7) { display: none; }
 .gal-item {
-  display: block; width: 100%; margin: 0 0 18px; padding: 0;
+  display: flex; flex-direction: column; width: 100%; margin: 0; padding: 0;
   border: 1px solid var(--line); border-radius: 18px; background: #fff;
-  overflow: hidden; cursor: zoom-in; break-inside: avoid; text-align: left;
+  overflow: hidden; cursor: zoom-in; text-align: left;
   font-family: inherit; box-shadow: var(--shadow-sm);
   transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
 }
 .gal-item:hover { transform: translateY(-4px); border-color: #DCCB9B; box-shadow: var(--shadow); }
 .gal-item:focus-visible { outline: 3px solid rgba(16, 41, 77, .45); outline-offset: 3px; }
-.gal-item img { display: block; width: 100%; height: auto; }
-.gal-item span { display: block; padding: 10px 14px; font-size: .8rem; font-weight: 700; color: var(--navy); border-top: 1px solid var(--line); }
-.gal-note { text-align: center; font-size: .74rem; color: #566a7e; margin-top: 6px; }
+.gal-item img {
+  display: block; width: 100%; aspect-ratio: 1 / 1;
+  object-fit: contain; object-position: center;
+  background: #f7f3ea; padding: 10px;
+}
+.gal-item span {
+  display: block; margin-top: auto; padding: 10px 14px;
+  font-size: .8rem; font-weight: 700; color: var(--navy); border-top: 1px solid var(--line);
+}
+.gal-more-wrap { display: flex; justify-content: center; margin-top: 22px; }
+.gal-note { text-align: center; font-size: .74rem; color: #566a7e; margin-top: 12px; }
 
 .gallery-lightbox { width: fit-content; max-width: min(96vw, 1220px); max-height: 92vh; padding: 0; border: 0; border-radius: 16px; background: transparent; overflow: visible; }
 .gallery-lightbox::backdrop { background: rgba(10, 20, 40, .9); }
@@ -672,14 +681,14 @@ body.lb-open { overflow: hidden; }
 .testi-grid .testi-quote { margin-bottom: 20px; }
 .testi-cta { text-align: center; margin-top: 20px; }
 
-@media (max-width: 900px) { .gal-grid { columns: 2 220px; } }
+@media (max-width: 900px) { .gal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; } }
 @media (max-width: 640px) {
-  .gal-grid { column-gap: 12px; }
-  .gal-item { margin-bottom: 12px; border-radius: 14px; }
+  .gal-grid { gap: 12px; }
+  .gal-item { border-radius: 14px; }
   .gal-item span { padding: 8px 10px; font-size: .72rem; }
   .gallery-close { top: 12px; right: 12px; width: 42px; height: 42px; }
 }
-@media (max-width: 560px) { .gal-grid { columns: 1; } }
+@media (max-width: 560px) { .gal-grid { grid-template-columns: 1fr; } }
 
 /* ---------- Ambak-style calculator ---------- */
 .ambak-calc {
