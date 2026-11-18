@@ -772,12 +772,11 @@ p:last-child { margin-bottom: 0; }
   background: #fff; border: 1px solid var(--gold);
   color: #a9822f; font-family: var(--serif); font-size: 1.3rem;
   display: grid; place-items: center; margin: 0;
-  box-shadow: 0 0 0 6px var(--cream, #fbf8f2);
   transition: background .35s ease, color .35s ease, border-color .35s ease, box-shadow .35s ease, transform .35s ease;
 }
 .steps .step.is-active .step-num {
   background: var(--gold); border-color: var(--gold-deep, #a9822f); color: #3b2b06;
-  box-shadow: 0 0 0 6px var(--cream, #fbf8f2), 0 12px 24px -12px rgba(169, 130, 47, .55);
+  box-shadow: 0 12px 22px -12px rgba(169, 130, 47, .55);
   transform: scale(1.06);
 }
 .steps .step.is-done .step-num { background: #f6ecd4; border-color: #e3cf9f; color: #8a6a1f; }
@@ -791,7 +790,7 @@ p:last-child { margin-bottom: 0; }
     grid-template-columns: 48px 1fr; grid-template-areas: "num h3" "num p";
     column-gap: 14px; text-align: left;
   }
-  .steps .step-num { width: 48px; height: 48px; font-size: 1.1rem; box-shadow: 0 0 0 5px var(--cream, #fbf8f2); }
+  .steps .step-num { width: 48px; height: 48px; font-size: 1.1rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   .step, .step-num, .steps::after { transition: none; }
@@ -1021,7 +1020,10 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
 @media (max-width: 560px) { .site-footer { padding-top: 30px; } .footer-grid { grid-template-columns: 1fr; gap: 22px; padding-bottom: 22px; } }
 
 /* ---------- Floating actions ---------- */
-.float-actions { position: fixed; right: 18px; bottom: 18px; z-index: 90; display: grid; gap: 10px; justify-items: end; }
+.float-actions { position: fixed; right: 18px; bottom: 18px; z-index: 90; display: grid; gap: 10px; justify-items: end; transition: opacity .28s ease, transform .28s ease, visibility .28s ease; }
+/* Quick-contact buttons only join once the visitor starts scrolling (JS adds is-deferred). */
+.float-actions.is-deferred { opacity: 0; visibility: hidden; transform: translateY(10px); }
+.float-actions.is-deferred.is-visible { opacity: 1; visibility: visible; transform: none; }
 .fab {
   width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center;
   background: #fff; color: var(--navy-deep); border: 1px solid #d6e4f2; box-shadow: 0 14px 30px -12px rgba(47, 93, 138, .3);

@@ -890,6 +890,19 @@
     window.addEventListener('load', request);
   });
 })();
+/* ---------- floating quick contact: reveal after scroll ---------- */
+(function () {
+  const wrap = document.querySelector('.float-actions');
+  if (!wrap) return;
+  wrap.classList.add('is-deferred');
+  const toggle = () => {
+    const room = document.documentElement.scrollHeight - window.innerHeight;
+    const limit = Math.min(260, Math.max(0, room - 40));
+    wrap.classList.toggle('is-visible', window.scrollY > limit);
+  };
+  window.addEventListener('scroll', toggle, { passive: true });
+  toggle();
+})();
 /* ---------- back to top ---------- */
 (function () {
   if (document.querySelector('.back-to-top')) return;
