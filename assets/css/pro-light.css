@@ -69,7 +69,7 @@ h3, h4 { color: var(--navy); }
 .site-header.scrolled { box-shadow: 0 12px 30px -24px rgba(16, 41, 77, .35); border-bottom-color: var(--line); }
 .brand-logo { height: 56px; width: auto; display: block; }
 .mobile-nav .brand-logo, .footer-brand .brand-logo { height: 46px; }
-.footer-brand .brand-logo { height: 56px; }
+.footer-brand .brand-logo { height: 46px; }
 .nav-link { color: var(--ink); font-weight: 600; }
 .nav-link:hover, .nav-link[aria-current="page"] { color: var(--navy); background: var(--cream); }
 .nav-link[aria-current="page"]::after { content: ''; position: absolute; left: 13px; right: 13px; bottom: 3px; height: 2px; border-radius: 2px; background: var(--gold); }
@@ -601,7 +601,7 @@ input, select, textarea { max-width: 100%; }
 }
 .step h3 { font-size: .96rem; margin-bottom: 4px; letter-spacing: -.01em; }
 .benefit h3 { margin-bottom: 6px; font-size: 1rem; letter-spacing: -.01em; line-height: 1.25; }
-.footer-col h3 { color: var(--navy-deep); font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 18px; }
+.footer-col h3 { color: var(--navy-deep); font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; }
 .danger-zone h3 { color: var(--red); font-size: .84rem; margin-bottom: 4px; letter-spacing: -.01em; }
 .drawer-section h3 { font-size: .7rem; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); margin-bottom: 10px; }
 .empty-state h3 { font-size: .95rem; margin-bottom: 4px; }
