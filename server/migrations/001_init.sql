@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   role TEXT NOT NULL DEFAULT 'admin',
   csrf_token TEXT NOT NULL DEFAULT '',
   user_id TEXT,
+  session_id TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   expires_at TIMESTAMPTZ NOT NULL,
   last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -73,8 +74,11 @@ CREATE TABLE IF NOT EXISTS sessions (
   user_agent TEXT NOT NULL DEFAULT ''
 );
 
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS session_id TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions (expires_at);
 CREATE INDEX IF NOT EXISTS idx_sessions_email ON sessions (email);
+CREATE INDEX IF NOT EXISTS idx_sessions_session_id ON sessions (session_id);
 
 CREATE TABLE IF NOT EXISTS audit_logs (
   id TEXT PRIMARY KEY,

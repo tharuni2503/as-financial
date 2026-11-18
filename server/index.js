@@ -241,6 +241,7 @@ app.get('/api/session', asyncRoute(async (req, res) => {
   if (session.userId && store.findUserById) user = await store.findUserById(session.userId);
   if (!user && store.findUserByEmail) user = await store.findUserByEmail(session.email);
   res.json({
+    sessionId: session.id || null,
     email: session.email,
     role: session.role || 'admin',
     userId: session.userId || (user && user.id) || null,
@@ -482,6 +483,72 @@ app.get('/api/audit', requireSession, requireRole('super_admin', 'admin'), async
   const type = req.query.type ? String(req.query.type) : '';
   const entries = await store.listAudit({ limit, type: type || undefined });
   res.json({ entries });
+}));
+
+app.get('/api/sessions', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
+  const isAdmin = req.session.role === 'admin' || req.session.role === 'super_admin';
+  const scopeAll = isAdmin && String(req.query.scope || '') === 'all';
+  const currentToken = req.authToken || auth.tokenFrom(req);
+  let sessions;
+  if (scopeAll) {
+    sessions = auth.listSessions ? auth.listSessions({ currentToken }) : [];
+  } else {
+    sessions = auth.listSessions ? auth.listSessions({ email: req.session.email, currentToken }) : [];
+  }
+  res.json({ sessions });
+}));
+
+app.post('/api/sessions/revoke-others', requireSession, requireCsrf, asyncRoute(async (req, res) => {
+  const currentToken = req.authToken || auth.tokenFrom(req);
+  const count = auth.revokeOthersForEmail ? await auth.revokeOthersForEmail(req.session.email, currentToken) : 0;
+  audit(req, { type: 'session.revoke_others', summary: 'Revoked ' + count + ' other session(s)', targetType: 'user', targetId: req.session.userId || '' , meta: { count } });
+  res.json({ ok: true, revoked: count });
+}));
+
+app.delete('/api/sessions/:id', requireSession, requireCsrf, asyncRoute(async (req, res) => {
+  const id = String(req.params.id || '');
+  const isAdmin = req.session.role === 'admin' || req.session.role === 'super_admin';
+  const currentToken = req.authToken || auth.tokenFrom(req);
+  // Find session info for authorization/audit
+  const all = auth.listSessions ? auth.listSessions({ currentToken }) : [];
+  const target = all.find((s) => s && s.id === id);
+  if (!target) {
+    // Try scoped to own if not found globally (for non-admin, listSessions all not called)
+    const own = auth.listSessions ? auth.listSessions({ email: req.session.email, currentToken }) : [];
+    const ownTarget = own.find((s) => s && s.id === id);
+    if (!ownTarget) { res.status(404).json({ error: 'Session not found.' }); return; }
+    if (ownTarget.current) { res.status(400).json({ error: 'Use sign out to end your current session.' }); return; }
+    const result = await auth.revokeById(id, currentToken);
+    if (!result || result.revoked === false) { res.status(400).json({ error: result && result.reason === 'current' ? 'Use sign out to end your current session.' : 'Could not revoke session.' }); return; }
+    audit(req, { type: 'session.revoked', summary: 'Revoked session', targetType: 'session', targetId: id, meta: { targetEmail: ownTarget.email } });
+    res.json({ ok: true });
+    return;
+  }
+  if (!isAdmin && String(target.email || '').toLowerCase() !== String(req.session.email || '').toLowerCase()) {
+    res.status(403).json({ error: 'You do not have permission to revoke this session.' });
+    return;
+  }
+  if (target.current) { res.status(400).json({ error: 'Use sign out to end your current session.' }); return; }
+  const result = await auth.revokeById(id, currentToken);
+  if (!result || result.revoked === false) { res.status(400).json({ error: 'Could not revoke session.' }); return; }
+  audit(req, { type: 'session.revoked', summary: 'Revoked session for ' + (target.email || ''), targetType: 'session', targetId: id, meta: { targetEmail: target.email } });
+  res.json({ ok: true });
+}));
+
+app.post('/api/users/:id/revoke-sessions', requireSession, requireRole('super_admin', 'admin'), requireCsrf, asyncRoute(async (req, res) => {
+  const user = await store.findUserById(String(req.params.id || ''));
+  if (!user) { res.status(404).json({ error: 'User not found.' }); return; }
+  const currentToken = req.authToken || auth.tokenFrom(req);
+  const keepCurrent = String(user.email || '').toLowerCase() === String(req.session.email || '').toLowerCase();
+  let count = 0;
+  if (keepCurrent && auth.revokeOthersForEmail) {
+    count = await auth.revokeOthersForEmail(user.email, currentToken);
+  } else if (auth.revokeAllForEmail) {
+    await auth.revokeAllForEmail(user.email);
+    count = -1; // unknown/all
+  }
+  audit(req, { type: 'session.revoke_user', summary: 'Revoked sessions for ' + user.email, targetType: 'user', targetId: user.id, meta: { keepCurrent } });
+  res.json({ ok: true, revoked: count, keepCurrent });
 }));
 
 app.post('/api/users', requireSession, requireRole('super_admin'), requireCsrf, asyncRoute(async (req, res) => {

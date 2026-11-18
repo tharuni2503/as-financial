@@ -231,7 +231,7 @@ async function deleteExpiredSessions() {
   let changed = false;
   Object.keys(db.sessions).forEach((token) => {
     const s = db.sessions[token];
-    const exp = s && s.expiresAt ? Date.parse(s.expiresAt) : 0;
+    const exp = s && s.expiresAt ? (typeof s.expiresAt === 'number' ? s.expiresAt : Date.parse(s.expiresAt)) : 0;
     if (!exp || exp <= now) {
       delete db.sessions[token];
       changed = true;
@@ -239,6 +239,67 @@ async function deleteExpiredSessions() {
   });
   if (changed) await save();
   return changed;
+}
+
+function publicSession(session, token, currentToken) {
+  if (!session) return null;
+  const createdAt = typeof session.createdAt === 'number' ? session.createdAt : Date.parse(session.createdAt);
+  const expiresAt = typeof session.expiresAt === 'number' ? session.expiresAt : Date.parse(session.expiresAt);
+  const lastSeenAt = typeof session.lastSeenAt === 'number' ? session.lastSeenAt : Date.parse(session.lastSeenAt);
+  return {
+    id: session.id || null,
+    email: session.email || '',
+    role: session.role || '',
+    userId: session.userId || null,
+    createdAt: createdAt ? new Date(createdAt).toISOString() : null,
+    expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
+    lastSeenAt: lastSeenAt ? new Date(lastSeenAt).toISOString() : null,
+    ip: session.ip || '',
+    userAgent: session.userAgent || '',
+    current: Boolean(currentToken && token && token === currentToken)
+  };
+}
+
+async function listSessions(options) {
+  const opts = options || {};
+  const now = Date.now();
+  const items = [];
+  Object.keys(db.sessions).forEach((token) => {
+    const s = db.sessions[token];
+    if (!s) return;
+    const exp = typeof s.expiresAt === 'number' ? s.expiresAt : Date.parse(s.expiresAt);
+    if (!exp || exp <= now) return;
+    if (opts.email && String(s.email || '').toLowerCase() !== String(opts.email).toLowerCase()) return;
+    if (opts.userId && String(s.userId || '') !== String(opts.userId)) return;
+    items.push(publicSession(s, token, opts.currentToken));
+  });
+  items.sort((a, b) => String(b.lastSeenAt || '').localeCompare(String(a.lastSeenAt || '')));
+  return items.slice(0, 200);
+}
+
+async function deleteSessionById(id) {
+  if (!id) return false;
+  const token = Object.keys(db.sessions).find((t) => db.sessions[t] && db.sessions[t].id === id);
+  if (!token) return false;
+  delete db.sessions[token];
+  await save();
+  return true;
+}
+
+async function deleteSessionsForEmail(email, exceptToken) {
+  const needle = String(email || '').toLowerCase();
+  if (!needle) return 0;
+  let count = 0;
+  Object.keys(db.sessions).forEach((token) => {
+    const s = db.sessions[token];
+    if (!s) return;
+    if (String(s.email || '').toLowerCase() !== needle) return;
+    if (exceptToken && token === exceptToken) return;
+    delete db.sessions[token];
+    count += 1;
+  });
+  if (count) await save();
+  return count;
 }
 
 /* ---------------------------------------------------------------- audit */
@@ -323,6 +384,9 @@ module.exports = {
   saveSession,
   deleteSession,
   deleteExpiredSessions,
+  listSessions,
+  deleteSessionById,
+  deleteSessionsForEmail,
   addAudit,
   listAudit,
   stats,

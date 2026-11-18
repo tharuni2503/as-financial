@@ -289,6 +289,7 @@ async function deleteUser(id) {
 function rowToSession(row) {
   if (!row) return null;
   return {
+    id: row.session_id || null,
     token: row.token,
     email: row.email,
     role: row.role || 'admin',
@@ -318,10 +319,10 @@ async function allSessions() {
 async function saveSession(token, session) {
   if (!token || !session) return;
   await getPool().query(
-    `INSERT INTO sessions (token, email, role, csrf_token, user_id, created_at, expires_at, last_seen_at, ip, user_agent)
-     VALUES ($1,$2,$3,$4,$5,to_timestamp($6/1000.0),to_timestamp($7/1000.0),to_timestamp($8/1000.0),$9,$10)
+    `INSERT INTO sessions (token, email, role, csrf_token, user_id, session_id, created_at, expires_at, last_seen_at, ip, user_agent)
+     VALUES ($1,$2,$3,$4,$5,$6,to_timestamp($7/1000.0),to_timestamp($8/1000.0),to_timestamp($9/1000.0),$10,$11)
      ON CONFLICT (token) DO UPDATE SET
-       email=EXCLUDED.email, role=EXCLUDED.role, csrf_token=EXCLUDED.csrf_token, user_id=EXCLUDED.user_id,
+       email=EXCLUDED.email, role=EXCLUDED.role, csrf_token=EXCLUDED.csrf_token, user_id=EXCLUDED.user_id, session_id=EXCLUDED.session_id,
        expires_at=EXCLUDED.expires_at, last_seen_at=EXCLUDED.last_seen_at, ip=EXCLUDED.ip, user_agent=EXCLUDED.user_agent`,
     [
       token,
@@ -329,6 +330,7 @@ async function saveSession(token, session) {
       String(session.role || 'admin'),
       String(session.csrfToken || ''),
       session.userId || null,
+      session.id || null,
       Number(session.createdAt || Date.now()),
       Number(session.expiresAt || Date.now()),
       Number(session.lastSeenAt || Date.now()),
@@ -347,6 +349,50 @@ async function deleteSession(token) {
 async function deleteExpiredSessions() {
   const res = await getPool().query('DELETE FROM sessions WHERE expires_at <= NOW()');
   return res.rowCount > 0;
+}
+
+function publicSession(rowOrSession, currentToken) {
+  if (!rowOrSession) return null;
+  return {
+    id: rowOrSession.id || null,
+    email: rowOrSession.email || '',
+    role: rowOrSession.role || '',
+    userId: rowOrSession.userId || null,
+    createdAt: rowOrSession.createdAt ? new Date(rowOrSession.createdAt).toISOString() : null,
+    expiresAt: rowOrSession.expiresAt ? new Date(rowOrSession.expiresAt).toISOString() : null,
+    lastSeenAt: rowOrSession.lastSeenAt ? new Date(rowOrSession.lastSeenAt).toISOString() : null,
+    ip: rowOrSession.ip || '',
+    userAgent: rowOrSession.userAgent || '',
+    current: Boolean(currentToken && rowOrSession.token && rowOrSession.token === currentToken)
+  };
+}
+
+async function listSessions(options) {
+  const opts = options || {};
+  const params = [];
+  const where = ['expires_at > NOW()'];
+  if (opts.email) { params.push(String(opts.email).toLowerCase()); where.push('LOWER(email) = $' + params.length); }
+  if (opts.userId) { params.push(String(opts.userId)); where.push('user_id = $' + params.length); }
+  const sql = 'SELECT * FROM sessions WHERE ' + where.join(' AND ') + ' ORDER BY last_seen_at DESC LIMIT 200';
+  const res = await getPool().query(sql, params);
+  return res.rows.map((row) => publicSession(rowToSession(row), opts.currentToken));
+}
+
+async function deleteSessionById(id) {
+  if (!id) return false;
+  const res = await getPool().query('DELETE FROM sessions WHERE session_id = $1', [String(id)]);
+  return res.rowCount > 0;
+}
+
+async function deleteSessionsForEmail(email, exceptToken) {
+  const needle = String(email || '').toLowerCase();
+  if (!needle) return 0;
+  if (exceptToken) {
+    const res = await getPool().query('DELETE FROM sessions WHERE LOWER(email) = $1 AND token <> $2', [needle, exceptToken]);
+    return res.rowCount || 0;
+  }
+  const res = await getPool().query('DELETE FROM sessions WHERE LOWER(email) = $1', [needle]);
+  return res.rowCount || 0;
 }
 
 /* ---------------------------------------------------------------- audit */
@@ -470,6 +516,9 @@ module.exports = {
   saveSession,
   deleteSession,
   deleteExpiredSessions,
+  listSessions,
+  deleteSessionById,
+  deleteSessionsForEmail,
   addAudit,
   listAudit,
   stats,

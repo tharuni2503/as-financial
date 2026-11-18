@@ -78,7 +78,12 @@ async function init(storePersistence) {
       if (!s) return;
       const exp = typeof s.expiresAt === 'number' ? s.expiresAt : Date.parse(s.expiresAt);
       if (!exp || exp <= now) return;
-      sessions.set(token, Object.assign({}, s, { expiresAt: exp, createdAt: typeof s.createdAt === 'number' ? s.createdAt : Date.parse(s.createdAt) || now }));
+      sessions.set(token, Object.assign({}, s, {
+        id: s.id || null,
+        expiresAt: exp,
+        createdAt: typeof s.createdAt === 'number' ? s.createdAt : Date.parse(s.createdAt) || now,
+        lastSeenAt: typeof s.lastSeenAt === 'number' ? s.lastSeenAt : (Date.parse(s.lastSeenAt) || now)
+      }));
     });
     if (persistence.removeExpired) {
       await persistence.removeExpired().catch(() => {});
@@ -93,6 +98,7 @@ async function issue(email, role, meta) {
   const csrfToken = crypto.randomBytes(32).toString('base64url');
   const now = Date.now();
   const session = {
+    id: crypto.randomBytes(12).toString('base64url'),
     email: String(email || '').toLowerCase(),
     role: role || 'admin',
     csrfToken,
@@ -149,6 +155,60 @@ async function revokeAllForEmail(email) {
   const tokens = [];
   sessions.forEach((s, t) => { if (String(s.email || '').toLowerCase() === needle) tokens.push(t); });
   await Promise.all(tokens.map((t) => revoke(t)));
+}
+
+function publicSessionInfo(session, token, currentToken) {
+  if (!session) return null;
+  return {
+    id: session.id || null,
+    email: session.email || '',
+    role: session.role || '',
+    userId: session.userId || null,
+    createdAt: session.createdAt ? new Date(session.createdAt).toISOString() : null,
+    expiresAt: session.expiresAt ? new Date(session.expiresAt).toISOString() : null,
+    lastSeenAt: session.lastSeenAt ? new Date(session.lastSeenAt).toISOString() : null,
+    ip: session.ip || '',
+    userAgent: session.userAgent || '',
+    current: Boolean(currentToken && token === currentToken)
+  };
+}
+
+function listSessions(options) {
+  const opts = options || {};
+  const now = Date.now();
+  const items = [];
+  sessions.forEach((s, token) => {
+    if (!s || s.expiresAt <= now) return;
+    if (opts.email && String(s.email || '').toLowerCase() !== String(opts.email).toLowerCase()) return;
+    if (opts.userId && String(s.userId || '') !== String(opts.userId)) return;
+    items.push(publicSessionInfo(s, token, opts.currentToken));
+  });
+  items.sort((a, b) => String(b.lastSeenAt || '').localeCompare(String(a.lastSeenAt || '')));
+  return items.slice(0, 200);
+}
+
+async function revokeById(id, currentToken) {
+  if (!id) return false;
+  let foundToken = null;
+  let found = null;
+  sessions.forEach((s, t) => {
+    if (!foundToken && s && s.id === id) { foundToken = t; found = s; }
+  });
+  if (!foundToken) return false;
+  if (currentToken && foundToken === currentToken) return { revoked: false, reason: 'current' };
+  await revoke(foundToken);
+  return { revoked: true, session: publicSessionInfo(found, foundToken, currentToken) };
+}
+
+async function revokeOthersForEmail(email, currentToken) {
+  const needle = String(email || '').toLowerCase();
+  if (!needle) return 0;
+  const tokens = [];
+  sessions.forEach((s, t) => {
+    if (String(s.email || '').toLowerCase() === needle && t !== currentToken) tokens.push(t);
+  });
+  await Promise.all(tokens.map((t) => revoke(t)));
+  return tokens.length;
 }
 
 function parseCookies(header) {
@@ -264,6 +324,9 @@ module.exports = {
   rotate,
   revoke,
   revokeAllForEmail,
+  revokeById,
+  revokeOthersForEmail,
+  listSessions,
   tokenFrom,
   cookieHeader,
   clearCookieHeader,

@@ -722,6 +722,7 @@
     renderAll();
     syncServerEnquiries();
     setView('overview', true);
+    loadSessions();
     if (currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin')) { loadUsers(); loadAudit(); }
     document.dispatchEvent(new Event('as:auth-ready'));
   }
@@ -797,6 +798,32 @@
       const actor = (e.actorEmail || '—') + (e.actorRole ? ' (' + esc(roleLabel(e.actorRole)) + ')' : '');
       const details = (e.summary || '') + (e.targetId ? ' [' + esc(e.targetId) + ']' : '');
       return '<tr><td>' + esc(when) + '</td><td>' + esc(e.type || 'event') + '</td><td>' + actor + '</td><td>' + esc(details || '—') + '</td></tr>';
+    }).join('');
+  }
+
+  async function loadSessions() {
+    const api = window.ASBackend;
+    if (!api || !currentUser) return;
+    try {
+      const data = await api.request('api/sessions');
+      renderSessions((data && data.sessions) || []);
+    } catch (e) {
+      renderSessions([], e && e.message ? e.message : 'Could not load sessions.');
+    }
+  }
+
+  function renderSessions(list, error) {
+    const tbody = $('#sessions-table-body');
+    if (!tbody) return;
+    if (error) { tbody.innerHTML = '<tr><td colspan="4" class="table-empty">' + esc(error) + '</td></tr>'; return; }
+    if (!list || !list.length) { tbody.innerHTML = '<tr><td colspan="4" class="table-empty">No active sessions.</td></tr>'; return; }
+    tbody.innerHTML = list.map(s => {
+      const when = s.lastSeenAt ? new Date(s.lastSeenAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+      const ua = String(s.userAgent || '').replace(/\s+/g, ' ').trim();
+      const device = (ua ? ua.slice(0, 60) + (ua.length > 60 ? '…' : '') : 'Unknown device') + (s.ip ? ' · ' + esc(s.ip) : '');
+      const status = s.current ? '<span class="badge badge-active">Current</span>' : '<span class="badge">Active</span>';
+      const action = s.current ? '<span style="color:var(--muted);font-size:.75rem">This session</span>' : '<button class="a-btn a-btn-light a-btn-sm" data-session-revoke="' + esc(s.id || '') + '">Sign out</button>';
+      return '<tr><td>' + esc(when) + '</td><td title="' + esc(s.userAgent || '') + '">' + device + '</td><td>' + status + '</td><td>' + action + '</td></tr>';
     }).join('');
   }
 
@@ -1623,6 +1650,7 @@
     const toggles = { 'notif-leads': n.leads, 'notif-apps': n.apps, 'notif-weekly': n.weekly, 'notif-whatsapp': n.whatsapp };
     Object.entries(toggles).forEach(([id, val]) => { const el = $('#' + id); if (el) el.checked = !!val; });
     renderAccount();
+    loadSessions();
     if (currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin')) { loadUsers(); loadAudit(); }
   }
 
@@ -1850,6 +1878,31 @@
     if (refreshUsersBtn) refreshUsersBtn.addEventListener('click', () => loadUsers());
     const refreshAuditBtn = $('#refresh-audit-btn');
     if (refreshAuditBtn) refreshAuditBtn.addEventListener('click', () => loadAudit());
+    const refreshSessionsBtn = $('#refresh-sessions-btn');
+    if (refreshSessionsBtn) refreshSessionsBtn.addEventListener('click', () => loadSessions());
+    const revokeOthersBtn = $('#revoke-other-sessions-btn');
+    if (revokeOthersBtn) revokeOthersBtn.addEventListener('click', () => {
+      const api = window.ASBackend; const msg = $('#sessions-msg');
+      if (!api) return;
+      showMsg(msg, 'Signing out other sessions…', 'info');
+      api.request('api/sessions/revoke-others', { method: 'POST', body: {} }).then((res) => {
+        showMsg(msg, 'Signed out ' + ((res && res.revoked) || 0) + ' other session(s).', 'ok');
+        loadSessions();
+      }).catch((err) => showMsg(msg, (err && err.message) || 'Could not sign out other sessions.', 'error'));
+    });
+    const sessionsTbody = $('#sessions-table-body');
+    if (sessionsTbody) sessionsTbody.addEventListener('click', (ev) => {
+      const btn = ev.target && ev.target.closest ? ev.target.closest('[data-session-revoke]') : null;
+      if (!btn) return;
+      const id = btn.getAttribute('data-session-revoke');
+      const api = window.ASBackend; const msg = $('#sessions-msg');
+      if (!id || !api) return;
+      showMsg(msg, 'Signing out session…', 'info');
+      api.request('api/sessions/' + encodeURIComponent(id), { method: 'DELETE' }).then(() => {
+        showMsg(msg, 'Session signed out.', 'ok');
+        loadSessions();
+      }).catch((err) => showMsg(msg, (err && err.message) || 'Could not sign out session.', 'error'));
+    });
     const createUserForm = $('#create-user-form');
     if (createUserForm) createUserForm.addEventListener('submit', (ev) => {
       ev.preventDefault();
