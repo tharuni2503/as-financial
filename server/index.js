@@ -5,17 +5,19 @@
  *
  * Serves the static site from the project root and exposes a small JSON API:
  *   GET    /api/health                 liveness probe
- *   POST   /api/login                  { email, password } -> bearer token
- *   POST   /api/logout                 revoke the current token
+ *   POST   /api/login                  { email, password } -> session cookie + csrf
+ *   POST   /api/logout                 revoke session (auth + csrf)
  *   GET    /api/session                who is signed in
  *   GET    /api/content[?scope=admin]  published content (admin scope needs auth)
- *   PUT    /api/content/:section       replace testimonials | gallery | posts | images
+ *   PUT    /api/content/:section       replace testimonials | gallery | posts | images (auth + csrf)
  *   GET    /api/admin/store            all admin collections (auth)
- *   PUT    /api/admin/store/:name      replace leads|applications|products|partners|tasks|settings (auth)
+ *   PUT    /api/admin/store/:name      replace leads|applications|products|partners|tasks|settings (auth + csrf)
  *   POST   /api/enquiries              website enquiry (public, rate limited)
  *   GET    /api/enquiries              list enquiries (auth)
- *   PATCH  /api/enquiries/:id          mark handled / add a note (auth)
- *   DELETE /api/enquiries/:id          remove an enquiry (auth)
+ *   PATCH  /api/enquiries/:id          mark handled / add a note (auth + csrf)
+ *   DELETE /api/enquiries/:id          remove an enquiry (auth + csrf)
+ *
+ * Storage: PostgreSQL when DATABASE_URL/POSTGRES_URL is set, otherwise JSON file (data/db.json).
  */
 
 const path = require('node:path');
@@ -44,6 +46,7 @@ const credential = auth.createCredential(ADMIN_EMAIL, ADMIN_PASSWORD);
 function cookieSecure(req) {
   return Boolean(req.secure || (req.headers && req.headers['x-forwarded-proto'] === 'https') || IS_PRODUCTION);
 }
+
 const app = express();
 
 app.disable('x-powered-by');
@@ -135,7 +138,8 @@ function asyncRoute(handler) {
 /* ------------------------------------------------------------------ api */
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, service: 'as-financial', time: new Date().toISOString() });
+  const desc = typeof store.describe === 'function' ? store.describe() : { backend: store.BACKEND || 'unknown' };
+  res.json({ ok: true, service: 'as-financial', backend: desc.backend, time: new Date().toISOString() });
 });
 
 app.post('/api/login', (req, res) => {
@@ -183,11 +187,11 @@ app.get('/api/session', (req, res) => {
   });
 });
 
-app.get('/api/content', (req, res) => {
+app.get('/api/content', asyncRoute(async (req, res) => {
   const session = auth.read(auth.tokenFrom(req));
   const admin = req.query.scope === 'admin' && Boolean(session);
-  const content = store.content();
-  const stats = store.stats();
+  const content = await store.content();
+  const stats = await store.stats();
 
   res.json({
     scope: admin ? 'admin' : 'public',
@@ -197,16 +201,17 @@ app.get('/api/content', (req, res) => {
     posts: admin ? content.posts : content.posts.filter((item) => item && item.published),
     images: content.images
   });
-});
+}));
 
-app.put('/api/content/:section', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, (req, res) => {
+app.put('/api/content/:section', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
   const section = String(req.params.section || '').toLowerCase();
   const value = validate.content(section, req.body);
-  store.setSection(section, value);
-  res.json({ ok: true, section, count: Array.isArray(value) ? value.length : Object.keys(value).length, updatedAt: store.stats().updatedAt });
-});
+  await store.setSection(section, value);
+  const stats = await store.stats();
+  res.json({ ok: true, section, count: Array.isArray(value) ? value.length : Object.keys(value).length, updatedAt: stats.updatedAt });
+}));
 
-app.post('/api/enquiries', (req, res) => {
+app.post('/api/enquiries', asyncRoute(async (req, res) => {
   const ip = req.ip || 'unknown';
   if (enquiryRateLimited(ip)) {
     res.status(429).json({ error: 'Too many enquiries from this connection. Please call us instead.' });
@@ -215,7 +220,6 @@ app.post('/api/enquiries', (req, res) => {
 
   const data = validate.enquiry(req.body);
   if (!data) {
-    // Honeypot tripped: answer normally, store nothing.
     res.status(201).json({ ok: true, id: null });
     return;
   }
@@ -229,42 +233,45 @@ app.post('/api/enquiries', (req, res) => {
     data
   );
 
-  store.addEnquiry(enquiry);
+  await store.addEnquiry(enquiry);
   console.log('[enquiry]', enquiry.id, enquiry.name, enquiry.phone, enquiry.product);
 
   res.status(201).json({ ok: true, id: enquiry.id });
-});
+}));
 
-app.get('/api/enquiries', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), (req, res) => {
-  res.json({ enquiries: store.listEnquiries(), stats: store.stats() });
-});
+app.get('/api/enquiries', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
+  const enquiries = await store.listEnquiries();
+  const stats = await store.stats();
+  res.json({ enquiries, stats });
+}));
 
-app.patch('/api/enquiries/:id', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), requireCsrf, (req, res) => {
+app.patch('/api/enquiries/:id', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
   const patch = {};
   if (req.body && typeof req.body.handled === 'boolean') patch.handled = req.body.handled;
   if (req.body && typeof req.body.note === 'string') patch.note = validate.text(req.body.note, 500);
-  const updated = store.updateEnquiry(String(req.params.id), patch);
+  const updated = await store.updateEnquiry(String(req.params.id), patch);
   if (!updated) {
     res.status(404).json({ error: 'Enquiry not found.' });
     return;
   }
   res.json({ ok: true, enquiry: updated });
-});
+}));
 
-app.delete('/api/enquiries/:id', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, (req, res) => {
-  const removed = store.removeEnquiry(String(req.params.id));
+app.delete('/api/enquiries/:id', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
+  const removed = await store.removeEnquiry(String(req.params.id));
   if (!removed) {
     res.status(404).json({ error: 'Enquiry not found.' });
     return;
   }
   res.json({ ok: true });
-});
+}));
 
-app.get('/api/admin/store', requireSession, requireRole('staff', 'admin', 'super_admin'), (req, res) => {
-  const admin = store.adminData();
+app.get('/api/admin/store', requireSession, requireRole('staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
+  const admin = await store.adminData();
+  const stats = await store.stats();
   res.json({
     ok: true,
-    updatedAt: store.stats().updatedAt,
+    updatedAt: stats.updatedAt,
     leads: admin.leads,
     applications: admin.applications,
     products: admin.products,
@@ -272,19 +279,20 @@ app.get('/api/admin/store', requireSession, requireRole('staff', 'admin', 'super
     tasks: admin.tasks,
     settings: admin.settings
   });
-});
+}));
 
-app.put('/api/admin/store/:name', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, (req, res) => {
+app.put('/api/admin/store/:name', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
   const name = String(req.params.name || '').toLowerCase();
   const value = validate.adminCollection(name, req.body);
-  store.setAdminCollection(name, value);
+  await store.setAdminCollection(name, value);
+  const stats = await store.stats();
   res.json({
     ok: true,
     name,
     count: Array.isArray(value) ? value.length : Object.keys(value).length,
-    updatedAt: store.stats().updatedAt
+    updatedAt: stats.updatedAt
   });
-});
+}));
 
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Unknown API route.' });
@@ -340,19 +348,26 @@ app.use((error, req, res, next) => {
 
 /* ---------------------------------------------------------------- boot */
 
-store.load();
-const stats = store.stats();
+async function boot() {
+  await store.load();
+  const stats = await store.stats();
+  const desc = typeof store.describe === 'function' ? store.describe() : { backend: store.BACKEND || 'unknown', location: '' };
 
-app.listen(PORT, () => {
-  console.log('');
-  console.log('  AS Financial backend running');
-  console.log('  Site:        http://localhost:' + PORT + '/');
-  console.log('  Admin:       http://localhost:' + PORT + '/admin.html');
-  console.log('  Health:      http://localhost:' + PORT + '/api/health');
-  console.log('  Data file:   ' + path.join(store.DATA_DIR, 'db.json'));
-  console.log('  Content:     ' + stats.publishedTestimonials + ' published testimonials, ' +
-    stats.gallery + ' posters, ' + stats.images + ' image overrides, ' + stats.enquiries + ' enquiries');
-  console.log('  Admin data:  ' + stats.leads + ' leads, ' + stats.applications + ' applications, ' +
-    (store.adminData().products.length) + ' products, ' + (store.adminData().tasks.length) + ' tasks');
-  console.log('');
+  app.listen(PORT, () => {
+    console.log('');
+    console.log('  AS Financial backend running');
+    console.log('  Site:        http://localhost:' + PORT + '/');
+    console.log('  Admin:       http://localhost:' + PORT + '/admin.html');
+    console.log('  Health:      http://localhost:' + PORT + '/api/health');
+    console.log('  Storage:     ' + desc.backend + (desc.location ? ' (' + desc.location + ')' : ''));
+    console.log('  Content:     ' + stats.publishedTestimonials + ' published testimonials, ' +
+      stats.gallery + ' posters, ' + stats.images + ' image overrides, ' + stats.enquiries + ' enquiries');
+    console.log('  Admin data:  ' + stats.leads + ' leads, ' + stats.applications + ' applications');
+    console.log('');
+  });
+}
+
+boot().catch((error) => {
+  console.error('[boot] failed to start:', error && error.message ? error.message : error);
+  process.exit(1);
 });
