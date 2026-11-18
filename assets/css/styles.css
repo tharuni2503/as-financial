@@ -755,8 +755,8 @@ p:last-child { margin-bottom: 0; }
   grid-template-areas: "x num h3" "x num p";
   text-align: left;
 }
-.steps.is-watching .step { opacity: .55; transform: translateY(14px); }
-.steps.is-watching .step.is-seen { opacity: 1; transform: none; }
+.steps.is-watching .step { transform: translateY(14px); }
+.steps.is-watching .step.is-seen { transform: none; }
 .step > h3 {
   grid-area: h3; margin: 0 0 4px; align-self: end;
   color: #6a5a39; transition: color .35s ease;

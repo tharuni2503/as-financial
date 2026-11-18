@@ -842,6 +842,48 @@
   });
 })();
 
+/* ---------- homepage offerings: show more ---------- */
+(function () {
+  const grid = document.getElementById('products-grid');
+  const btn = document.querySelector('[data-products-more]');
+  if (!grid || !btn) return;
+
+  const LIMIT = 6;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function sync() {
+    const total = grid.querySelectorAll('.pcard').length;
+    if (total <= LIMIT) {
+      grid.classList.remove('is-collapsed');
+      btn.hidden = true;
+      btn.setAttribute('aria-expanded', 'true');
+      return;
+    }
+    btn.hidden = false;
+    const expanded = !grid.classList.contains('is-collapsed');
+    btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    btn.textContent = expanded ? 'Show fewer offerings' : 'Show all offerings (' + total + ')';
+  }
+
+  // Start collapsed so the first two rows carry the section.
+  if (grid.querySelectorAll('.pcard').length > LIMIT) grid.classList.add('is-collapsed');
+  sync();
+
+  btn.addEventListener('click', () => {
+    const collapsing = !grid.classList.contains('is-collapsed');
+    grid.classList.toggle('is-collapsed', collapsing);
+    if (!collapsing) {
+      // Cards revealed by the toggle never met the reveal observer.
+      grid.querySelectorAll('.pcard:not(.in)').forEach((el) => el.classList.add('in'));
+    }
+    sync();
+    if (collapsing) {
+      const offset = grid.getBoundingClientRect().top + window.scrollY - 130;
+      window.scrollTo({ top: Math.max(0, offset), behavior: reduce ? 'auto' : 'smooth' });
+    }
+  });
+})();
+
 /* ---------- process steps: scroll progress + active number ---------- */
 (function () {
   const wraps = document.querySelectorAll('.steps');
