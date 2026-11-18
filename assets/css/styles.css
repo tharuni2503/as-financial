@@ -966,7 +966,6 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
 
 /* ---------- Floating actions ---------- */
 .float-actions { position: fixed; right: 18px; bottom: 18px; z-index: 90; display: grid; gap: 10px; justify-items: end; }
-.float-actions.is-hidden { display: none; }
 .fab {
   width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center;
   background: #fff; color: var(--navy-deep); border: 1px solid #d6e4f2; box-shadow: 0 14px 30px -12px rgba(47, 93, 138, .3);
@@ -974,10 +973,8 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
 }
 .fab:hover { transform: translateY(-3px) scale(1.04); background: var(--blue-soft); }
 .fab-wa { background: #25d366; color: #fff; border-color: #25d366; }
-.fab-close { width: 30px; height: 30px; background: #fff; color: #526176; border-color: #d6e4f2; box-shadow: 0 8px 18px -10px rgba(47,93,138,.35); }
-.fab-close .icon { width: 14px; height: 14px; }
 .fab .icon { width: 25px; height: 25px; }
-@media (max-width: 600px) { .float-actions { right: 12px; bottom: 12px; } .fab { width: 46px; height: 46px; } .fab-close { width: 28px; height: 28px; } }
+@media (max-width: 600px) { .float-actions { right: 12px; bottom: 12px; } .fab { width: 46px; height: 46px; } }
 
 /* ---------- Forms ---------- */
 .form-card { background: #fff; border: 1px solid var(--line); border-radius: var(--r-lg); padding: clamp(24px, 3.4vw, 40px); box-shadow: var(--shadow-sm); }

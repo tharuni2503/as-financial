@@ -832,24 +832,6 @@
   });
 })();
 
-/* ---------- floating quick contact (dismissible) ---------- */
-(function () {
-  const KEY = 'as_float_contact_hidden';
-  const wrap = document.querySelector('[data-float-actions]');
-  if (!wrap) return;
-  try {
-    if (sessionStorage.getItem(KEY) === '1') {
-      wrap.classList.add('is-hidden');
-      return;
-    }
-  } catch (e) {}
-  const close = wrap.querySelector('[data-float-close]');
-  if (!close) return;
-  close.addEventListener('click', () => {
-    wrap.classList.add('is-hidden');
-    try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
-  });
-})();
 /* ---------- back to top ---------- */
 (function () {
   if (document.querySelector('.back-to-top')) return;
