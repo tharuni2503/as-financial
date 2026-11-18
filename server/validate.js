@@ -152,4 +152,54 @@ function enquiry(payload) {
   };
 }
 
-module.exports = { HttpError, content, enquiry, text };
+const ADMIN_ARRAYS = ['leads', 'applications', 'products', 'partners', 'tasks'];
+
+function scalar(value, maxString) {
+  if (value === null || value === undefined) return value === undefined ? null : null;
+  const t = typeof value;
+  if (t === 'boolean') return value;
+  if (t === 'number') {
+    if (!Number.isFinite(value)) return 0;
+    return value;
+  }
+  if (t === 'string') return clean(value).slice(0, maxString);
+  return null;
+}
+
+function sanitize(value, depth, maxString) {
+  if (depth > 8) return null;
+  if (value === null) return null;
+  if (Array.isArray(value)) {
+    if (value.length > 600) throw new HttpError(400, 'List is too large.');
+    return value.map((item) => sanitize(item, depth + 1, maxString));
+  }
+  const t = typeof value;
+  if (t === 'object') {
+    const keys = Object.keys(value);
+    if (keys.length > 120) throw new HttpError(400, 'Object has too many fields.');
+    const out = {};
+    keys.forEach((key) => {
+      if (typeof key !== 'string') return;
+      const safeKey = clean(key).slice(0, 80);
+      if (!safeKey) return;
+      out[safeKey] = sanitize(value[key], depth + 1, maxString);
+    });
+    return out;
+  }
+  return scalar(value, maxString);
+}
+
+function adminCollection(name, payload) {
+  if (name === 'settings') {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      throw new HttpError(400, 'Settings must be an object.');
+    }
+    return sanitize(payload, 0, 4000);
+  }
+  if (!ADMIN_ARRAYS.includes(name)) throw new HttpError(404, 'Unknown admin collection.');
+  if (!Array.isArray(payload)) throw new HttpError(400, name + ' must be a list.');
+  if (payload.length > 2000) throw new HttpError(400, 'Too many ' + name + ' (max 2000).');
+  return payload.map((item) => sanitize(item, 0, 8000));
+}
+
+module.exports = { HttpError, content, enquiry, text, adminCollection };

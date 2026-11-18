@@ -18,21 +18,35 @@ const TMP_FILE = path.join(DATA_DIR, 'db.tmp.json');
 const BACKUP_FILE = path.join(DATA_DIR, 'db.backup.json');
 
 const SECTIONS = ['testimonials', 'gallery', 'posts'];
+const ADMIN_COLLECTIONS = ['leads', 'applications', 'products', 'partners', 'tasks'];
 const MAX_ENQUIRIES = 2000;
 
 function emptyContent() {
   return { testimonials: [], gallery: [], posts: [], images: {} };
 }
 
+function emptyAdmin() {
+  return {
+    leads: [],
+    applications: [],
+    products: [],
+    partners: [],
+    tasks: [],
+    settings: {}
+  };
+}
+
 function emptyDb() {
-  return { version: 1, updatedAt: null, content: emptyContent(), enquiries: [] };
+  return { version: 2, updatedAt: null, content: emptyContent(), enquiries: [], admin: emptyAdmin() };
 }
 
 let db = emptyDb();
 
 function normalise(parsed) {
   const source = (parsed && parsed.content) || {};
+  const adminSrc = (parsed && parsed.admin) || {};
   const content = emptyContent();
+  const admin = emptyAdmin();
 
   SECTIONS.forEach((key) => {
     if (Array.isArray(source[key])) content[key] = source[key];
@@ -41,17 +55,26 @@ function normalise(parsed) {
     content.images = source.images;
   }
 
+  ADMIN_COLLECTIONS.forEach((key) => {
+    if (Array.isArray(adminSrc[key])) admin[key] = adminSrc[key];
+  });
+  if (adminSrc.settings && typeof adminSrc.settings === 'object' && !Array.isArray(adminSrc.settings)) {
+    admin.settings = adminSrc.settings;
+  }
+
   return {
-    version: 1,
+    version: 2,
     updatedAt: parsed && typeof parsed.updatedAt === 'string' ? parsed.updatedAt : null,
     content,
-    enquiries: parsed && Array.isArray(parsed.enquiries) ? parsed.enquiries : []
+    enquiries: parsed && Array.isArray(parsed.enquiries) ? parsed.enquiries : [],
+    admin
   };
 }
 
 function load() {
   try {
-    db = normalise(JSON.parse(fs.readFileSync(DB_FILE, 'utf8')));
+    const raw = fs.readFileSync(DB_FILE, 'utf8').replace(/^\uFEFF/, '');
+    db = normalise(JSON.parse(raw));
   } catch (error) {
     if (error.code !== 'ENOENT') {
       console.warn('[store] could not read db.json, starting with empty content:', error.message);
@@ -119,6 +142,19 @@ function removeEnquiry(id) {
   return true;
 }
 
+function adminData() {
+  return db.admin;
+}
+
+function setAdminCollection(name, value) {
+  if (!ADMIN_COLLECTIONS.includes(name) && name !== 'settings') {
+    throw new Error('Unknown admin collection: ' + name);
+  }
+  db.admin[name] = value;
+  save();
+  return db.admin[name];
+}
+
 function stats() {
   const publishedTestimonials = db.content.testimonials.filter((item) => item && item.published).length;
   return {
@@ -129,16 +165,21 @@ function stats() {
     images: Object.keys(db.content.images).length,
     enquiries: db.enquiries.length,
     unreadEnquiries: db.enquiries.filter((item) => item && !item.handled).length,
+    leads: db.admin.leads.length,
+    applications: db.admin.applications.length,
     updatedAt: db.updatedAt
   };
 }
 
 module.exports = {
   DATA_DIR,
+  ADMIN_COLLECTIONS,
   load,
   save,
   content,
   setSection,
+  adminData,
+  setAdminCollection,
   addEnquiry,
   listEnquiries,
   findEnquiry,

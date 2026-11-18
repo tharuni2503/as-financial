@@ -1004,6 +1004,11 @@
 
     $('#drawer-status').addEventListener('change', (e) => {
       lead.status = e.target.value;
+      if (lead._server && window.ASBackend && window.ASBackend.token && window.ASBackend.token()) {
+        var handled = ['Contacted', 'Qualified', 'Documents', 'Sanctioned', 'Disbursed', 'Lost'].indexOf(lead.status) !== -1;
+        lead._handled = handled;
+        window.ASBackend.request('api/enquiries/' + lead.id, { method: 'PATCH', body: { handled: handled } }).catch(function () {});
+      }
       save.leads();
       toast('Status updated to ' + lead.status + '.');
       renderAll();
@@ -1016,6 +1021,9 @@
       if (!text) return;
       lead.notes = lead.notes || [];
       lead.notes.unshift({ text, at: new Date().toISOString() });
+      if (lead._server && window.ASBackend && window.ASBackend.token && window.ASBackend.token()) {
+        window.ASBackend.request('api/enquiries/' + lead.id, { method: 'PATCH', body: { note: text } }).catch(function () {});
+      }
       save.leads();
       input.value = '';
       toast('Note added.');

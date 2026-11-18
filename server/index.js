@@ -10,6 +10,8 @@
  *   GET    /api/session                who is signed in
  *   GET    /api/content[?scope=admin]  published content (admin scope needs auth)
  *   PUT    /api/content/:section       replace testimonials | gallery | posts | images
+ *   GET    /api/admin/store            all admin collections (auth)
+ *   PUT    /api/admin/store/:name      replace leads|applications|products|partners|tasks|settings (auth)
  *   POST   /api/enquiries              website enquiry (public, rate limited)
  *   GET    /api/enquiries              list enquiries (auth)
  *   PATCH  /api/enquiries/:id          mark handled / add a note (auth)
@@ -206,6 +208,32 @@ app.delete('/api/enquiries/:id', requireSession, (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/api/admin/store', requireSession, (req, res) => {
+  const admin = store.adminData();
+  res.json({
+    ok: true,
+    updatedAt: store.stats().updatedAt,
+    leads: admin.leads,
+    applications: admin.applications,
+    products: admin.products,
+    partners: admin.partners,
+    tasks: admin.tasks,
+    settings: admin.settings
+  });
+});
+
+app.put('/api/admin/store/:name', requireSession, (req, res) => {
+  const name = String(req.params.name || '').toLowerCase();
+  const value = validate.adminCollection(name, req.body);
+  store.setAdminCollection(name, value);
+  res.json({
+    ok: true,
+    name,
+    count: Array.isArray(value) ? value.length : Object.keys(value).length,
+    updatedAt: store.stats().updatedAt
+  });
+});
+
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Unknown API route.' });
 });
@@ -272,5 +300,7 @@ app.listen(PORT, () => {
   console.log('  Data file:   ' + path.join(store.DATA_DIR, 'db.json'));
   console.log('  Content:     ' + stats.publishedTestimonials + ' published testimonials, ' +
     stats.gallery + ' posters, ' + stats.images + ' image overrides, ' + stats.enquiries + ' enquiries');
+  console.log('  Admin data:  ' + stats.leads + ' leads, ' + stats.applications + ' applications, ' +
+    (store.adminData().products.length) + ' products, ' + (store.adminData().tasks.length) + ' tasks');
   console.log('');
 });
