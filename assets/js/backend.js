@@ -1,29 +1,20 @@
 /* Shared client for the optional Node backend (server/index.js).
- * Every call fails soft: without a backend the site keeps using the
- * browser-local demo data it always had. */
+ * Auth uses HttpOnly session cookies set by the server. Every call fails soft:
+ * without a backend the site keeps using browser-local/demo data. */
 (function () {
   'use strict';
 
-  var TOKEN_KEY = 'as_api_token';
+  var TOKEN_KEY = 'as_api_token'; // legacy cleanup only
   var probe = null;
 
-  function readToken() {
-    try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (error) { return ''; }
-  }
-
-  function writeToken(token) {
-    try {
-      if (token) localStorage.setItem(TOKEN_KEY, token);
-      else localStorage.removeItem(TOKEN_KEY);
-    } catch (error) { /* storage blocked */ }
+  function clearLegacyToken() {
+    try { localStorage.removeItem(TOKEN_KEY); } catch (error) { /* storage blocked */ }
   }
 
   function request(path, options) {
     var opts = options || {};
     var headers = { accept: 'application/json' };
     if (opts.body !== undefined) headers['content-type'] = 'application/json';
-    var token = readToken();
-    if (token) headers.authorization = 'Bearer ' + token;
 
     return fetch(path, {
       method: opts.method || 'GET',
@@ -36,6 +27,7 @@
         if (!response.ok) {
           var error = new Error((payload && payload.error) || ('Request failed (' + response.status + ')'));
           error.status = response.status;
+          error.payload = payload;
           throw error;
         }
         return payload;
@@ -54,8 +46,9 @@
   window.ASBackend = {
     available: available,
     request: request,
-    token: readToken,
-    setToken: writeToken,
+    // Legacy helpers (no-op for cookie auth); kept so older code paths don't break.
+    token: function () { return ''; },
+    setToken: function () { clearLegacyToken(); },
     content: function (scope) {
       return available().then(function (ok) {
         if (!ok) return null;
@@ -63,10 +56,16 @@
       });
     },
     login: function (email, password) {
-      return request('api/login', { method: 'POST', body: { email: email, password: password } });
+      return request('api/login', { method: 'POST', body: { email: email, password: password } }).then(function (result) {
+        clearLegacyToken();
+        return result;
+      });
     },
     logout: function () {
-      return request('api/logout', { method: 'POST' }).catch(function () { return null; });
+      return request('api/logout', { method: 'POST' }).catch(function () { return null; }).then(function (result) {
+        clearLegacyToken();
+        return result;
+      });
     },
     session: function () {
       return request('api/session');

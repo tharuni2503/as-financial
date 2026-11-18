@@ -29,12 +29,21 @@ const ROOT = path.join(__dirname, '..');
 const PORT = Number(process.env.PORT || 3000);
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@asfinancial.in').toLowerCase();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'AS@2026';
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 if (!process.env.ADMIN_PASSWORD) {
+  if (IS_PRODUCTION) {
+    console.error('[auth] ADMIN_PASSWORD must be set when NODE_ENV=production. Refusing to start with the default demo password.');
+    process.exit(1);
+  }
   console.warn('[auth] Using the default demo admin password. Set ADMIN_PASSWORD before going live.');
 }
 
 const credential = auth.createCredential(ADMIN_EMAIL, ADMIN_PASSWORD);
+
+function cookieSecure(req) {
+  return Boolean(req.secure || (req.headers && req.headers['x-forwarded-proto'] === 'https') || IS_PRODUCTION);
+}
 const app = express();
 
 app.disable('x-powered-by');
@@ -114,11 +123,13 @@ app.post('/api/login', (req, res) => {
 
   auth.clearAttempts(ip);
   const token = auth.issue(credential.email);
-  res.json({ token, email: credential.email, expiresIn: auth.SESSION_TTL_MS });
+  res.setHeader('Set-Cookie', auth.cookieHeader(token, { maxAgeMs: auth.SESSION_TTL_MS, secure: cookieSecure(req) }));
+  res.json({ ok: true, email: credential.email, expiresIn: auth.SESSION_TTL_MS });
 });
 
 app.post('/api/logout', (req, res) => {
   auth.revoke(auth.tokenFrom(req));
+  res.setHeader('Set-Cookie', auth.clearCookieHeader(cookieSecure(req)));
   res.json({ ok: true });
 });
 

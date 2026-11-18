@@ -1,9 +1,8 @@
 /* Bridges the admin dashboard and the backend.
  *
- * - Pulls server-published content and admin collections into localStorage so
- *   the dashboard reflects what the server has.
- * - Pushes saves (content + admin collections) to the API when signed in.
- * - Without a backend nothing changes: local demo behavior remains intact.
+ * Auth uses server-set HttpOnly cookies. This module syncs published content
+ * and admin collections when a valid session exists. Without a backend the
+ * dashboard keeps working in local demo mode.
  */
 (function () {
   'use strict';
@@ -29,6 +28,7 @@
 
   var statusEl = null;
   var statusTimer = 0;
+  var canSyncAdmin = false;
 
   function status(message, tone) {
     if (!document.body) return;
@@ -63,6 +63,31 @@
     try { return JSON.stringify(a) === JSON.stringify(b); } catch (e) { return false; }
   }
 
+  function pullAdmin() {
+    if (!canSyncAdmin) return Promise.resolve(false);
+    return api.request('api/admin/store').then(function (store) {
+      if (!store) return false;
+      var changed = false;
+      Object.keys(ADMIN).forEach(function (key) {
+        var name = ADMIN[key];
+        var remote = store[name];
+        var local = getLocal(key);
+        if (hasContent(remote)) {
+          if (!same(remote, local)) {
+            setLocal(key, remote);
+            changed = true;
+          }
+        } else if (hasContent(local)) {
+          api.request('api/admin/store/' + name, { method: 'PUT', body: local }).catch(function () {});
+        }
+      });
+      return changed;
+    }).catch(function (error) {
+      if (error && error.status === 401) canSyncAdmin = false;
+      return false;
+    });
+  }
+
   function pull() {
     return api.available()
       .then(function (ok) { return ok ? api.content('admin') : null; })
@@ -78,53 +103,35 @@
             }
           });
         }
-        if (!api.token()) return changed;
-        return api.request('api/admin/store').then(function (store) {
-          if (!store) return changed;
-          Object.keys(ADMIN).forEach(function (key) {
-            var name = ADMIN[key];
-            var remote = store[name];
-            var local = getLocal(key);
-            if (hasContent(remote)) {
-              if (!same(remote, local)) {
-                setLocal(key, remote);
-                changed = true;
-              }
-            } else if (hasContent(local)) {
-              // Seed empty server collection from current local state once.
-              api.request('api/admin/store/' + name, { method: 'PUT', body: local }).catch(function () {});
-            }
-          });
-          return changed;
-        }).catch(function () { return changed; });
+        return pullAdmin().then(function (adminChanged) { return changed || adminChanged; });
       })
       .then(function (changed) {
-        if (changed && !sessionStorage.getItem('as_pulled_v2')) {
-          sessionStorage.setItem('as_pulled_v2', '1');
+        if (changed && !sessionStorage.getItem('as_pulled_v3')) {
+          sessionStorage.setItem('as_pulled_v3', '1');
           location.reload();
         }
       })
       .catch(function () { /* offline: keep local data */ });
   }
 
-  pull();
-
   /* ------------------------------------------------------------ push */
   var timers = {};
 
   function push(sectionType, name, value) {
-    if (!api.token()) return;
     var path = sectionType === 'content' ? 'api/content/' + name : 'api/admin/store/' + name;
+    if (sectionType === 'admin' && !canSyncAdmin) return;
     api.request(path, { method: 'PUT', body: value })
-      .then(function () { status('Saved to server.', 'ok'); })
+      .then(function () {
+        if (sectionType === 'admin' || canSyncAdmin) status('Saved to server.', 'ok');
+      })
       .catch(function (error) {
         if (error && error.status === 401) {
-          api.setToken('');
+          canSyncAdmin = false;
           status('Session expired. Sign in again to sync.', 'warn');
         } else if (error && error.status === 400) {
           status('Could not save: ' + error.message, 'warn');
-        } else {
-          status('Saved in this browser only (backend unreachable).', 'warn');
+        } else if (sectionType === 'admin' || canSyncAdmin) {
+          status('Saved in this browser only (backend unavailable).', 'warn');
         }
       });
   }
@@ -145,62 +152,32 @@
     timers[name] = setTimeout(function () { push(sectionType, name, detail.value); }, 500);
   });
 
-  /* --------------------------------------------------- sign in / out */
-  var loginForm = document.getElementById('login-form');
-  if (loginForm) {
-    loginForm.addEventListener('submit', function () {
-      var emailField = document.getElementById('login-email');
-      var passwordField = document.getElementById('login-password');
-      var email = emailField ? emailField.value.trim() : '';
-      var password = passwordField ? passwordField.value : '';
-      api.login(email, password)
-        .then(function (result) {
-          if (result && result.token) {
-            api.setToken(result.token);
-            sessionStorage.removeItem('as_reauth');
-            status('Connected. Data now syncs with the server.', 'ok');
-            sessionStorage.removeItem('as_pulled_v2');
-            document.dispatchEvent(new Event('as:sync-enquiries'));
-            pull();
-          }
-        })
-        .catch(function () { api.setToken(''); });
-    });
+  /* --------------------------------------------------- auth hooks */
+  function onAuthReady() {
+    canSyncAdmin = true;
+    sessionStorage.removeItem('as_pulled_v3');
+    status('Connected. Data syncs with the server.', 'ok');
+    document.dispatchEvent(new Event('as:sync-enquiries'));
+    pull();
   }
 
-  ['logout-btn', 'sidebar-logout'].forEach(function (id) {
-    var button = document.getElementById(id);
-    if (button) button.addEventListener('click', function () {
-      api.logout();
-      api.setToken('');
-    });
-  });
+  document.addEventListener('as:auth-ready', onAuthReady);
 
-  if (api.token()) {
-    api.session().then(function () {
+  // If already authenticated (page load with valid cookie), admin.js will
+  // dispatch as:auth-ready after session check. Also try a lightweight probe.
+  api.available().then(function (ok) {
+    if (!ok) return;
+    return api.session().then(function () {
+      // Session valid; admin.js may not have entered yet, but enable sync.
+      canSyncAdmin = true;
       document.dispatchEvent(new Event('as:sync-enquiries'));
-    }).catch(function (error) {
-      if (error && error.status === 401) {
-        api.setToken('');
-        try {
-          if ((sessionStorage.getItem('as_admin_session') || localStorage.getItem('as_admin_session')) && !sessionStorage.getItem('as_reauth')) {
-            sessionStorage.setItem('as_reauth', '1');
-            sessionStorage.removeItem('as_admin_session');
-            localStorage.removeItem('as_admin_session');
-            location.reload();
-          }
-        } catch (e) { /* ignore */ }
-      }
-    });
-  } else {
-    // Signed into the UI but missing an API token: require fresh sign-in for sync.
-    try {
-      if ((sessionStorage.getItem('as_admin_session') || localStorage.getItem('as_admin_session')) && !sessionStorage.getItem('as_reauth')) {
-        sessionStorage.setItem('as_reauth', '1');
-        sessionStorage.removeItem('as_admin_session');
-        localStorage.removeItem('as_admin_session');
-        location.reload();
-      }
-    } catch (e) { /* ignore */ }
-  }
+      pull();
+    }).catch(function () { canSyncAdmin = false; });
+  }).catch(function () {});
+
+  // Logout buttons are handled in admin.js (calls backend). We just react.
+  document.addEventListener('click', function (e) {
+    var t = e.target && e.target.closest ? e.target.closest('#logout-btn, #sidebar-logout') : null;
+    if (t) canSyncAdmin = false;
+  });
 })();

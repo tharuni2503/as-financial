@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | AS Financial Services and Solutions</title>
-  <meta name="description" content="Private demo admin dashboard for AS Financial Services and Solutions.">
+  <meta name="description" content="Private admin dashboard for AS Financial Services and Solutions.">
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#10294D">
   <link rel="icon" href="assets/img/brand/favicon.png" type="image/png">
@@ -13,8 +13,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/admin.css?v=20261118z17">
-  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261118z17">
+  <link rel="stylesheet" href="assets/css/admin.css?v=20261118z18">
+  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261118z18">
 </head>
 <body>
 
@@ -42,19 +42,19 @@
         <p>Sign in to manage enquiries, applications and your website content.</p>
 
         <form class="login-form" id="login-form" autocomplete="on">
-          <div class="login-error" id="login-error">That email and password don't match. Try the demo credentials below.</div>
+          <div class="login-error" id="login-error">Sign in failed. Check your email and password, and make sure the backend server is running.</div>
           <div class="login-field">
             <label for="login-email">Email address</label>
             <div class="login-input">
               <svg class="icon" aria-hidden="true"><use href="#i-mail"></use></svg>
-              <input type="email" id="login-email" name="email" value="admin@asfinancial.in" required autocomplete="username">
+              <input type="email" id="login-email" name="email" required autocomplete="username" placeholder="name@example.com">
             </div>
           </div>
           <div class="login-field">
             <label for="login-password">Password</label>
             <div class="login-input">
               <svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg>
-              <input type="password" id="login-password" name="password" value="AS@2026" required autocomplete="current-password">
+              <input type="password" id="login-password" name="password" required autocomplete="current-password" placeholder="Enter your password">
             </div>
           </div>
           <div class="login-row">
@@ -63,12 +63,9 @@
           </div>
           <button class="a-btn a-btn-primary" style="padding:11px 16px;font-size:.85rem" type="submit">Sign in to dashboard <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
         </form>
-
-        <div class="demo-note">
-          <b>Demo credentials</b><br>
-          Email: <b>admin@asfinancial.in</b><br>
-          Password: <b>AS@2026</b>
-        </div>
+      <div class="demo-note">
+        Sign in with your administrator account. A running backend server is required.
+      </div>
         <div class="login-foot"><a href="index.html">← Back to the website</a></div>
       </div>
     </div>
@@ -546,7 +543,7 @@
                 <div class="card-body">
                   <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px">
                     <span class="cust-avatar" style="width:44px;height:44px;font-size:.9rem">AD</span>
-                    <div><b style="display:block;color:var(--navy)">Administrator</b><span style="font-size:.72rem;color:var(--muted)">admin@asfinancial.in</span></div>
+                    <div><b style="display:block;color:var(--navy)">Administrator</b><span style="font-size:.72rem;color:var(--muted)">Signed in</span></div>
                   </div>
                   <div class="detail-box" style="margin-bottom:10px"><small>Role</small><b>Business manager · full access</b></div>
                   <div class="detail-box"><small>Last sign in</small><b id="last-signin">Today</b></div>
@@ -567,7 +564,7 @@
               <div class="card">
                 <div class="card-body" style="display:flex;gap:10px;align-items:flex-start">
                   <svg class="icon" aria-hidden="true" style="color:var(--gold-deep);flex:none"><use href="#i-shield"></use></svg>
-                  <p style="margin:0;font-size:.74rem;color:var(--muted)">This dashboard stores data in your browser only (localStorage) for demonstration. Connect a backend and authentication before using it with real customer data.</p>
+                  <p style="margin:0;font-size:.74rem;color:var(--muted)">When signed in to the backend, changes sync to the server. Without a backend connection, data is stored in this browser only.</p>
                 </div>
               </div>
             </div>
@@ -603,8 +600,8 @@
     <div class="a-toast-host" id="toast-host"></div>
   </div>
 
-  <script src="assets/js/icons.js?v=20261118z17"></script>
-  <script src="assets/js/backend.js?v=20261118z17"></script><script src="assets/js/admin.js?v=20261118z17"></script><script src="assets/js/admin-sync.js?v=20261118z17"></script>
+  <script src="assets/js/icons.js?v=20261118z18"></script>
+  <script src="assets/js/backend.js?v=20261118z18"></script><script src="assets/js/admin.js?v=20261118z18"></script><script src="assets/js/admin-sync.js?v=20261118z18"></script>
   <script>
     (function () {
       var btn = document.getElementById('forgot-password-btn');
@@ -612,10 +609,10 @@
         btn.addEventListener('click', function () {
           var box = document.getElementById('login-error');
           if (box) {
-            box.textContent = 'Password reset requires backend authentication (not available in this frontend demo). Please use the demo credentials shown below or contact the administrator.';
+            box.textContent = 'Password reset is not yet available. Please contact your administrator to reset access.';
             box.classList.add('show');
           } else {
-            alert('Password reset requires backend authentication (not available in this frontend demo).');
+            alert('Password reset is not yet available. Please contact your administrator.');
           }
         });
       }

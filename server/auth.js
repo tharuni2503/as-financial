@@ -2,11 +2,14 @@
 
 /*
  * Admin authentication: scrypt password hashing (no plaintext on disk) and
- * random bearer tokens held in memory for the life of the server process.
+ * random session tokens held in memory for the life of the server process.
+ * Tokens are issued as HttpOnly cookies (and also accepted via Authorization
+ * header for non-browser clients).
  */
 
 const crypto = require('node:crypto');
 
+const COOKIE_NAME = 'as_session';
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
 const MAX_ATTEMPTS = 8;
 const ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
@@ -53,10 +56,40 @@ function revoke(token) {
   if (token) sessions.delete(token);
 }
 
+function parseCookies(header) {
+  const out = {};
+  if (!header) return out;
+  String(header).split(';').forEach((part) => {
+    const i = part.indexOf('=');
+    if (i === -1) return;
+    const key = part.slice(0, i).trim();
+    if (!key) return;
+    const value = part.slice(i + 1).trim();
+    try { out[key] = decodeURIComponent(value); } catch (e) { out[key] = value; }
+  });
+  return out;
+}
+
 function tokenFrom(request) {
-  const header = request.headers.authorization || '';
+  const cookies = parseCookies(request && request.headers && request.headers.cookie);
+  if (cookies[COOKIE_NAME]) return cookies[COOKIE_NAME];
+  const header = (request && request.headers && request.headers.authorization) || '';
   const match = /^Bearer\s+([A-Za-z0-9\-_]+)$/.exec(header);
   return match ? match[1] : '';
+}
+
+function cookieHeader(token, options) {
+  const opts = options || {};
+  const parts = [COOKIE_NAME + '=' + encodeURIComponent(token), 'Path=/', 'HttpOnly', 'SameSite=Lax'];
+  if (opts.secure) parts.push('Secure');
+  if (typeof opts.maxAgeMs === 'number') parts.push('Max-Age=' + Math.max(0, Math.floor(opts.maxAgeMs / 1000)));
+  return parts.join('; ');
+}
+
+function clearCookieHeader(secure) {
+  const parts = [COOKIE_NAME + '=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'];
+  if (secure) parts.push('Secure');
+  return parts.join('; ');
 }
 
 function tooManyAttempts(ip) {
@@ -95,6 +128,7 @@ const sweeper = setInterval(() => {
 if (sweeper.unref) sweeper.unref();
 
 module.exports = {
+  COOKIE_NAME,
   SESSION_TTL_MS,
   createCredential,
   verifyPassword,
@@ -102,6 +136,8 @@ module.exports = {
   read,
   revoke,
   tokenFrom,
+  cookieHeader,
+  clearCookieHeader,
   tooManyAttempts,
   noteFailedAttempt,
   clearAttempts

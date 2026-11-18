@@ -55,8 +55,6 @@
   };
 
   /* ---------------------------------------------------------------- config */
-  const LOGIN = { email: 'admin@asfinancial.in', password: 'AS@2026' };
-
   const DEFAULT_SETTINGS = {
     businessName: 'AS Financial Services and Solutions',
     tagline: 'Your Goals, Our Solutions',
@@ -375,7 +373,7 @@
   let syncingEnquiries = false;
   function syncServerEnquiries() {
     const api = window.ASBackend;
-    if (!api || !api.token || !api.token() || syncingEnquiries) return;
+    if (!api || syncingEnquiries) return;
     syncingEnquiries = true;
     api.request('api/enquiries')
       .then((data) => {
@@ -385,7 +383,7 @@
         leads = serverLeads.concat(local);
         renderAll();
       })
-      .catch(() => { /* backend unavailable or session expired */ })
+      .catch(() => { /* backend unavailable or not signed in */ })
       .then(() => { syncingEnquiries = false; });
   }
 
@@ -655,38 +653,56 @@
   }
 
   /* ---------------------------------------------------------------- auth */
-  function showLogin() {
+  function showLogin(message) {
     $('#login-screen').classList.remove('hidden');
     $('#admin-app').classList.add('hidden');
     document.body.style.overflow = '';
+    const err = $('#login-error');
+    if (err) {
+      if (message) { err.textContent = message; err.classList.add('show'); }
+      else err.classList.remove('show');
+    }
+    try { sessionStorage.removeItem('as_admin_ui'); localStorage.removeItem('as_admin_ui'); } catch (e) {}
   }
 
-  function enterApp(remember) {
+  function enterApp(user, remember) {
+    const email = (user && user.email) || 'admin';
+    const name = email.indexOf('@') > 0 ? email.split('@')[0] : 'Admin';
+    const display = name.charAt(0).toUpperCase() + name.slice(1);
     $('#login-screen').classList.add('hidden');
     $('#admin-app').classList.remove('hidden');
-    const email = LOGIN.email;
-    const name = 'Admin';
-    $('#sidebar-user-name').textContent = name;
-    $('#topbar-user').textContent = name;
-    $('#sidebar-avatar').textContent = initials(name);
-    $('#topbar-avatar').textContent = initials(name);
-    $('#greeting-name').textContent = name;
+    $('#login-error').classList.remove('show');
+    $('#sidebar-user-name').textContent = display;
+    $('#topbar-user').textContent = display;
+    $('#sidebar-avatar').textContent = initials(display);
+    $('#topbar-avatar').textContent = initials(display);
+    $('#greeting-name').textContent = display;
     const d = new Date();
     $('#topbar-date').textContent = d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     $('#last-signin').textContent = 'Today, ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-    if (remember) localStorage.setItem('as_admin_session', email);
-    sessionStorage.setItem('as_admin_session', email);
+    try {
+      if (remember) localStorage.setItem('as_admin_ui', email);
+      else localStorage.removeItem('as_admin_ui');
+      sessionStorage.setItem('as_admin_ui', email);
+    } catch (e) {}
     loadData();
     renderAll();
     syncServerEnquiries();
     setView('overview', true);
+    document.dispatchEvent(new Event('as:auth-ready'));
   }
 
   function logout() {
-    sessionStorage.removeItem('as_admin_session');
-    localStorage.removeItem('as_admin_session');
-    showLogin();
-    toast('You have been signed out.');
+    const finish = () => {
+      try { sessionStorage.removeItem('as_admin_ui'); localStorage.removeItem('as_admin_ui'); } catch (e) {}
+      showLogin();
+      toast('You have been signed out.');
+    };
+    if (window.ASBackend && window.ASBackend.logout) {
+      window.ASBackend.logout().then(finish).catch(finish);
+    } else {
+      finish();
+    }
   }
 
   /* ---------------------------------------------------------------- navigation */
@@ -1004,7 +1020,7 @@
 
     $('#drawer-status').addEventListener('change', (e) => {
       lead.status = e.target.value;
-      if (lead._server && window.ASBackend && window.ASBackend.token && window.ASBackend.token()) {
+      if (lead._server && window.ASBackend && window.ASBackend.request) {
         var handled = ['Contacted', 'Qualified', 'Documents', 'Sanctioned', 'Disbursed', 'Lost'].indexOf(lead.status) !== -1;
         lead._handled = handled;
         window.ASBackend.request('api/enquiries/' + lead.id, { method: 'PATCH', body: { handled: handled } }).catch(function () {});
@@ -1021,7 +1037,7 @@
       if (!text) return;
       lead.notes = lead.notes || [];
       lead.notes.unshift({ text, at: new Date().toISOString() });
-      if (lead._server && window.ASBackend && window.ASBackend.token && window.ASBackend.token()) {
+      if (lead._server && window.ASBackend && window.ASBackend.request) {
         window.ASBackend.request('api/enquiries/' + lead.id, { method: 'PATCH', body: { note: text } }).catch(function () {});
       }
       save.leads();
@@ -1629,17 +1645,32 @@
 
   /* ---------------------------------------------------------------- events */
   function bindEvents() {
-    // login
+    // login (backend-authenticated)
     $('#login-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const email = $('#login-email').value.trim().toLowerCase();
       const pass = $('#login-password').value;
-      if (email === LOGIN.email && pass === LOGIN.password) {
-        $('#login-error').classList.remove('show');
-        enterApp(true);
-      } else {
-        $('#login-error').classList.add('show');
+      const submitBtn = $('#login-form button[type="submit"]');
+      const err = $('#login-error');
+      const api = window.ASBackend;
+      if (!api) {
+        err.textContent = 'Backend client unavailable. Please reload the page.';
+        err.classList.add('show');
+        return;
       }
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.setAttribute('aria-busy', 'true'); }
+      err.classList.remove('show');
+      api.available().then((ok) => {
+        if (!ok) throw Object.assign(new Error('Backend is unavailable. Start the server and try again.'), { status: 503 });
+        return api.login(email, pass);
+      }).then((result) => {
+        enterApp(result || { email: email }, true);
+      }).catch((error) => {
+        err.textContent = (error && error.message) || 'Sign in failed. Check your details and try again.';
+        err.classList.add('show');
+      }).then(() => {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.removeAttribute('aria-busy'); }
+      });
     });
 
     // logout
@@ -1894,7 +1925,7 @@
         const l = leads.find(x => x.id === id);
         if (l) confirmDialog('Delete this lead?', l.name + ' will be removed from the pipeline permanently.', () => {
           const done = () => { leads = leads.filter(x => x.id !== id); save.leads(); renderAll(); toast('Lead deleted.'); };
-          if (l._server && window.ASBackend && window.ASBackend.token && window.ASBackend.token()) {
+          if (l._server && window.ASBackend && window.ASBackend.request) {
             window.ASBackend.request('api/enquiries/' + id, { method: 'DELETE' }).catch(() => {}).then(done);
           } else {
             done();
@@ -1986,14 +2017,23 @@
     loadData();
     bindEvents();
     $('#login-year').textContent = new Date().getFullYear();
-    const session = sessionStorage.getItem('as_admin_session') || localStorage.getItem('as_admin_session');
-    if (session) {
-      enterApp(false);
-      const hash = location.hash.replace('#', '');
-      if (VIEW_TITLES[hash]) setView(hash, true);
-    } else {
-      showLogin();
-    }
+    showLogin();
+
+    const api = window.ASBackend;
+    if (!api) return;
+
+    api.available().then((ok) => {
+      if (!ok) return; // backend optional for public/demo, but admin login requires it
+      return api.session().then((user) => {
+        if (user && user.email) {
+          enterApp(user, false);
+          const hash = location.hash.replace('#', '');
+          if (VIEW_TITLES[hash]) setView(hash, true);
+        }
+      }).catch(() => {
+        // No active session: stay on login screen.
+      });
+    }).catch(() => {});
   }
 
   init();
