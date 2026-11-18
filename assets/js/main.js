@@ -126,20 +126,30 @@
   });
 
   /* ---------- reveal on scroll ---------- */
-  const revealEls = document.querySelectorAll('.reveal');
   const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (revealEls.length) {
+  if (document.querySelector('.reveal')) {
     if (!reduceMotion && 'IntersectionObserver' in window) {
       const io = new IntersectionObserver((entries) => {
         entries.forEach(e => {
           if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
         });
       }, { threshold: 0.08, rootMargin: '120px 0px -20px 0px' });
-      revealEls.forEach(el => io.observe(el));
+      const watch = (root) => {
+        if (!root || root.nodeType !== 1) return;
+        if (root.classList && root.classList.contains('reveal') && !root.classList.contains('in')) io.observe(root);
+        if (root.querySelectorAll) root.querySelectorAll('.reveal:not(.in)').forEach(el => io.observe(el));
+      };
+      watch(document.body);
+      // Content rendered later (gallery, reviews, offering images) must reveal too.
+      if ('MutationObserver' in window) {
+        new MutationObserver((muts) => {
+          muts.forEach(m => Array.prototype.forEach.call(m.addedNodes, watch));
+        }).observe(document.body, { childList: true, subtree: true });
+      }
       // Safety net: never leave content hidden if the observer misses an element.
-      setTimeout(() => revealEls.forEach(el => el.classList.add('in')), 2400);
+      setTimeout(() => document.querySelectorAll('.reveal:not(.in)').forEach(el => el.classList.add('in')), 2400);
     } else {
-      revealEls.forEach(el => el.classList.add('in'));
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
     }
   }
 
