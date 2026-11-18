@@ -12,6 +12,7 @@ const path = require('node:path');
 const SECTIONS = ['testimonials', 'gallery', 'posts'];
 const ADMIN_COLLECTIONS = ['leads', 'applications', 'products', 'partners', 'tasks'];
 const MAX_ENQUIRIES = 2000;
+const MAX_AUDIT = 2000;
 
 let pool = null;
 let dbUrl = null;
@@ -36,8 +37,18 @@ function getPool() {
 }
 
 async function migrate() {
-  const sql = fs.readFileSync(path.join(__dirname, 'migrations', '001_init.sql'), 'utf8');
-  await getPool().query(sql);
+  const dir = path.join(__dirname, 'migrations');
+  let files = [];
+  try {
+    files = fs.readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
+  } catch (e) {
+    files = ['001_init.sql'];
+  }
+  if (!files.length) files = ['001_init.sql'];
+  for (const file of files) {
+    const sql = fs.readFileSync(path.join(dir, file), 'utf8');
+    await getPool().query(sql);
+  }
 }
 
 function emptyContent() {
@@ -338,6 +349,61 @@ async function deleteExpiredSessions() {
   return res.rowCount > 0;
 }
 
+/* ---------------------------------------------------------------- audit */
+
+async function addAudit(entry) {
+  if (!entry) return null;
+  const record = {
+    id: entry.id || ('AUD-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase()),
+    at: entry.at || new Date().toISOString(),
+    type: String(entry.type || 'event'),
+    actorEmail: String(entry.actorEmail || ''),
+    actorUserId: entry.actorUserId || null,
+    actorRole: String(entry.actorRole || ''),
+    ip: String(entry.ip || '').slice(0, 120),
+    targetType: String(entry.targetType || ''),
+    targetId: String(entry.targetId || ''),
+    summary: String(entry.summary || '').slice(0, 500),
+    meta: entry.meta && typeof entry.meta === 'object' ? entry.meta : {}
+  };
+  await getPool().query(
+    `INSERT INTO audit_logs (id, at, type, actor_email, actor_user_id, actor_role, ip, target_type, target_id, summary, meta)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb)`,
+    [record.id, record.at, record.type, record.actorEmail, record.actorUserId, record.actorRole, record.ip, record.targetType, record.targetId, record.summary, JSON.stringify(record.meta)]
+  );
+  await getPool().query(
+    `DELETE FROM audit_logs WHERE id IN (
+       SELECT id FROM audit_logs ORDER BY at DESC OFFSET $1
+     )`, [MAX_AUDIT]
+  );
+  return record;
+}
+
+async function listAudit(options) {
+  const opts = options || {};
+  const limit = Math.max(1, Math.min(Number(opts.limit) || 100, 500));
+  const params = [];
+  const where = [];
+  if (opts.type) { params.push(String(opts.type)); where.push('type = $' + params.length); }
+  if (opts.actorEmail) { params.push(String(opts.actorEmail).toLowerCase()); where.push('LOWER(actor_email) = $' + params.length); }
+  params.push(limit);
+  const sql = 'SELECT * FROM audit_logs' + (where.length ? ' WHERE ' + where.join(' AND ') : '') + ' ORDER BY at DESC LIMIT $' + params.length;
+  const res = await getPool().query(sql, params);
+  return res.rows.map((row) => ({
+    id: row.id,
+    at: row.at instanceof Date ? row.at.toISOString() : row.at,
+    type: row.type,
+    actorEmail: row.actor_email || '',
+    actorUserId: row.actor_user_id || null,
+    actorRole: row.actor_role || '',
+    ip: row.ip || '',
+    targetType: row.target_type || '',
+    targetId: row.target_id || '',
+    summary: row.summary || '',
+    meta: row.meta || {}
+  }));
+}
+
 async function stats() {
   const c = await content();
   const a = await adminData();
@@ -349,6 +415,11 @@ async function stats() {
     const ur = await getPool().query('SELECT COUNT(*)::int AS n FROM users');
     userCount = (ur.rows[0] && ur.rows[0].n) || 0;
   } catch (e) { /* table may not exist yet in old db */ }
+  let auditCount = 0;
+  try {
+    const ar = await getPool().query('SELECT COUNT(*)::int AS n FROM audit_logs');
+    auditCount = (ar.rows[0] && ar.rows[0].n) || 0;
+  } catch (e) { /* table may not exist yet */ }
   const publishedTestimonials = c.testimonials.filter((item) => item && item.published).length;
   const row = eq.rows[0] || { total: 0, unread: 0 };
   return {
@@ -362,6 +433,7 @@ async function stats() {
     leads: a.leads.length,
     applications: a.applications.length,
     users: userCount,
+    audit: auditCount,
     updatedAt: await getMetaUpdatedAt()
   };
 }
@@ -398,6 +470,8 @@ module.exports = {
   saveSession,
   deleteSession,
   deleteExpiredSessions,
+  addAudit,
+  listAudit,
   stats,
   describe
 };

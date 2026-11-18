@@ -19,6 +19,7 @@ const BACKUP_FILE = path.join(DATA_DIR, 'db.backup.json');
 const SECTIONS = ['testimonials', 'gallery', 'posts'];
 const ADMIN_COLLECTIONS = ['leads', 'applications', 'products', 'partners', 'tasks'];
 const MAX_ENQUIRIES = 2000;
+const MAX_AUDIT = 2000;
 
 function emptyContent() {
   return { testimonials: [], gallery: [], posts: [], images: {} };
@@ -36,7 +37,7 @@ function emptyAdmin() {
 }
 
 function emptyDb() {
-  return { version: 3, updatedAt: null, content: emptyContent(), enquiries: [], admin: emptyAdmin(), users: [], sessions: {} };
+  return { version: 4, updatedAt: null, content: emptyContent(), enquiries: [], admin: emptyAdmin(), users: [], sessions: {}, audit: [] };
 }
 
 let db = emptyDb();
@@ -65,13 +66,14 @@ function normalise(parsed) {
     ? parsed.sessions : {};
 
   return {
-    version: 3,
+    version: 4,
     updatedAt: parsed && typeof parsed.updatedAt === 'string' ? parsed.updatedAt : null,
     content,
     enquiries: parsed && Array.isArray(parsed.enquiries) ? parsed.enquiries : [],
     admin,
     users: parsed && Array.isArray(parsed.users) ? parsed.users : [],
-    sessions
+    sessions,
+    audit: parsed && Array.isArray(parsed.audit) ? parsed.audit.slice(0, MAX_AUDIT) : []
   };
 }
 
@@ -239,6 +241,38 @@ async function deleteExpiredSessions() {
   return changed;
 }
 
+/* ---------------------------------------------------------------- audit */
+
+async function addAudit(entry) {
+  if (!entry) return null;
+  const record = Object.assign({
+    id: entry.id || ('AUD-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase()),
+    at: entry.at || new Date().toISOString(),
+    type: String(entry.type || 'event'),
+    actorEmail: String(entry.actorEmail || ''),
+    actorUserId: entry.actorUserId || null,
+    actorRole: String(entry.actorRole || ''),
+    ip: String(entry.ip || ''),
+    targetType: String(entry.targetType || ''),
+    targetId: String(entry.targetId || ''),
+    summary: String(entry.summary || ''),
+    meta: entry.meta && typeof entry.meta === 'object' ? entry.meta : {}
+  }, entry.id ? { id: entry.id } : {});
+  db.audit.unshift(record);
+  if (db.audit.length > MAX_AUDIT) db.audit.length = MAX_AUDIT;
+  await save();
+  return record;
+}
+
+async function listAudit(options) {
+  const opts = options || {};
+  let items = db.audit.slice();
+  if (opts.type) items = items.filter((a) => a && a.type === opts.type);
+  if (opts.actorEmail) items = items.filter((a) => a && String(a.actorEmail || '').toLowerCase() === String(opts.actorEmail).toLowerCase());
+  const limit = Math.max(1, Math.min(Number(opts.limit) || 100, 500));
+  return items.slice(0, limit);
+}
+
 async function stats() {
   const publishedTestimonials = db.content.testimonials.filter((item) => item && item.published).length;
   return {
@@ -252,6 +286,7 @@ async function stats() {
     leads: db.admin.leads.length,
     applications: db.admin.applications.length,
     users: db.users.length,
+    audit: db.audit.length,
     updatedAt: db.updatedAt
   };
 }
@@ -288,6 +323,8 @@ module.exports = {
   saveSession,
   deleteSession,
   deleteExpiredSessions,
+  addAudit,
+  listAudit,
   stats,
   describe
 };

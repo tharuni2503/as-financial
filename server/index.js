@@ -155,6 +155,25 @@ function asyncRoute(handler) {
   };
 }
 
+function audit(req, entry) {
+  if (!store || typeof store.addAudit !== 'function') return;
+  const session = req && req.session ? req.session : null;
+  const payload = Object.assign({
+    at: new Date().toISOString(),
+    actorEmail: session ? (session.email || '') : '',
+    actorUserId: session ? (session.userId || null) : null,
+    actorRole: session ? (session.role || '') : '',
+    ip: req && req.ip ? String(req.ip) : '',
+    targetType: '',
+    targetId: '',
+    summary: '',
+    meta: {}
+  }, entry || {});
+  Promise.resolve(store.addAudit(payload)).catch((err) => {
+    console.warn('[audit] failed:', err && err.message ? err.message : err);
+  });
+}
+
 /* ------------------------------------------------------------------ api */
 
 app.get('/api/health', (req, res) => {
@@ -185,6 +204,7 @@ app.post('/api/login', asyncRoute(async (req, res) => {
   const ok = user && user.active !== false && auth.verifyPassword(user, password);
   if (!ok) {
     auth.noteFailedAttempt(ip);
+    audit(req, { type: 'auth.login_failed', actorEmail: email, summary: 'Login failed', meta: { reason: user ? (user.active === false ? 'inactive' : 'bad_password') : 'unknown_user' } });
     res.status(401).json({ error: 'Those details do not match our records.' });
     return;
   }
@@ -198,12 +218,14 @@ app.post('/api/login', asyncRoute(async (req, res) => {
     ip,
     userAgent: req.get('user-agent') || ''
   });
+  audit(req, { type: 'auth.login', actorEmail: user.email, actorUserId: user.id, actorRole: user.role || 'admin', summary: 'User signed in', targetType: 'user', targetId: user.id });
   res.setHeader('Set-Cookie', auth.cookieHeader(issued.token, { maxAgeMs: auth.SESSION_TTL_MS, secure: cookieSecure(req) }));
   const pub = auth.publicUser ? auth.publicUser(user) : { email: user.email, role: user.role };
   res.json(Object.assign({ ok: true, csrfToken: issued.csrfToken, expiresIn: auth.SESSION_TTL_MS }, pub));
 }));
 
 app.post('/api/logout', requireSession, requireCsrf, asyncRoute(async (req, res) => {
+  audit(req, { type: 'auth.logout', summary: 'User signed out', targetType: 'user', targetId: req.session.userId || '' });
   await auth.revoke(auth.tokenFrom(req));
   res.setHeader('Set-Cookie', auth.clearCookieHeader(cookieSecure(req)));
   res.json({ ok: true });
@@ -391,6 +413,7 @@ app.post('/api/change-password', requireSession, requireCsrf, asyncRoute(async (
   auth.setPassword(user, newPassword);
   await store.upsertUser(user);
   await auth.revokeAllForEmail(user.email);
+  audit(req, { type: 'auth.password_changed', summary: 'User changed password', targetType: 'user', targetId: user.id });
   const issued = await auth.issue(user.email, user.role || 'admin', { userId: user.id, ip, userAgent: req.get('user-agent') || '' });
   res.setHeader('Set-Cookie', auth.cookieHeader(issued.token, { maxAgeMs: auth.SESSION_TTL_MS, secure: cookieSecure(req) }));
   res.json(Object.assign({ ok: true, csrfToken: issued.csrfToken, expiresIn: auth.SESSION_TTL_MS }, userPublic(user)));
@@ -411,6 +434,7 @@ app.post('/api/forgot-password', asyncRoute(async (req, res) => {
   user.resetToken = rt.token;
   user.resetExpiresAt = rt.expiresAt;
   await store.upsertUser(user);
+  audit(req, { type: 'auth.forgot_password', actorEmail: user.email, summary: 'Password reset requested', targetType: 'user', targetId: user.id });
   const resetUrl = '/admin.html?reset=' + encodeURIComponent(rt.token);
   console.log('[auth] Password reset requested for', user.email, 'token expires', rt.expiresAt, 'url', resetUrl);
   if (!IS_PRODUCTION) {
@@ -443,12 +467,21 @@ app.post('/api/reset-password', asyncRoute(async (req, res) => {
   auth.setPassword(user, newPassword);
   await store.upsertUser(user);
   await auth.revokeAllForEmail(user.email);
+  audit(req, { type: 'auth.password_reset', actorEmail: user.email, summary: 'Password reset completed', targetType: 'user', targetId: user.id });
   res.json({ ok: true, message: 'Password updated. You can now sign in.' });
 }));
 
 app.get('/api/users', requireSession, requireRole('super_admin', 'admin'), asyncRoute(async (req, res) => {
   const users = store.listUsers ? await store.listUsers() : [];
   res.json({ users: users.map(userPublic) });
+}));
+
+app.get('/api/audit', requireSession, requireRole('super_admin', 'admin'), asyncRoute(async (req, res) => {
+  if (!store.listAudit) { res.json({ entries: [] }); return; }
+  const limit = Math.max(1, Math.min(Number(req.query.limit) || 100, 500));
+  const type = req.query.type ? String(req.query.type) : '';
+  const entries = await store.listAudit({ limit, type: type || undefined });
+  res.json({ entries });
 }));
 
 app.post('/api/users', requireSession, requireRole('super_admin'), requireCsrf, asyncRoute(async (req, res) => {
@@ -477,6 +510,7 @@ app.post('/api/users', requireSession, requireRole('super_admin'), requireCsrf, 
   };
   auth.setPassword(user, password);
   await store.upsertUser(user);
+  audit(req, { type: 'user.created', summary: 'User created: ' + email, targetType: 'user', targetId: user.id, meta: { role: user.role } });
   res.status(201).json({ ok: true, user: userPublic(user) });
 }));
 
@@ -512,6 +546,7 @@ app.patch('/api/users/:id', requireSession, requireRole('super_admin'), requireC
     await auth.revokeAllForEmail(user.email);
   }
   await store.upsertUser(user);
+  audit(req, { type: 'user.updated', summary: 'User updated: ' + user.email, targetType: 'user', targetId: user.id, meta: { role: user.role, active: user.active !== false } });
   res.json({ ok: true, user: userPublic(user) });
 }));
 
@@ -522,6 +557,7 @@ app.post('/api/users/:id/reset-token', requireSession, requireRole('super_admin'
   user.resetToken = rt.token;
   user.resetExpiresAt = rt.expiresAt;
   await store.upsertUser(user);
+  audit(req, { type: 'user.reset_token_generated', summary: 'Reset token generated for ' + user.email, targetType: 'user', targetId: user.id });
   const resetUrl = '/admin.html?reset=' + encodeURIComponent(rt.token);
   console.log('[auth] Reset token generated for', user.email, 'expires', rt.expiresAt);
   res.json({ ok: true, user: userPublic(user), resetToken: rt.token, resetUrl, expiresAt: rt.expiresAt });

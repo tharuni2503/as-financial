@@ -76,6 +76,24 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions (expires_at);
 CREATE INDEX IF NOT EXISTS idx_sessions_email ON sessions (email);
 
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id TEXT PRIMARY KEY,
+  at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  type TEXT NOT NULL,
+  actor_email TEXT NOT NULL DEFAULT '',
+  actor_user_id TEXT,
+  actor_role TEXT NOT NULL DEFAULT '',
+  ip TEXT NOT NULL DEFAULT '',
+  target_type TEXT NOT NULL DEFAULT '',
+  target_id TEXT NOT NULL DEFAULT '',
+  summary TEXT NOT NULL DEFAULT '',
+  meta JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_at ON audit_logs (at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_type ON audit_logs (type);
+CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_logs (actor_email);
+
 -- Seed default rows for known keys
 INSERT INTO app_content (key, value) VALUES
   ('testimonials', '[]'::jsonb),
@@ -93,5 +111,5 @@ INSERT INTO app_admin (key, value) VALUES
   ('settings', '{}'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
-INSERT INTO app_meta (key, value) VALUES ('schema_version', '2')
-ON CONFLICT (key) DO UPDATE SET value = '2';
+INSERT INTO app_meta (key, value) VALUES ('schema_version', '3')
+ON CONFLICT (key) DO UPDATE SET value = '3';
