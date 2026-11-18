@@ -770,7 +770,7 @@ p:last-child { margin-bottom: 0; }
   grid-area: num; align-self: center;
   width: 56px; height: 56px; border-radius: 50%;
   background: #fff; border: 1px solid var(--gold);
-  color: #a9822f; font-family: var(--serif); font-size: 1.3rem;
+  color: #805f14; font-family: var(--serif); font-size: 1.3rem;
   display: grid; place-items: center; margin: 0;
   transition: background .35s ease, color .35s ease, border-color .35s ease, box-shadow .35s ease, transform .35s ease;
 }
@@ -779,7 +779,7 @@ p:last-child { margin-bottom: 0; }
   box-shadow: 0 12px 22px -12px rgba(169, 130, 47, .55);
   transform: scale(1.06);
 }
-.steps .step.is-done .step-num { background: #f6ecd4; border-color: #e3cf9f; color: #8a6a1f; }
+.steps .step.is-done .step-num { background: #f6ecd4; border-color: #ddc794; color: #7a5b16; }
 .step.is-active h3 { color: var(--navy-deep, #0b1f38); }
 .step.is-done h3 { color: var(--navy); }
 @media (max-width: 860px) {
