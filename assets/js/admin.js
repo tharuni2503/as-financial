@@ -82,6 +82,7 @@
     },
     set(key, value) {
       try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+      document.dispatchEvent(new CustomEvent('as:store', { detail: { key: key, value: value } }));
     },
     remove(key) { try { localStorage.removeItem(key); } catch (e) {} }
   };
@@ -294,6 +295,7 @@
   }
 
   function seedAll(force) {
+    window.__asSeeding = true;
     if (force || localStorage.getItem('as_leads') === null) store.set('as_leads', seedLeads());
     if (force || localStorage.getItem('as_applications') === null) store.set('as_applications', seedApplications());
     if (force || localStorage.getItem('as_products') === null) store.set('as_products', seedProducts());
@@ -306,6 +308,7 @@
     if (force || localStorage.getItem('as_gallery') === null) store.set('as_gallery', seedGallery());
     if (force || localStorage.getItem('as_tasks') === null) store.set('as_tasks', seedTasks());
     if (force || localStorage.getItem('as_settings') === null) store.set('as_settings', DEFAULT_SETTINGS);
+    window.__asSeeding = false;
   }
 
   /* ---------------------------------------------------------------- state */
@@ -334,7 +337,7 @@
   }
 
   const save = {
-    leads: () => store.set('as_leads', leads),
+    leads: () => store.set('as_leads', leads.filter(l => !l._server)),
     apps: () => store.set('as_applications', apps),
     products: () => store.set('as_products', products),
     partners: () => store.set('as_partners', partners),
@@ -345,6 +348,48 @@
     tasks: () => store.set('as_tasks', tasks),
     settings: () => store.set('as_settings', settings)
   };
+
+  /* ------------------------------------------------------------ server enquiries */
+  function mapServerEnquiry(e) {
+    return {
+      id: e.id,
+      name: e.name || '',
+      phone: e.phone || '',
+      email: e.email || '',
+      city: e.city || 'Hyderabad',
+      product: e.product || 'General enquiry',
+      amount: amountToNumber(e.amount) || 0,
+      source: e.source || 'Website form',
+      employment: e.employment || '',
+      status: e.handled ? 'Contacted' : 'New',
+      priority: 'Medium',
+      owner: 'Admin',
+      message: e.message || '',
+      createdAt: e.receivedAt || new Date().toISOString(),
+      notes: e.note ? [{ at: e.receivedAt || new Date().toISOString(), text: e.note, by: 'Server' }] : [],
+      _server: true,
+      _handled: !!e.handled
+    };
+  }
+
+  let syncingEnquiries = false;
+  function syncServerEnquiries() {
+    const api = window.ASBackend;
+    if (!api || !api.token || !api.token() || syncingEnquiries) return;
+    syncingEnquiries = true;
+    api.request('api/enquiries')
+      .then((data) => {
+        const list = (data && Array.isArray(data.enquiries)) ? data.enquiries : [];
+        const serverLeads = list.map(mapServerEnquiry);
+        const local = leads.filter(l => !l._server);
+        leads = serverLeads.concat(local);
+        renderAll();
+      })
+      .catch(() => { /* backend unavailable or session expired */ })
+      .then(() => { syncingEnquiries = false; });
+  }
+
+  document.addEventListener('as:sync-enquiries', syncServerEnquiries);
 
   /* ---------------------------------------------------------------- toast */
   function toast(message, type) {
@@ -633,6 +678,7 @@
     sessionStorage.setItem('as_admin_session', email);
     loadData();
     renderAll();
+    syncServerEnquiries();
     setView('overview', true);
   }
 
@@ -1839,7 +1885,12 @@
       if (action === 'delete-lead') {
         const l = leads.find(x => x.id === id);
         if (l) confirmDialog('Delete this lead?', l.name + ' will be removed from the pipeline permanently.', () => {
-          leads = leads.filter(x => x.id !== id); save.leads(); renderAll(); toast('Lead deleted.');
+          const done = () => { leads = leads.filter(x => x.id !== id); save.leads(); renderAll(); toast('Lead deleted.'); };
+          if (l._server && window.ASBackend && window.ASBackend.token && window.ASBackend.token()) {
+            window.ASBackend.request('api/enquiries/' + id, { method: 'DELETE' }).catch(() => {}).then(done);
+          } else {
+            done();
+          }
         });
       }
       if (action === 'clear-filters') {

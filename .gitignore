@@ -5,3 +5,4 @@ desktop.ini
 *.zip
 node_modules/
 .vercel/
+data/

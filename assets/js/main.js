@@ -480,21 +480,30 @@
         submitBtn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span>Saving…';
       }
 
-      // No backend is connected in this static build: the enquiry is stored
-      // locally so it can be reviewed in the demo admin dashboard.
-      setTimeout(() => {
-        saveLead({
-          name,
-          phone,
-          email,
-          product: data.get('product') || 'General enquiry',
-          amount: data.get('amount') || '',
-          income: data.get('income') || '',
-          employment: data.get('employment') || '',
-          city: data.get('city') || 'Hyderabad',
-          message: data.get('message') || '',
-          source: form.dataset.source || 'Website form'
-        });
+      const escape = (value) => String(value).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+      const payload = {
+        name,
+        phone,
+        email,
+        product: data.get('product') || 'General enquiry',
+        amount: data.get('amount') || '',
+        income: data.get('income') || '',
+        employment: data.get('employment') || '',
+        city: data.get('city') || 'Hyderabad',
+        message: data.get('message') || '',
+        source: form.dataset.source || 'Website form',
+        consent: true,
+        website: (data.get('website') || '').toString()
+      };
+
+      // Send to the backend when one is running; otherwise keep the local copy.
+      const api = window.ASBackend;
+      const delivery = api
+        ? api.enquire(payload).then((result) => !!(result && result.ok)).catch(() => false)
+        : Promise.resolve(false);
+
+      delivery.then((delivered) => {
+        saveLead(payload);
 
         if (submitBtn) {
           submitBtn.disabled = false;
@@ -504,7 +513,7 @@
         }
 
         if (success) {
-          const first = name.split(' ')[0] || 'there';
+          const first = escape(name.split(' ')[0] || 'there');
           const msg = settings.whatsapp || '919182703079';
           const waText = encodeURIComponent(
             'Hi AS Financial, my name is ' + name + '. I would like help with a ' +
@@ -512,19 +521,25 @@
           );
           success.innerHTML =
             '<svg class="icon icon-sm" aria-hidden="true"><use href="#i-check-circle"></use></svg>' +
-            '<span><strong>Thanks, ' + first + '. Your enquiry has been saved.</strong>' +
+            '<span><strong>Thanks, ' + first + '. ' +
+            (delivered ? 'Your enquiry has reached our team.' : 'Your enquiry has been saved.') + '</strong>' +
             ' For an immediate response, call or message us on ' +
             '<a href="tel:+' + (settings.phoneRaw || '919182703079') + '">' + settings.phone + '</a>.' +
             '<a class="success-wa" href="https://wa.me/' + msg + '?text=' + waText + '" target="_blank" rel="noopener">' +
             '<svg class="icon icon-sm" aria-hidden="true"><use href="#i-whatsapp"></use></svg> Send details on WhatsApp</a>' +
-            '<small class="demo-note">Demo build: this enquiry is stored in your browser only. Backend delivery and advisor callbacks are not connected yet.</small></span>';
+            (delivered
+              ? '<small class="demo-note">Received ' + new Date().toLocaleString('en-IN') + '. An advisor will call you back on the number you shared.</small>'
+              : '<small class="demo-note">Saved on this device only. If this message repeats, please call or WhatsApp us so nothing is missed.</small>') +
+            '</span>';
           success.classList.add('show');
           success.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
         form.reset();
         form.querySelectorAll('.field-error.show').forEach(el => el.classList.remove('show'));
-        asToast('Enquiry saved locally. For immediate help, call or WhatsApp ' + settings.phone + '.');
-      }, 450);
+        asToast(delivered
+          ? 'Enquiry received. We will call you back shortly.'
+          : 'Enquiry saved locally. For immediate help, call or WhatsApp ' + settings.phone + '.');
+      });
     });
   });
 
@@ -635,10 +650,6 @@
   const grid = document.querySelector('.gal-grid[data-gallery]');
   if (!grid) return;
 
-  let saved = null;
-  try { saved = JSON.parse(localStorage.getItem('as_gallery') || 'null'); } catch (error) { saved = null; }
-  if (!Array.isArray(saved) || !saved.length) return;
-
   const esc = (value) => String(value).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
   const safeSrc = (value) => {
     if (typeof value !== 'string') return false;
@@ -646,18 +657,31 @@
     return /^data:image\/(png|jpe?g|webp);base64,[a-z0-9+/=\s]+$/i.test(value);
   };
 
-  const items = saved.filter((item) => item && safeSrc(item.src));
-  if (!items.length) return;
+  function render(list) {
+    const items = list.filter((item) => item && safeSrc(item.src));
+    if (!items.length) return;
+    grid.innerHTML = items.map((item) => {
+      const caption = esc(item.caption || item.alt || 'Poster');
+      const alt = esc(item.alt || item.caption || 'Poster');
+      const src = item.src;
+      return '<button class="gal-item reveal" type="button" data-full="' + esc(src) + '" aria-label="View larger: ' + caption + '">' +
+        '<img src="' + esc(src) + '" alt="' + alt + '" loading="lazy">' +
+        '<span>' + caption + '</span>' +
+        '</button>';
+    }).join('');
+  }
 
-  grid.innerHTML = items.map((item) => {
-    const caption = esc(item.caption || item.alt || 'Poster');
-    const alt = esc(item.alt || item.caption || 'Poster');
-    const src = item.src;
-    return '<button class="gal-item reveal" type="button" data-full="' + esc(src) + '" aria-label="View larger: ' + caption + '">' +
-      '<img src="' + esc(src) + '" alt="' + alt + '" loading="lazy">' +
-      '<span>' + caption + '</span>' +
-      '</button>';
-  }).join('');
+  function local() {
+    try { return JSON.parse(localStorage.getItem('as_gallery') || 'null'); } catch (error) { return null; }
+  }
+
+  const api = window.ASBackend;
+  const remote = api ? api.content().catch(() => null) : Promise.resolve(null);
+  remote.then((content) => {
+    const server = content && Array.isArray(content.gallery) ? content.gallery : null;
+    const source = server && server.length ? server : local();
+    if (Array.isArray(source) && source.length) render(source);
+  });
 })();
 
 /* ---------- gallery lightbox ---------- */
@@ -701,30 +725,40 @@
   const grid = document.querySelector('.testi-grid[data-testimonials]');
   if (!grid) return;
 
-  let saved = null;
-  try { saved = JSON.parse(localStorage.getItem('as_testimonials') || 'null'); } catch (error) { saved = null; }
-  if (!Array.isArray(saved) || !saved.length) return;
-
-  const published = saved.filter((item) => item && item.published && item.name && item.quote);
-  const section = grid.closest('section');
-
-  if (!published.length) {
-    if (section) section.hidden = true;
-    return;
-  }
-
   const esc = (value) => String(value).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
   const initials = (name) => name.trim().split(/\s+/).slice(0, 2).map((word) => word.charAt(0)).join('').toUpperCase();
+  const section = grid.closest('section');
 
-  grid.innerHTML = published.map((item) => {
-    const meta = [item.product, item.location].filter(Boolean).map(esc).join(' · ');
-    return '<article class="testi-card">' +
-      '<svg class="icon testi-mark" aria-hidden="true"><use href="#i-quote"></use></svg>' +
-      '<p class="testi-quote">“' + esc(item.quote) + '”</p>' +
-      '<div class="testi-person"><span class="testi-avatar">' + esc(initials(item.name)) + '</span>' +
-      '<span><strong>' + esc(item.name) + '</strong><span>' + meta + '</span></span></div>' +
-      '</article>';
-  }).join('');
+  function local() {
+    try { return JSON.parse(localStorage.getItem('as_testimonials') || 'null'); } catch (error) { return null; }
+  }
+
+  function render(saved) {
+    const published = saved.filter((item) => item && item.published && item.name && item.quote);
+
+    if (!published.length) {
+      if (section) section.hidden = true;
+      return;
+    }
+
+    grid.innerHTML = published.map((item) => {
+      const meta = [item.product, item.location].filter(Boolean).map(esc).join(' · ');
+      return '<article class="testi-card">' +
+        '<svg class="icon testi-mark" aria-hidden="true"><use href="#i-quote"></use></svg>' +
+        '<p class="testi-quote">“' + esc(item.quote) + '”</p>' +
+        '<div class="testi-person"><span class="testi-avatar">' + esc(initials(item.name)) + '</span>' +
+        '<span><strong>' + esc(item.name) + '</strong><span>' + meta + '</span></span></div>' +
+        '</article>';
+    }).join('');
+  }
+
+  const api = window.ASBackend;
+  const remote = api ? api.content().catch(() => null) : Promise.resolve(null);
+  remote.then((content) => {
+    const server = content && Array.isArray(content.testimonials) ? content.testimonials : null;
+    const source = server && server.length ? server : local();
+    if (Array.isArray(source) && source.length) render(source);
+  });
 })();
 
 /* ---------- calculator amount chips ---------- */
@@ -762,10 +796,6 @@
 
 /* ---------- homepage product images: admin selection ---------- */
 (function () {
-  let images = null;
-  try { images = JSON.parse(localStorage.getItem('as_content_images') || 'null'); } catch (error) { images = null; }
-  if (!images || typeof images !== 'object' || Array.isArray(images)) return;
-
   const ALT = {
     'assets/img/poster/home-loan.jpg': 'Modern family home',
     'assets/img/poster/mortgage.jpg': 'House model with keys',
@@ -804,41 +834,57 @@
     return /^#i-[a-z0-9-]+$/.test(href || '') ? href : '';
   }
 
-  document.querySelectorAll('.pcard[data-content-img]').forEach((card) => {
-    const key = card.getAttribute('data-content-img');
-    if (!Object.prototype.hasOwnProperty.call(images, key)) return;
-    const value = images[key];
-    const media = card.querySelector('.pcard-media');
-    if (!media) return;
-    const heading = (card.querySelector('h3') || {}).textContent || 'Loan';
+  function apply(images) {
+    if (!images || typeof images !== 'object' || Array.isArray(images)) return;
 
-    if (!value || value === 'icon') {
-      const href = iconHref(card);
-      if (!href) return;
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('class', 'icon');
-      svg.setAttribute('aria-hidden', 'true');
-      const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-      use.setAttribute('href', href);
-      svg.appendChild(use);
-      media.classList.add('icon-only');
-      media.textContent = '';
-      media.appendChild(svg);
-      return;
-    }
+    document.querySelectorAll('.pcard[data-content-img]').forEach((card) => {
+      const key = card.getAttribute('data-content-img');
+      if (!Object.prototype.hasOwnProperty.call(images, key)) return;
+      const value = images[key];
+      const media = card.querySelector('.pcard-media');
+      if (!media) return;
+      const heading = (card.querySelector('h3') || {}).textContent || 'Loan';
 
-    if (!safeSrc(value)) return;
-    let img = media.querySelector('img');
-    if (!img) {
-      media.textContent = '';
-      img = document.createElement('img');
-      img.loading = 'lazy';
-      img.decoding = 'async';
-      media.appendChild(img);
-    }
-    media.classList.remove('icon-only');
-    img.src = value;
-    img.alt = ALT[value] || (heading + ' illustration');
+      if (!value || value === 'icon') {
+        const href = iconHref(card);
+        if (!href) return;
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'icon');
+        svg.setAttribute('aria-hidden', 'true');
+        const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+        use.setAttribute('href', href);
+        svg.appendChild(use);
+        media.classList.add('icon-only');
+        media.textContent = '';
+        media.appendChild(svg);
+        return;
+      }
+
+      if (!safeSrc(value)) return;
+      let img = media.querySelector('img');
+      if (!img) {
+        media.textContent = '';
+        img = document.createElement('img');
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        media.appendChild(img);
+      }
+      media.classList.remove('icon-only');
+      img.src = value;
+      img.alt = ALT[value] || (heading + ' illustration');
+    });
+  }
+
+  function local() {
+    try { return JSON.parse(localStorage.getItem('as_content_images') || 'null'); } catch (error) { return null; }
+  }
+
+  const api = window.ASBackend;
+  const remote = api ? api.content().catch(() => null) : Promise.resolve(null);
+  remote.then((content) => {
+    const server = content && content.images && typeof content.images === 'object' ? content.images : null;
+    const images = server && Object.keys(server).length ? server : local();
+    apply(images);
   });
 })();
 

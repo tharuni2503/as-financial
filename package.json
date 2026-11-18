@@ -1,0 +1,17 @@
+{
+  "name": "as-financial-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AS Financial Services and Solutions - static site plus a small Node backend for published content and website enquiries.",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
