@@ -418,11 +418,16 @@ input[type="range"]::-moz-range-thumb { border-color: var(--navy); }
 }
 
 /* tools/calculators promo */
-.tools-promo-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:14px; }
+.tools-promo-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(168px,1fr)); gap:12px; }
 .tools-promo-card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px; transform-style:preserve-3d; transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease; color: inherit; }
 .tools-promo-card h3 { margin: 0 0 6px; font-size: 1rem; }
 .tools-promo-card p { margin: 0; color: var(--muted); font-size: .86rem; }
 .tools-promo-card:hover { transform: translateY(-5px) rotateX(1.5deg); box-shadow: var(--shadow); border-color:#DCCB9B; }
+@media (max-width: 560px) {
+  .tools-promo-card { padding: 13px; border-radius: 14px; }
+  .tools-promo-card h3 { font-size: .92rem; margin-bottom: 4px; }
+  .tools-promo-card p { font-size: .79rem; }
+}
 
 /* Ambak-like calculator pages */
 .calc-page-hero { padding: 42px 0 24px; background: linear-gradient(180deg,#fff,var(--cream)); border-bottom: 1px solid var(--line); }
