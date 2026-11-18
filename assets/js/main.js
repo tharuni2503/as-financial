@@ -832,6 +832,54 @@
   });
 })();
 
+/* ---------- process steps: scroll progress + active number ---------- */
+(function () {
+  const wraps = document.querySelectorAll('.steps');
+  if (!wraps.length) return;
+
+  wraps.forEach((wrap) => {
+    const steps = Array.prototype.slice.call(wrap.querySelectorAll('.step'));
+    if (!steps.length) return;
+    wrap.classList.add('is-watching');
+    let frame = 0;
+
+    const update = () => {
+      frame = 0;
+      const vh = window.innerHeight || 800;
+      const anchor = vh * 0.62;
+      const centers = steps.map((s) => {
+        const r = s.getBoundingClientRect();
+        return r.top + r.height / 2;
+      });
+      const start = centers[0];
+      const end = centers[centers.length - 1];
+      const span = end - start;
+      const fill = span > 0
+        ? Math.min(1, Math.max(0, (anchor - start) / span))
+        : (anchor >= start ? 1 : 0);
+      wrap.style.setProperty('--progress', fill.toFixed(4));
+
+      let active = -1;
+      centers.forEach((c, i) => { if (c <= anchor) active = i; });
+
+      steps.forEach((step, i) => {
+        step.classList.toggle('is-seen', centers[i] < vh * 0.95);
+        step.classList.toggle('is-active', i === active);
+        step.classList.toggle('is-done', i < active);
+      });
+    };
+
+    const request = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener('scroll', request, { passive: true });
+    window.addEventListener('resize', request);
+    window.addEventListener('load', request);
+  });
+})();
 /* ---------- back to top ---------- */
 (function () {
   if (document.querySelector('.back-to-top')) return;
