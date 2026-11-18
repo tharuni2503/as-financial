@@ -35,10 +35,18 @@ function verifyPassword(credential, password) {
   return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
 }
 
-function issue(email) {
+function issue(email, role) {
   const token = crypto.randomBytes(32).toString('base64url');
-  sessions.set(token, { email, expiresAt: Date.now() + SESSION_TTL_MS });
-  return token;
+  const csrfToken = crypto.randomBytes(32).toString('base64url');
+  const session = {
+    email,
+    role: role || 'admin',
+    csrfToken,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + SESSION_TTL_MS
+  };
+  sessions.set(token, session);
+  return { token, csrfToken, session };
 }
 
 function read(token) {
@@ -50,6 +58,13 @@ function read(token) {
     return null;
   }
   return session;
+}
+
+function rotate(token) {
+  const current = read(token);
+  if (!current) return null;
+  sessions.delete(token);
+  return issue(current.email, current.role);
 }
 
 function revoke(token) {
@@ -134,6 +149,7 @@ module.exports = {
   verifyPassword,
   issue,
   read,
+  rotate,
   revoke,
   tokenFrom,
   cookieHeader,

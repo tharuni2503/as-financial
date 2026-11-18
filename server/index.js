@@ -87,7 +87,43 @@ function requireSession(req, res, next) {
     return;
   }
   req.session = session;
+  req.authToken = auth.tokenFrom(req);
   next();
+}
+
+function requireCsrf(req, res, next) {
+  const method = String(req.method || 'GET').toUpperCase();
+  if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return next();
+  const session = req.session;
+  if (!session) {
+    res.status(401).json({ error: 'Please sign in again.' });
+    return;
+  }
+  const header = req.get('x-csrf-token') || req.get('x-xsrf-token') || '';
+  if (!header || header !== session.csrfToken) {
+    res.status(403).json({ error: 'Security check failed. Please refresh and sign in again.' });
+    return;
+  }
+  next();
+}
+
+const ROLE_RANK = { advisor: 1, staff: 2, admin: 3, super_admin: 4 };
+
+function requireRole(...roles) {
+  const allowed = roles && roles.length ? roles : ['staff', 'admin', 'super_admin'];
+  return (req, res, next) => {
+    if (!req.session) {
+      res.status(401).json({ error: 'Please sign in again.' });
+      return;
+    }
+    const role = req.session.role || 'advisor';
+    const ok = allowed.some((r) => role === r || (ROLE_RANK[role] || 0) >= (ROLE_RANK[r] || 99));
+    if (!ok) {
+      res.status(403).json({ error: 'You do not have permission to perform this action.' });
+      return;
+    }
+    next();
+  };
 }
 
 function asyncRoute(handler) {
@@ -122,12 +158,12 @@ app.post('/api/login', (req, res) => {
   }
 
   auth.clearAttempts(ip);
-  const token = auth.issue(credential.email);
-  res.setHeader('Set-Cookie', auth.cookieHeader(token, { maxAgeMs: auth.SESSION_TTL_MS, secure: cookieSecure(req) }));
-  res.json({ ok: true, email: credential.email, expiresIn: auth.SESSION_TTL_MS });
+  const issued = auth.issue(credential.email, 'super_admin');
+  res.setHeader('Set-Cookie', auth.cookieHeader(issued.token, { maxAgeMs: auth.SESSION_TTL_MS, secure: cookieSecure(req) }));
+  res.json({ ok: true, email: credential.email, role: 'super_admin', csrfToken: issued.csrfToken, expiresIn: auth.SESSION_TTL_MS });
 });
 
-app.post('/api/logout', (req, res) => {
+app.post('/api/logout', requireSession, requireCsrf, (req, res) => {
   auth.revoke(auth.tokenFrom(req));
   res.setHeader('Set-Cookie', auth.clearCookieHeader(cookieSecure(req)));
   res.json({ ok: true });
@@ -139,7 +175,12 @@ app.get('/api/session', (req, res) => {
     res.status(401).json({ error: 'Not signed in.' });
     return;
   }
-  res.json({ email: session.email, expiresAt: new Date(session.expiresAt).toISOString() });
+  res.json({
+    email: session.email,
+    role: session.role || 'admin',
+    csrfToken: session.csrfToken || '',
+    expiresAt: new Date(session.expiresAt).toISOString()
+  });
 });
 
 app.get('/api/content', (req, res) => {
@@ -158,7 +199,7 @@ app.get('/api/content', (req, res) => {
   });
 });
 
-app.put('/api/content/:section', requireSession, (req, res) => {
+app.put('/api/content/:section', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, (req, res) => {
   const section = String(req.params.section || '').toLowerCase();
   const value = validate.content(section, req.body);
   store.setSection(section, value);
@@ -194,11 +235,11 @@ app.post('/api/enquiries', (req, res) => {
   res.status(201).json({ ok: true, id: enquiry.id });
 });
 
-app.get('/api/enquiries', requireSession, (req, res) => {
+app.get('/api/enquiries', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), (req, res) => {
   res.json({ enquiries: store.listEnquiries(), stats: store.stats() });
 });
 
-app.patch('/api/enquiries/:id', requireSession, (req, res) => {
+app.patch('/api/enquiries/:id', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), requireCsrf, (req, res) => {
   const patch = {};
   if (req.body && typeof req.body.handled === 'boolean') patch.handled = req.body.handled;
   if (req.body && typeof req.body.note === 'string') patch.note = validate.text(req.body.note, 500);
@@ -210,7 +251,7 @@ app.patch('/api/enquiries/:id', requireSession, (req, res) => {
   res.json({ ok: true, enquiry: updated });
 });
 
-app.delete('/api/enquiries/:id', requireSession, (req, res) => {
+app.delete('/api/enquiries/:id', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, (req, res) => {
   const removed = store.removeEnquiry(String(req.params.id));
   if (!removed) {
     res.status(404).json({ error: 'Enquiry not found.' });
@@ -219,7 +260,7 @@ app.delete('/api/enquiries/:id', requireSession, (req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/api/admin/store', requireSession, (req, res) => {
+app.get('/api/admin/store', requireSession, requireRole('staff', 'admin', 'super_admin'), (req, res) => {
   const admin = store.adminData();
   res.json({
     ok: true,
@@ -233,7 +274,7 @@ app.get('/api/admin/store', requireSession, (req, res) => {
   });
 });
 
-app.put('/api/admin/store/:name', requireSession, (req, res) => {
+app.put('/api/admin/store/:name', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, (req, res) => {
   const name = String(req.params.name || '').toLowerCase();
   const value = validate.adminCollection(name, req.body);
   store.setAdminCollection(name, value);
