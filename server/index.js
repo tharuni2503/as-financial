@@ -644,6 +644,29 @@ app.post('/api/users/:id/revoke-sessions', requireSession, requireRole('super_ad
   res.json({ ok: true, revoked: count, keepCurrent });
 }));
 
+app.get('/api/admin/export', requireSession, requireRole('super_admin'), asyncRoute(async (req, res) => {
+  const content = await store.content();
+  const admin = await store.adminData();
+  const enquiries = await store.listEnquiries();
+  const users = store.listUsers ? await store.listUsers() : [];
+  const auditEntries = store.listAudit ? await store.listAudit({ limit: 500 }) : [];
+  const stats = await store.stats();
+  const desc = typeof store.describe === 'function' ? store.describe() : { backend: store.BACKEND || 'unknown' };
+  const safeUsers = users.map((u) => userPublic(u));
+  audit(req, { type: 'admin.export', summary: 'Exported system data', targetType: 'system', targetId: 'export' });
+  res.json({
+    ok: true,
+    exportedAt: new Date().toISOString(),
+    backend: desc.backend,
+    stats,
+    content,
+    admin,
+    enquiries,
+    users: safeUsers,
+    audit: auditEntries
+  });
+}));
+
 app.post('/api/users', requireSession, requireRole('super_admin'), requireCsrf, asyncRoute(async (req, res) => {
   const body = req.body || {};
   const email = String(body.email || '').trim().toLowerCase();

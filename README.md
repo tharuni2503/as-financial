@@ -67,6 +67,10 @@ Then open <http://127.0.0.1:4173/>.
 - `sitemap.xml` and `robots.txt` reference `https://as-financial-services-psi.vercel.app/`. Update these if the domain changes.
 - To run the Node backend on Vercel you need a server/adapter deployment and a durable database; without it the site deploys and runs in static/demo mode.
 
+### Admin utilities
+
+- `GET /api/admin/export` (super_admin, authenticated session): exports content, admin collections, enquiries, sanitized users, recent audit entries, and stats for backup/migration planning. Secrets (password hashes/salts/reset tokens) are not included.
+
 ## Notes
 
 - No build step. Calculator output is indicative; final rates and eligibility depend on the lender and the customer's profile.
