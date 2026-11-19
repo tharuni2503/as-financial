@@ -434,7 +434,8 @@ async function addAudit(entry) {
   };
   await getPool().query(
     `INSERT INTO audit_logs (id, at, type, actor_email, actor_user_id, actor_role, ip, target_type, target_id, summary, meta)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb)`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb)
+     ON CONFLICT (id) DO NOTHING`,
     [record.id, record.at, record.type, record.actorEmail, record.actorUserId, record.actorRole, record.ip, record.targetType, record.targetId, record.summary, JSON.stringify(record.meta)]
   );
   await getPool().query(

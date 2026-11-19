@@ -71,6 +71,24 @@ Then open <http://127.0.0.1:4173/>.
 
 - `GET /api/admin/export` (super_admin, authenticated session): exports content, admin collections, enquiries, sanitized users, recent audit entries, and stats for backup/migration planning. Secrets (password hashes/salts/reset tokens) are not included.
 
+### JSON → PostgreSQL migration
+
+When `DATABASE_URL`/`POSTGRES_URL` is configured, you can import existing JSON data into Postgres (auto-migrates schema first):
+
+```bash
+# preview
+node server/migrate-json-to-pg.js --dry-run
+
+# import from local data/db.json (full: users/credentials, sessions, audit, security)
+DATABASE_URL=postgres://... node server/migrate-json-to-pg.js
+
+# import from a specific file (e.g. a saved export or db snapshot)
+DATABASE_URL=postgres://... node server/migrate-json-to-pg.js path/to/data.json
+```
+
+- Prefer `data/db.json` for a complete migration. Snapshots from `GET /api/admin/export` are sanitized (no password hashes/salts, reset tokens, sessions, or security state) and cannot restore credentials/sessions.
+- Safe to re-run for most entities (upserts / conflict-safe inserts where applicable). Verify with `GET /api/health` (`backend: "postgres"`).
+
 ## Notes
 
 - No build step. Calculator output is indicative; final rates and eligibility depend on the lender and the customer's profile.
