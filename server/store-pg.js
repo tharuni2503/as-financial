@@ -73,6 +73,26 @@ async function touchUpdatedAt() {
   return now;
 }
 
+async function getSecurityState() {
+  try {
+    const res = await getPool().query('SELECT value FROM app_meta WHERE key = $1', ['security_state']);
+    if (!res.rows[0] || !res.rows[0].value) return {};
+    const parsed = JSON.parse(res.rows[0].value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+async function setSecurityState(state) {
+  const safe = state && typeof state === 'object' && !Array.isArray(state) ? state : {};
+  await getPool().query(
+    'INSERT INTO app_meta (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+    ['security_state', JSON.stringify(safe)]
+  );
+  return safe;
+}
+
 async function load(url) {
   if (url) dbUrl = url;
   getPool();
@@ -521,6 +541,8 @@ module.exports = {
   deleteSessionsForEmail,
   addAudit,
   listAudit,
+  getSecurityState,
+  setSecurityState,
   stats,
   describe
 };

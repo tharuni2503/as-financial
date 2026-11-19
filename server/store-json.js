@@ -37,7 +37,7 @@ function emptyAdmin() {
 }
 
 function emptyDb() {
-  return { version: 4, updatedAt: null, content: emptyContent(), enquiries: [], admin: emptyAdmin(), users: [], sessions: {}, audit: [] };
+  return { version: 5, updatedAt: null, content: emptyContent(), enquiries: [], admin: emptyAdmin(), users: [], sessions: {}, audit: [], security: {} };
 }
 
 let db = emptyDb();
@@ -64,16 +64,19 @@ function normalise(parsed) {
 
   const sessions = parsed && parsed.sessions && typeof parsed.sessions === 'object' && !Array.isArray(parsed.sessions)
     ? parsed.sessions : {};
+  const security = parsed && parsed.security && typeof parsed.security === 'object' && !Array.isArray(parsed.security)
+    ? parsed.security : {};
 
   return {
-    version: 4,
+    version: 5,
     updatedAt: parsed && typeof parsed.updatedAt === 'string' ? parsed.updatedAt : null,
     content,
     enquiries: parsed && Array.isArray(parsed.enquiries) ? parsed.enquiries : [],
     admin,
     users: parsed && Array.isArray(parsed.users) ? parsed.users : [],
     sessions,
-    audit: parsed && Array.isArray(parsed.audit) ? parsed.audit.slice(0, MAX_AUDIT) : []
+    audit: parsed && Array.isArray(parsed.audit) ? parsed.audit.slice(0, MAX_AUDIT) : [],
+    security
   };
 }
 
@@ -334,6 +337,18 @@ async function listAudit(options) {
   return items.slice(0, limit);
 }
 
+/* ------------------------------------------------------------- security */
+
+async function getSecurityState() {
+  return db.security && typeof db.security === 'object' ? db.security : {};
+}
+
+async function setSecurityState(state) {
+  db.security = state && typeof state === 'object' && !Array.isArray(state) ? state : {};
+  await save();
+  return db.security;
+}
+
 async function stats() {
   const publishedTestimonials = db.content.testimonials.filter((item) => item && item.published).length;
   return {
@@ -389,6 +404,8 @@ module.exports = {
   deleteSessionsForEmail,
   addAudit,
   listAudit,
+  getSecurityState,
+  setSecurityState,
   stats,
   describe
 };

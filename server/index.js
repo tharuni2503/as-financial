@@ -183,12 +183,14 @@ app.get('/api/health', (req, res) => {
 
 app.post('/api/login', asyncRoute(async (req, res) => {
   const ip = req.ip || 'unknown';
-  if (auth.tooManyAttempts(ip)) {
+  const email = String((req.body && req.body.email) || '').trim().toLowerCase();
+  const acctKey = email ? ('acct:' + email) : '';
+  if (auth.tooManyAttempts(ip) || (acctKey && auth.tooManyAttempts(acctKey))) {
+    audit(req, { type: 'auth.login_rate_limited', actorEmail: email, summary: 'Login rate limited', meta: { ip } });
     res.status(429).json({ error: 'Too many attempts. Please try again in a few minutes.' });
     return;
   }
 
-  const email = String((req.body && req.body.email) || '').trim().toLowerCase();
   const password = String((req.body && req.body.password) || '');
 
   let user = null;
@@ -204,12 +206,14 @@ app.post('/api/login', asyncRoute(async (req, res) => {
   const ok = user && user.active !== false && auth.verifyPassword(user, password);
   if (!ok) {
     auth.noteFailedAttempt(ip);
+    if (acctKey) auth.noteFailedAttempt(acctKey);
     audit(req, { type: 'auth.login_failed', actorEmail: email, summary: 'Login failed', meta: { reason: user ? (user.active === false ? 'inactive' : 'bad_password') : 'unknown_user' } });
     res.status(401).json({ error: 'Those details do not match our records.' });
     return;
   }
 
   auth.clearAttempts(ip);
+  if (acctKey) auth.clearAttempts(acctKey);
   user.lastLoginAt = new Date().toISOString();
   if (store.upsertUser) await store.upsertUser(user);
 
@@ -700,7 +704,13 @@ async function boot() {
           removeExpired: () => store.deleteExpiredSessions ? store.deleteExpiredSessions() : Promise.resolve()
         }
       : null;
-    await auth.init(sessionPersistence);
+    const securityPersistence = (store.getSecurityState && store.setSecurityState)
+      ? {
+          load: () => store.getSecurityState(),
+          save: (state) => store.setSecurityState(state)
+        }
+      : null;
+    await auth.init(sessionPersistence, securityPersistence);
   }
 
   const stats = await store.stats();

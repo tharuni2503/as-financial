@@ -18,6 +18,48 @@ const RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
 const sessions = new Map();
 const attempts = new Map();
 let persistence = null; // { loadAll, save, remove, removeExpired }
+let securityPersistence = null; // { load, save }
+let securitySaveTimer = null;
+
+function pruneAttemptsMap(map) {
+  const now = Date.now();
+  let changed = false;
+  map.forEach((record, key) => {
+    if (!record || (record.resetAt && record.resetAt <= now)) { map.delete(key); changed = true; }
+  });
+  return changed;
+}
+
+function serializeAttempts() {
+  const obj = {};
+  attempts.forEach((record, key) => {
+    if (record && record.resetAt > Date.now()) obj[key] = { count: record.count, resetAt: record.resetAt };
+  });
+  return obj;
+}
+
+function persistAttemptsNow() {
+  if (!securityPersistence || !securityPersistence.save) return Promise.resolve();
+  const state = { attempts: serializeAttempts(), savedAt: Date.now() };
+  return Promise.resolve(securityPersistence.save(state)).catch((err) => {
+    console.warn('[auth] security persist failed:', err && err.message ? err.message : err);
+  });
+}
+
+function scheduleAttemptsPersist(immediate) {
+  if (!securityPersistence || !securityPersistence.save) return;
+  if (immediate) {
+    if (securitySaveTimer) { clearTimeout(securitySaveTimer); securitySaveTimer = null; }
+    persistAttemptsNow();
+    return;
+  }
+  if (securitySaveTimer) return;
+  securitySaveTimer = setTimeout(() => {
+    securitySaveTimer = null;
+    persistAttemptsNow();
+  }, 1500);
+  if (securitySaveTimer.unref) securitySaveTimer.unref();
+}
 
 function createCredential(email, password) {
   const salt = crypto.randomBytes(16);
@@ -66,30 +108,48 @@ function persistRemove(token) {
   });
 }
 
-async function init(storePersistence) {
+async function init(storePersistence, secPersistence) {
   persistence = storePersistence || null;
+  securityPersistence = secPersistence || null;
   sessions.clear();
-  if (!persistence || !persistence.loadAll) return;
-  try {
-    const all = await persistence.loadAll();
-    const now = Date.now();
-    Object.keys(all || {}).forEach((token) => {
-      const s = all[token];
-      if (!s) return;
-      const exp = typeof s.expiresAt === 'number' ? s.expiresAt : Date.parse(s.expiresAt);
-      if (!exp || exp <= now) return;
-      sessions.set(token, Object.assign({}, s, {
-        id: s.id || null,
-        expiresAt: exp,
-        createdAt: typeof s.createdAt === 'number' ? s.createdAt : Date.parse(s.createdAt) || now,
-        lastSeenAt: typeof s.lastSeenAt === 'number' ? s.lastSeenAt : (Date.parse(s.lastSeenAt) || now)
-      }));
-    });
-    if (persistence.removeExpired) {
-      await persistence.removeExpired().catch(() => {});
+  attempts.clear();
+  if (persistence && persistence.loadAll) {
+    try {
+      const all = await persistence.loadAll();
+      const now = Date.now();
+      Object.keys(all || {}).forEach((token) => {
+        const s = all[token];
+        if (!s) return;
+        const exp = typeof s.expiresAt === 'number' ? s.expiresAt : Date.parse(s.expiresAt);
+        if (!exp || exp <= now) return;
+        sessions.set(token, Object.assign({}, s, {
+          id: s.id || null,
+          expiresAt: exp,
+          createdAt: typeof s.createdAt === 'number' ? s.createdAt : Date.parse(s.createdAt) || now,
+          lastSeenAt: typeof s.lastSeenAt === 'number' ? s.lastSeenAt : (Date.parse(s.lastSeenAt) || now)
+        }));
+      });
+      if (persistence.removeExpired) {
+        await persistence.removeExpired().catch(() => {});
+      }
+    } catch (err) {
+      console.warn('[auth] could not load persisted sessions:', err && err.message ? err.message : err);
     }
-  } catch (err) {
-    console.warn('[auth] could not load persisted sessions:', err && err.message ? err.message : err);
+  }
+  if (securityPersistence && securityPersistence.load) {
+    try {
+      const state = await securityPersistence.load();
+      const stored = state && state.attempts && typeof state.attempts === 'object' ? state.attempts : {};
+      const now = Date.now();
+      Object.keys(stored).forEach((key) => {
+        const rec = stored[key];
+        if (!rec || !rec.resetAt || rec.resetAt <= now) return;
+        attempts.set(key, { count: Number(rec.count) || 0, resetAt: Number(rec.resetAt) });
+      });
+      pruneAttemptsMap(attempts);
+    } catch (err) {
+      console.warn('[auth] could not load security state:', err && err.message ? err.message : err);
+    }
   }
 }
 
@@ -252,6 +312,7 @@ function tooManyAttempts(ip) {
   if (!record) return false;
   if (record.resetAt <= Date.now()) {
     attempts.delete(ip);
+    scheduleAttemptsPersist(false);
     return false;
   }
   return record.count >= MAX_ATTEMPTS;
@@ -261,13 +322,16 @@ function noteFailedAttempt(ip) {
   const record = attempts.get(ip);
   if (!record || record.resetAt <= Date.now()) {
     attempts.set(ip, { count: 1, resetAt: Date.now() + ATTEMPT_WINDOW_MS });
-    return;
+  } else {
+    record.count += 1;
   }
-  record.count += 1;
+  scheduleAttemptsPersist(true);
 }
 
 function clearAttempts(ip) {
+  if (!attempts.has(ip)) return;
   attempts.delete(ip);
+  scheduleAttemptsPersist(true);
 }
 
 function makeResetToken() {
@@ -305,9 +369,8 @@ const sweeper = setInterval(() => {
     expired.forEach((t) => persistRemove(t));
     if (persistence.removeExpired) persistence.removeExpired().catch(() => {});
   }
-  attempts.forEach((record, ip) => {
-    if (record.resetAt <= now) attempts.delete(ip);
-  });
+  const pruned = pruneAttemptsMap(attempts);
+  if (pruned) scheduleAttemptsPersist(false);
 }, 15 * 60 * 1000);
 if (sweeper.unref) sweeper.unref();
 
