@@ -27,12 +27,14 @@ function getPool() {
   }
   const connectionString = dbUrl || process.env.DATABASE_URL || process.env.POSTGRES_URL;
   if (!connectionString) throw new Error('DATABASE_URL is not set.');
-  pool = new pg.Pool({
-    connectionString,
-    ssl: /sslmode=require/i.test(connectionString) || process.env.PGSSLMODE === 'require'
-      ? { rejectUnauthorized: false }
-      : undefined
-  });
+  const wantsSsl = /sslmode=(require|prefer|verify-ca|no-verify|allow)/i.test(connectionString)
+    || /supabase\.(co|com)/i.test(connectionString)
+    || /sslmode=/i.test(connectionString)
+    || String(process.env.PGSSLMODE || '').length > 0
+    || process.env.AS_PG_SSL === '1';
+  const verify = /sslmode=verify-full/i.test(connectionString) || process.env.AS_PG_SSL_VERIFY === '1';
+  const ssl = wantsSsl ? { rejectUnauthorized: !!verify } : undefined;
+  pool = new pg.Pool({ connectionString, ssl });
   return pool;
 }
 
