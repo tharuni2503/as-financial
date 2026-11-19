@@ -38,12 +38,17 @@ function serializeAttempts() {
   return obj;
 }
 
-function persistAttemptsNow() {
-  if (!securityPersistence || !securityPersistence.save) return Promise.resolve();
-  const state = { attempts: serializeAttempts(), savedAt: Date.now() };
-  return Promise.resolve(securityPersistence.save(state)).catch((err) => {
+async function persistAttemptsNow() {
+  if (!securityPersistence || !securityPersistence.save) return;
+  try {
+    let state = {};
+    if (securityPersistence.load) state = await Promise.resolve(securityPersistence.load()) || {};
+    state.attempts = serializeAttempts();
+    state.savedAt = Date.now();
+    await Promise.resolve(securityPersistence.save(state));
+  } catch (err) {
     console.warn('[auth] security persist failed:', err && err.message ? err.message : err);
-  });
+  }
 }
 
 function scheduleAttemptsPersist(immediate) {

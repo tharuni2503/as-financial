@@ -100,6 +100,7 @@ function enquiryRateLimited(ip) {
   hits.push(now);
   enquiriesByIp.set(ip, hits);
   if (enquiriesByIp.size > 5000) enquiriesByIp.clear();
+  scheduleSecurityPersist(false);
   return hits.length > ENQUIRY_LIMIT;
 }
 
@@ -147,6 +148,71 @@ function requireRole(...roles) {
     }
     next();
   };
+}
+
+let securitySaveTimer = null;
+
+function pruneBucketMap(map, windowMs) {
+  const now = Date.now();
+  const w = windowMs || 15 * 60 * 1000;
+  let changed = false;
+  map.forEach((rec, key) => {
+    const hits = Array.isArray(rec && rec.hits) ? rec.hits.filter((t) => now - Number(t) < w) : [];
+    if (hits.length) { rec.hits = hits; } else { map.delete(key); changed = true; }
+  });
+  if (map.size > 5000) { map.clear(); changed = true; }
+  return changed;
+}
+
+function serializeBucketMap(map, windowMs) {
+  const now = Date.now();
+  const w = windowMs || 15 * 60 * 1000;
+  const out = {};
+  map.forEach((rec, key) => {
+    const hits = Array.isArray(rec && rec.hits) ? rec.hits.filter((t) => now - Number(t) < w).slice(-100) : [];
+    if (hits.length) out[key] = { hits };
+  });
+  return out;
+}
+
+function loadBucketsFromState(state) {
+  const sec = state && typeof state === 'object' ? state : {};
+  const pw = sec.pwBuckets && typeof sec.pwBuckets === 'object' ? sec.pwBuckets : {};
+  const enq = sec.enquiryBuckets && typeof sec.enquiryBuckets === 'object' ? sec.enquiryBuckets : {};
+  Object.keys(pw).forEach((k) => { const hits = Array.isArray(pw[k] && pw[k].hits) ? pw[k].hits : []; if (hits.length) pwAttemptsByIp.set(k, { hits: hits.slice() }); });
+  Object.keys(enq).forEach((k) => { const hits = Array.isArray(enq[k] && enq[k].hits) ? enq[k].hits : []; if (hits.length) enquiriesByIp.set(k, hits.slice()); });
+  pruneBucketMap(pwAttemptsByIp, 15 * 60 * 1000);
+  pruneBucketMap(enquiriesByIp, ENQUIRY_WINDOW_MS);
+}
+
+async function persistSecurityNow() {
+  if (!store || typeof store.getSecurityState !== 'function' || typeof store.setSecurityState !== 'function') return;
+  try {
+    pruneBucketMap(pwAttemptsByIp, 15 * 60 * 1000);
+    pruneBucketMap(enquiriesByIp, ENQUIRY_WINDOW_MS);
+    const state = await store.getSecurityState() || {};
+    state.pwBuckets = serializeBucketMap(pwAttemptsByIp, 15 * 60 * 1000);
+    state.enquiryBuckets = serializeBucketMap(enquiriesByIp, ENQUIRY_WINDOW_MS);
+    state.savedAt = Date.now();
+    await store.setSecurityState(state);
+  } catch (err) {
+    console.warn('[security] persist failed:', err && err.message ? err.message : err);
+  }
+}
+
+function scheduleSecurityPersist(immediate) {
+  if (!store || typeof store.setSecurityState !== 'function') return;
+  if (immediate) {
+    if (securitySaveTimer) { clearTimeout(securitySaveTimer); securitySaveTimer = null; }
+    Promise.resolve(persistSecurityNow()).catch(() => {});
+    return;
+  }
+  if (securitySaveTimer) return;
+  securitySaveTimer = setTimeout(() => {
+    securitySaveTimer = null;
+    Promise.resolve(persistSecurityNow()).catch(() => {});
+  }, 3000);
+  if (securitySaveTimer.unref) securitySaveTimer.unref();
 }
 
 function asyncRoute(handler) {
@@ -373,6 +439,7 @@ function pwRateLimited(ip, limit, windowMs) {
   rec.hits.push(now);
   pwAttemptsByIp.set(key, rec);
   if (pwAttemptsByIp.size > 5000) pwAttemptsByIp.clear();
+  scheduleSecurityPersist(false);
   return rec.hits.length > (limit || 10);
 }
 
@@ -711,6 +778,10 @@ async function boot() {
         }
       : null;
     await auth.init(sessionPersistence, securityPersistence);
+  }
+
+  if (store.getSecurityState) {
+    try { loadBucketsFromState(await store.getSecurityState()); } catch (e) { /* ignore */ }
   }
 
   const stats = await store.stats();
