@@ -77,6 +77,8 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
   next();
 });
 
@@ -525,16 +527,21 @@ app.post('/api/forgot-password', asyncRoute(async (req, res) => {
   const resetUrl = (mailer && mailer.absoluteResetUrl) ? mailer.absoluteResetUrl(resetPath, req) : resetPath;
   let mailResult = { sent: false, configured: false };
   if (mailer && mailer.isConfigured && mailer.isConfigured()) {
-    mailResult = await mailer.sendPasswordReset({ to: user.email, name: user.name, resetUrl, expiresAt: rt.expiresAt }).catch(() => ({ sent: false, fallback: true }));
+    mailResult = await mailer.sendPasswordReset({ to: user.email, name: user.name, resetUrl, expiresAt: rt.expiresAt }).catch(() => ({ sent: false, fallback: true, reason: 'send_exception' }));
     mailResult.configured = true;
   }
-  audit(req, { type: 'auth.forgot_password', actorEmail: user.email, summary: 'Password reset requested', targetType: 'user', targetId: user.id, meta: { emailSent: !!mailResult.sent } });
-  console.log('[auth] Password reset requested for', user.email, 'token expires', rt.expiresAt, 'url', resetUrl, 'emailSent=' + !!mailResult.sent);
+  const emailSent = !!mailResult.sent;
+  const emailConfigured = !!(mailer && mailer.isConfigured && mailer.isConfigured());
+  if (IS_PRODUCTION && !emailSent) {
+    console.warn('[auth] Password reset requested in production but email was not delivered (configured=' + emailConfigured + ', reason=' + (mailResult.reason || 'unknown') + ') for', user.email);
+  }
+  audit(req, { type: 'auth.forgot_password', actorEmail: user.email, summary: 'Password reset requested', targetType: 'user', targetId: user.id, meta: { emailSent, emailConfigured, reason: mailResult.reason || null } });
+  console.log('[auth] Password reset requested for', user.email, 'token expires', rt.expiresAt, 'url', resetUrl, 'emailSent=' + emailSent + ' emailConfigured=' + emailConfigured);
   if (!IS_PRODUCTION) {
-    res.json(Object.assign({}, generic, { devResetToken: rt.token, devResetUrl: resetPath, resetUrl, expiresAt: rt.expiresAt, emailSent: !!mailResult.sent }));
+    res.json(Object.assign({}, generic, { devResetToken: rt.token, devResetUrl: resetPath, resetUrl, expiresAt: rt.expiresAt, emailSent, emailConfigured }));
   } else {
     // In production do not expose tokens; delivery relies on configured email or admin-issued reset.
-    res.json(Object.assign({}, generic, { emailSent: !!mailResult.sent }));
+    res.json(Object.assign({}, generic, { emailSent, emailConfigured }));
   }
 }));
 
