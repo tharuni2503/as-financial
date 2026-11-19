@@ -607,7 +607,8 @@ app.post('/api/sessions/revoke-others', requireSession, requireCsrf, asyncRoute(
 
 app.delete('/api/sessions/:id', requireSession, requireCsrf, asyncRoute(async (req, res) => {
   const id = String(req.params.id || '');
-  const isAdmin = roleAtLeast(req.session.role || 'advisor', 'admin');
+  const actorRole = req.session.role || 'advisor';
+  const isAdmin = roleAtLeast(actorRole, 'admin');
   const currentToken = req.authToken || auth.tokenFrom(req);
   // Find session info for authorization/audit
   const all = auth.listSessions ? auth.listSessions({ currentToken }) : [];
@@ -624,9 +625,20 @@ app.delete('/api/sessions/:id', requireSession, requireCsrf, asyncRoute(async (r
     res.json({ ok: true });
     return;
   }
-  if (!isAdmin && String(target.email || '').toLowerCase() !== String(req.session.email || '').toLowerCase()) {
+  const targetEmail = String(target.email || '').toLowerCase();
+  const actorEmail = String(req.session.email || '').toLowerCase();
+  const isOwn = targetEmail && targetEmail === actorEmail;
+  if (!isAdmin && !isOwn) {
     res.status(403).json({ error: 'You do not have permission to revoke this session.' });
     return;
+  }
+  // Prevent lower-privileged admins from revoking sessions of higher/equal privileged users (super_admin can manage all).
+  if (!isOwn && actorRole !== 'super_admin') {
+    const targetRole = String(target.role || 'advisor');
+    if ((ROLE_RANK[actorRole] || 0) <= (ROLE_RANK[targetRole] || 0)) {
+      res.status(403).json({ error: 'You do not have permission to revoke sessions for this user.' });
+      return;
+    }
   }
   if (target.current) { res.status(400).json({ error: 'Use sign out to end your current session.' }); return; }
   const result = await auth.revokeById(id, currentToken);
@@ -638,8 +650,18 @@ app.delete('/api/sessions/:id', requireSession, requireCsrf, asyncRoute(async (r
 app.post('/api/users/:id/revoke-sessions', requireSession, requireRole('super_admin', 'admin'), requireCsrf, asyncRoute(async (req, res) => {
   const user = await store.findUserById(String(req.params.id || ''));
   if (!user) { res.status(404).json({ error: 'User not found.' }); return; }
+  const actorRole = req.session.role || 'advisor';
+  const actorEmail = String(req.session.email || '').toLowerCase();
+  const targetEmail = String(user.email || '').toLowerCase();
+  const keepCurrent = targetEmail && targetEmail === actorEmail;
+  if (!keepCurrent && actorRole !== 'super_admin') {
+    const targetRole = String(user.role || 'advisor');
+    if ((ROLE_RANK[actorRole] || 0) <= (ROLE_RANK[targetRole] || 0)) {
+      res.status(403).json({ error: 'You do not have permission to revoke sessions for this user.' });
+      return;
+    }
+  }
   const currentToken = req.authToken || auth.tokenFrom(req);
-  const keepCurrent = String(user.email || '').toLowerCase() === String(req.session.email || '').toLowerCase();
   let count = 0;
   if (keepCurrent && auth.revokeOthersForEmail) {
     count = await auth.revokeOthersForEmail(user.email, currentToken);
