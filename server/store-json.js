@@ -17,7 +17,7 @@ const TMP_FILE = path.join(DATA_DIR, 'db.tmp.json');
 const BACKUP_FILE = path.join(DATA_DIR, 'db.backup.json');
 
 const SECTIONS = ['testimonials', 'gallery', 'posts'];
-const ADMIN_COLLECTIONS = ['leads', 'applications', 'products', 'partners', 'tasks'];
+const ADMIN_COLLECTIONS = ['leads', 'applications', 'products', 'partners', 'tasks', 'customers', 'documents', 'notifications'];
 const MAX_ENQUIRIES = 2000;
 const MAX_AUDIT = 2000;
 
@@ -32,6 +32,9 @@ function emptyAdmin() {
     products: [],
     partners: [],
     tasks: [],
+    customers: [],
+    documents: [],
+    notifications: [],
     settings: {}
   };
 }
@@ -361,6 +364,10 @@ async function stats() {
     unreadEnquiries: db.enquiries.filter((item) => item && !item.handled).length,
     leads: db.admin.leads.length,
     applications: db.admin.applications.length,
+    customers: Array.isArray(db.admin.customers) ? db.admin.customers.length : 0,
+    documents: Array.isArray(db.admin.documents) ? db.admin.documents.length : 0,
+    notifications: Array.isArray(db.admin.notifications) ? db.admin.notifications.length : 0,
+    tasks: Array.isArray(db.admin.tasks) ? db.admin.tasks.length : 0,
     users: db.users.length,
     audit: db.audit.length,
     updatedAt: db.updatedAt

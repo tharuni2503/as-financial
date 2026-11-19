@@ -10,7 +10,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const SECTIONS = ['testimonials', 'gallery', 'posts'];
-const ADMIN_COLLECTIONS = ['leads', 'applications', 'products', 'partners', 'tasks'];
+const ADMIN_COLLECTIONS = ['leads', 'applications', 'products', 'partners', 'tasks', 'customers', 'documents', 'notifications'];
 const MAX_ENQUIRIES = 2000;
 const MAX_AUDIT = 2000;
 
@@ -56,7 +56,7 @@ function emptyContent() {
 }
 
 function emptyAdmin() {
-  return { leads: [], applications: [], products: [], partners: [], tasks: [], settings: {} };
+  return { leads: [], applications: [], products: [], partners: [], tasks: [], customers: [], documents: [], notifications: [], settings: {} };
 }
 
 async function getMetaUpdatedAt() {
@@ -497,8 +497,12 @@ async function stats() {
     images: Object.keys(c.images || {}).length,
     enquiries: row.total || 0,
     unreadEnquiries: row.unread || 0,
-    leads: a.leads.length,
-    applications: a.applications.length,
+    leads: (a.leads || []).length,
+    applications: (a.applications || []).length,
+    customers: (a.customers || []).length,
+    documents: (a.documents || []).length,
+    notifications: (a.notifications || []).length,
+    tasks: (a.tasks || []).length,
     users: userCount,
     audit: auditCount,
     updatedAt: await getMetaUpdatedAt()

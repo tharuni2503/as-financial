@@ -78,6 +78,9 @@ async function main() {
       products: asArray(admin.products).length,
       partners: asArray(admin.partners).length,
       tasks: asArray(admin.tasks).length,
+      customers: asArray(admin.customers).length,
+      documents: asArray(admin.documents).length,
+      notifications: asArray(admin.notifications).length,
       settings: Object.keys(asObject(admin.settings)).length
     },
     enquiries: enquiries.length,
@@ -119,7 +122,7 @@ async function main() {
   }
 
   // Admin collections + settings
-  for (const key of ['leads', 'applications', 'products', 'partners', 'tasks']) {
+  for (const key of ['leads', 'applications', 'products', 'partners', 'tasks', 'customers', 'documents', 'notifications']) {
     if (Array.isArray(admin[key])) { await store.setAdminCollection(key, admin[key]); counts.admin += 1; }
   }
   if (admin.settings && typeof admin.settings === 'object' && !Array.isArray(admin.settings)) {

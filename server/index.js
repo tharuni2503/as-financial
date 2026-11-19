@@ -382,6 +382,28 @@ app.post('/api/enquiries', asyncRoute(async (req, res) => {
   console.log('[enquiry]', enquiry.id, enquiry.name, enquiry.phone, enquiry.product);
   audit(req, { type: 'enquiry.created', actorEmail: '', summary: 'Website enquiry received: ' + (enquiry.product || 'General'), targetType: 'enquiry', targetId: enquiry.id, meta: { product: enquiry.product || '', source: enquiry.source || '', city: enquiry.city || '' } });
 
+  // Create an in-app notification for staff (best-effort).
+  try {
+    if (store.adminData && store.setAdminCollection) {
+      const admin = await store.adminData();
+      const notifications = Array.isArray(admin.notifications) ? admin.notifications.slice() : [];
+      notifications.unshift({
+        id: 'NTF-' + Date.now().toString(36).toUpperCase(),
+        type: 'enquiry.new',
+        title: 'New enquiry received',
+        message: [enquiry.name, enquiry.phone, enquiry.product].filter(Boolean).join(' • ').slice(0, 240),
+        targetType: 'enquiry',
+        targetId: enquiry.id,
+        read: false,
+        createdAt: enquiry.receivedAt
+      });
+      if (notifications.length > 500) notifications.length = 500;
+      await store.setAdminCollection('notifications', notifications);
+    }
+  } catch (e) {
+    console.warn('[notify] failed to create enquiry notification:', e && e.message ? e.message : e);
+  }
+
   res.status(201).json({ ok: true, id: enquiry.id });
 }));
 
@@ -421,12 +443,15 @@ app.get('/api/admin/store', requireSession, requireRole('staff', 'admin', 'super
   res.json({
     ok: true,
     updatedAt: stats.updatedAt,
-    leads: admin.leads,
-    applications: admin.applications,
-    products: admin.products,
-    partners: admin.partners,
-    tasks: admin.tasks,
-    settings: admin.settings
+    leads: admin.leads || [],
+    applications: admin.applications || [],
+    products: admin.products || [],
+    partners: admin.partners || [],
+    tasks: admin.tasks || [],
+    customers: admin.customers || [],
+    documents: admin.documents || [],
+    notifications: admin.notifications || [],
+    settings: admin.settings || {}
   });
 }));
 
@@ -876,7 +901,8 @@ async function boot() {
     console.log('  Storage:     ' + desc.backend + (desc.location ? ' (' + desc.location + ')' : ''));
     console.log('  Content:     ' + stats.publishedTestimonials + ' published testimonials, ' +
       stats.gallery + ' posters, ' + stats.images + ' image overrides, ' + stats.enquiries + ' enquiries');
-    console.log('  Admin data:  ' + stats.leads + ' leads, ' + stats.applications + ' applications, ' + (stats.users || 0) + ' users');
+    console.log('  Admin data:  ' + (stats.leads || 0) + ' leads, ' + (stats.applications || 0) + ' applications, ' +
+      (stats.customers || 0) + ' customers, ' + (stats.documents || 0) + ' documents, ' + (stats.notifications || 0) + ' notifications, ' + (stats.users || 0) + ' users');
     console.log('');
   });
 }

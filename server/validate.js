@@ -152,7 +152,7 @@ function enquiry(payload) {
   };
 }
 
-const ADMIN_ARRAYS = ['leads', 'applications', 'products', 'partners', 'tasks'];
+const ADMIN_ARRAYS = ['leads', 'applications', 'products', 'partners', 'tasks', 'customers', 'documents', 'notifications'];
 
 function scalar(value, maxString) {
   if (value === null || value === undefined) return value === undefined ? null : null;

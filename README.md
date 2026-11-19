@@ -29,7 +29,8 @@ Then open:
 ### What the backend does
 
 - **Site-wide publishing**: testimonials, gallery posters, guides/posts, and homepage offering images saved in admin are stored on the server (`data/db.json`) and served to every visitor via `GET /api/content`.
-- **Enquiry capture**: website enquiry forms post to `POST /api/enquiries` (stored server-side, rate-limited, with a honeypot). When signed in, admin can view and remove these enquiries from the Leads view.
+- **Enquiry capture**: website enquiry forms post to `POST /api/enquiries` (stored server-side, rate-limited, with a honeypot). New enquiries also create an in-app notification record (admin store `notifications`) for staff follow-up. When signed in, admin/staff can view, update, and remove enquiries.
+- **CRM/admin data collections**: server-backed collections for `leads`, `applications`, `products`, `partners`, `tasks`, `customers`, `documents`, `notifications`, and `settings` via `GET /api/admin/store` and `PUT /api/admin/store/:name` (RBAC-protected, CSRF-validated, audited).
 - **Graceful fallback**: if the backend is not running, the site keeps working as a static demo - content falls back to browser `localStorage` and enquiries are saved on the device only.
 
 ### Admin sign-in
