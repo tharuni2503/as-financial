@@ -26,6 +26,7 @@ const express = require('express');
 const store = require('./store');
 const auth = require('./auth');
 const validate = require('./validate');
+const mailer = require('./mailer');
 
 const ROOT = path.join(__dirname, '..');
 const PORT = Number(process.env.PORT || 3000);
@@ -506,13 +507,20 @@ app.post('/api/forgot-password', asyncRoute(async (req, res) => {
   user.resetToken = rt.token;
   user.resetExpiresAt = rt.expiresAt;
   await store.upsertUser(user);
-  audit(req, { type: 'auth.forgot_password', actorEmail: user.email, summary: 'Password reset requested', targetType: 'user', targetId: user.id });
-  const resetUrl = '/admin.html?reset=' + encodeURIComponent(rt.token);
-  console.log('[auth] Password reset requested for', user.email, 'token expires', rt.expiresAt, 'url', resetUrl);
+  const resetPath = '/admin.html?reset=' + encodeURIComponent(rt.token);
+  const resetUrl = (mailer && mailer.absoluteResetUrl) ? mailer.absoluteResetUrl(resetPath, req) : resetPath;
+  let mailResult = { sent: false, configured: false };
+  if (mailer && mailer.isConfigured && mailer.isConfigured()) {
+    mailResult = await mailer.sendPasswordReset({ to: user.email, name: user.name, resetUrl, expiresAt: rt.expiresAt }).catch(() => ({ sent: false, fallback: true }));
+    mailResult.configured = true;
+  }
+  audit(req, { type: 'auth.forgot_password', actorEmail: user.email, summary: 'Password reset requested', targetType: 'user', targetId: user.id, meta: { emailSent: !!mailResult.sent } });
+  console.log('[auth] Password reset requested for', user.email, 'token expires', rt.expiresAt, 'url', resetUrl, 'emailSent=' + !!mailResult.sent);
   if (!IS_PRODUCTION) {
-    res.json(Object.assign({}, generic, { devResetToken: rt.token, devResetUrl: resetUrl, expiresAt: rt.expiresAt }));
+    res.json(Object.assign({}, generic, { devResetToken: rt.token, devResetUrl: resetPath, resetUrl, expiresAt: rt.expiresAt, emailSent: !!mailResult.sent }));
   } else {
-    res.json(generic);
+    // In production do not expose tokens; delivery relies on configured email or admin-issued reset.
+    res.json(Object.assign({}, generic, { emailSent: !!mailResult.sent }));
   }
 }));
 
@@ -695,10 +703,16 @@ app.post('/api/users/:id/reset-token', requireSession, requireRole('super_admin'
   user.resetToken = rt.token;
   user.resetExpiresAt = rt.expiresAt;
   await store.upsertUser(user);
-  audit(req, { type: 'user.reset_token_generated', summary: 'Reset token generated for ' + user.email, targetType: 'user', targetId: user.id });
-  const resetUrl = '/admin.html?reset=' + encodeURIComponent(rt.token);
-  console.log('[auth] Reset token generated for', user.email, 'expires', rt.expiresAt);
-  res.json({ ok: true, user: userPublic(user), resetToken: rt.token, resetUrl, expiresAt: rt.expiresAt });
+  const resetPath = '/admin.html?reset=' + encodeURIComponent(rt.token);
+  const resetUrl = (mailer && mailer.absoluteResetUrl) ? mailer.absoluteResetUrl(resetPath, req) : resetPath;
+  let emailSent = false;
+  if (mailer && mailer.isConfigured && mailer.isConfigured()) {
+    const mailResult = await mailer.sendPasswordReset({ to: user.email, name: user.name, resetUrl, expiresAt: rt.expiresAt }).catch(() => ({ sent: false }));
+    emailSent = !!(mailResult && mailResult.sent);
+  }
+  audit(req, { type: 'user.reset_token_generated', summary: 'Reset token generated for ' + user.email, targetType: 'user', targetId: user.id, meta: { emailSent } });
+  console.log('[auth] Reset token generated for', user.email, 'expires', rt.expiresAt, 'emailSent=' + emailSent);
+  res.json({ ok: true, user: userPublic(user), resetToken: rt.token, resetUrl: resetPath, absoluteResetUrl: resetUrl, expiresAt: rt.expiresAt, emailSent });
 }));
 
 app.use('/api', (req, res) => {

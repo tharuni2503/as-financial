@@ -38,6 +38,15 @@ Then open:
 - Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables before using in production.
 - The password is hashed in memory (scrypt) and sessions use short-lived bearer tokens.
 
+### Password reset email (optional)
+
+Configure SMTP to deliver password reset links by email (otherwise reset links are logged and, in non-production, returned by the API for development):
+
+- `SMTP_HOST`, `SMTP_PORT` (default `587`), `SMTP_USER`, `SMTP_PASS`
+- `SMTP_SECURE` (`true` for port 465/implicit TLS)
+- `MAIL_FROM` (sender address)
+- `APP_URL` (public base URL used to build absolute reset links, e.g. `https://your-domain.example`)
+
 ### Data storage
 
 - Stored in `data/db.json` (created automatically). A backup of the previous version is kept as `data/db.backup.json`.
