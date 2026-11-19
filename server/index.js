@@ -343,7 +343,9 @@ app.put('/api/content/:section', requireSession, requireRole('staff', 'admin', '
   const value = validate.content(section, req.body);
   await store.setSection(section, value);
   const stats = await store.stats();
-  res.json({ ok: true, section, count: Array.isArray(value) ? value.length : Object.keys(value).length, updatedAt: stats.updatedAt });
+  const count = Array.isArray(value) ? value.length : Object.keys(value).length;
+  audit(req, { type: 'content.published', summary: 'Published content: ' + section, targetType: 'content', targetId: section, meta: { section, count } });
+  res.json({ ok: true, section, count, updatedAt: stats.updatedAt });
 }));
 
 app.post('/api/enquiries', asyncRoute(async (req, res) => {
@@ -370,6 +372,7 @@ app.post('/api/enquiries', asyncRoute(async (req, res) => {
 
   await store.addEnquiry(enquiry);
   console.log('[enquiry]', enquiry.id, enquiry.name, enquiry.phone, enquiry.product);
+  audit(req, { type: 'enquiry.created', actorEmail: '', summary: 'Website enquiry received: ' + (enquiry.product || 'General'), targetType: 'enquiry', targetId: enquiry.id, meta: { product: enquiry.product || '', source: enquiry.source || '', city: enquiry.city || '' } });
 
   res.status(201).json({ ok: true, id: enquiry.id });
 }));
@@ -389,15 +392,18 @@ app.patch('/api/enquiries/:id', requireSession, requireRole('advisor', 'staff', 
     res.status(404).json({ error: 'Enquiry not found.' });
     return;
   }
+  audit(req, { type: 'enquiry.updated', summary: 'Enquiry updated: ' + String(req.params.id), targetType: 'enquiry', targetId: String(req.params.id), meta: patch });
   res.json({ ok: true, enquiry: updated });
 }));
 
 app.delete('/api/enquiries/:id', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
-  const removed = await store.removeEnquiry(String(req.params.id));
+  const id = String(req.params.id);
+  const removed = await store.removeEnquiry(id);
   if (!removed) {
     res.status(404).json({ error: 'Enquiry not found.' });
     return;
   }
+  audit(req, { type: 'enquiry.deleted', summary: 'Enquiry deleted: ' + id, targetType: 'enquiry', targetId: id });
   res.json({ ok: true });
 }));
 
@@ -421,10 +427,12 @@ app.put('/api/admin/store/:name', requireSession, requireRole('staff', 'admin', 
   const value = validate.adminCollection(name, req.body);
   await store.setAdminCollection(name, value);
   const stats = await store.stats();
+  const count = Array.isArray(value) ? value.length : Object.keys(value).length;
+  audit(req, { type: 'admin.store_updated', summary: 'Admin data updated: ' + name, targetType: 'admin_store', targetId: name, meta: { name, count } });
   res.json({
     ok: true,
     name,
-    count: Array.isArray(value) ? value.length : Object.keys(value).length,
+    count,
     updatedAt: stats.updatedAt
   });
 }));
