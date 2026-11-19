@@ -134,6 +134,10 @@ function requireCsrf(req, res, next) {
 
 const ROLE_RANK = { advisor: 1, staff: 2, admin: 3, super_admin: 4 };
 
+function roleAtLeast(role, minRole) {
+  return (ROLE_RANK[role] || 0) >= (ROLE_RANK[minRole] || 99);
+}
+
 function requireRole(...roles) {
   const allowed = roles && roles.length ? roles : ['staff', 'admin', 'super_admin'];
   return (req, res, next) => {
@@ -142,7 +146,7 @@ function requireRole(...roles) {
       return;
     }
     const role = req.session.role || 'advisor';
-    const ok = allowed.some((r) => role === r || (ROLE_RANK[role] || 0) >= (ROLE_RANK[r] || 99));
+    const ok = allowed.some((r) => role === r || roleAtLeast(role, r));
     if (!ok) {
       res.status(403).json({ error: 'You do not have permission to perform this action.' });
       return;
@@ -324,7 +328,9 @@ app.get('/api/session', asyncRoute(async (req, res) => {
 
 app.get('/api/content', asyncRoute(async (req, res) => {
   const session = auth.read(auth.tokenFrom(req));
-  const admin = req.query.scope === 'admin' && Boolean(session);
+  const wantsAdmin = req.query.scope === 'admin';
+  const canViewAdmin = Boolean(session) && roleAtLeast(session.role || 'advisor', 'staff');
+  const admin = wantsAdmin && canViewAdmin;
   const content = await store.content();
   const stats = await store.stats();
 
@@ -573,7 +579,7 @@ app.get('/api/audit', requireSession, requireRole('super_admin', 'admin'), async
 }));
 
 app.get('/api/sessions', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
-  const isAdmin = req.session.role === 'admin' || req.session.role === 'super_admin';
+  const isAdmin = roleAtLeast(req.session.role || 'advisor', 'admin');
   const scopeAll = isAdmin && String(req.query.scope || '') === 'all';
   const currentToken = req.authToken || auth.tokenFrom(req);
   let sessions;
@@ -594,7 +600,7 @@ app.post('/api/sessions/revoke-others', requireSession, requireCsrf, asyncRoute(
 
 app.delete('/api/sessions/:id', requireSession, requireCsrf, asyncRoute(async (req, res) => {
   const id = String(req.params.id || '');
-  const isAdmin = req.session.role === 'admin' || req.session.role === 'super_admin';
+  const isAdmin = roleAtLeast(req.session.role || 'advisor', 'admin');
   const currentToken = req.authToken || auth.tokenFrom(req);
   // Find session info for authorization/audit
   const all = auth.listSessions ? auth.listSessions({ currentToken }) : [];
