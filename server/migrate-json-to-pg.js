@@ -21,6 +21,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
+
+// Load environment variables from project root .env (if present)
+try {
+  process.loadEnvFile(path.join(ROOT, '.env'));
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error;
+}
 const DEFAULT_DB = path.join(ROOT, 'data', 'db.json');
 
 function argValue(flag) {

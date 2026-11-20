@@ -25,7 +25,7 @@ function getPool() {
   } catch (error) {
     throw new Error('PostgreSQL backend requires the "pg" package. Run: npm install pg');
   }
-  const connectionString = dbUrl || process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  let connectionString = dbUrl || process.env.DATABASE_URL || process.env.POSTGRES_URL;
   if (!connectionString) throw new Error('DATABASE_URL is not set.');
   const wantsSsl = /sslmode=(require|prefer|verify-ca|no-verify|allow)/i.test(connectionString)
     || /supabase\.(co|com)/i.test(connectionString)
@@ -33,6 +33,25 @@ function getPool() {
     || String(process.env.PGSSLMODE || '').length > 0
     || process.env.AS_PG_SSL === '1';
   const verify = /sslmode=verify-full/i.test(connectionString) || process.env.AS_PG_SSL_VERIFY === '1';
+  if (wantsSsl && !verify) {
+    // Avoid pg-connection-string / libpq sslmode parsing conflicts (common with Supabase cert chains).
+    try {
+      const u = new URL(connectionString);
+      u.searchParams.delete('sslmode');
+      u.searchParams.delete('uselibpqcompat');
+      connectionString = u.toString();
+    } catch (e) {
+      connectionString = connectionString
+        .replace(/([?&])sslmode=[^&]*/ig, '$1')
+        .replace(/([?&])uselibpqcompat=[^&]*/ig, '$1')
+        .replace(/[?&]$/, '');
+    }
+    // Supabase/managed Postgres may present cert chains Node rejects even with rejectUnauthorized:false in some setups.
+    // Keep encrypted TLS but relax verification unless strict verification is explicitly requested.
+    if (process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0') {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    }
+  }
   const ssl = wantsSsl ? { rejectUnauthorized: !!verify } : undefined;
   pool = new pg.Pool({ connectionString, ssl });
   return pool;
