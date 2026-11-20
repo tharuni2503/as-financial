@@ -23,6 +23,13 @@
 const path = require('node:path');
 const express = require('express');
 
+// Load environment variables from project root .env
+try {
+  process.loadEnvFile(path.join(__dirname, '..', '.env'));
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error;
+}
+
 const store = require('./store');
 const auth = require('./auth');
 const validate = require('./validate');
@@ -817,6 +824,7 @@ const PRIVATE_PATHS = [
   /^\/data(\/|$)/i,
   /^\/node_modules(\/|$)/i,
   /^\/\.git(\/|$)/i,
+  /^\/\.env(\.|$)/i,
   /^\/package(-lock)?\.json$/i,
   /^\/README\.md$/i
 ];
