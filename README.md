@@ -24,7 +24,15 @@ Then open:
 
 - Site: <http://localhost:3000/>
 - Admin: <http://localhost:3000/admin.html>
-- Health check: <http://localhost:3000/api/health>
+- Health check: <http://localhost:3000/api/health> (shows `backend: "json"` or `backend: "postgres"`)
+
+### Environment variables
+
+- Copy `.env.example` to `.env` and fill in values. The server and migration script auto-load `.env` on startup.
+- `DATABASE_URL` (or `POSTGRES_URL`): PostgreSQL connection string (Supabase/Neon/etc.). When set, the app uses Postgres and auto-migrates schema on boot; when unset, it uses `data/db.json`.
+- `ADMIN_EMAIL`, `ADMIN_PASSWORD`: admin bootstrap/sign-in credentials. **`ADMIN_PASSWORD` is required when `NODE_ENV=production`.**
+- `APP_URL`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE`, `MAIL_FROM`: optional password-reset email delivery (see below).
+- For serverless/Vercel, prefer a **pooled** Postgres URI (e.g. Supabase transaction pooler, port 6543). Direct/session pooler URIs are fine for local/long-running servers. Set env vars in Vercel Project Settings and redeploy.
 
 ### What the backend does
 
