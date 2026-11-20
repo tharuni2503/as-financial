@@ -127,6 +127,9 @@
         <button class="sidebar-link active" data-view="overview"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg> Overview</button>
         <button class="sidebar-link" data-view="leads"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg> Leads <span class="badge-count" id="nav-lead-count">0</span></button>
         <button class="sidebar-link" data-view="applications"><svg class="icon" aria-hidden="true"><use href="#i-folder"></use></svg> Applications</button>
+        <button class="sidebar-link" data-view="customers"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg> Customers</button>
+        <button class="sidebar-link" data-view="documents"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg> Documents</button>
+        <button class="sidebar-link" data-view="notifications"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg> Notifications <span class="badge-count" id="nav-notif-count">0</span></button>
         <button class="sidebar-link" data-view="reports"><svg class="icon" aria-hidden="true"><use href="#i-report"></use></svg> Reports</button>
 
         <div class="sidebar-label">Catalogue</div>
@@ -513,6 +516,55 @@
                 <tbody id="lender-body"></tbody>
               </table>
             </div>
+          </div>
+        </section>
+
+        <!-- CUSTOMERS -->
+        <section class="view" id="view-customers">
+          <div class="page-head">
+            <div><h2>Customers</h2><p>Manage customer profiles and relationships</p></div>
+            <div class="page-head-actions"><button class="a-btn a-btn-gold" id="add-customer-btn"><svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg> Add customer</button></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h3>Customer records</h3><p>Synced to the server when signed in</p></div></div>
+            <div class="table-wrap">
+              <table class="a-table">
+                <thead><tr><th scope="col">Customer</th><th scope="col">Phone</th><th scope="col">Email</th><th scope="col">Product interest</th><th scope="col">Status</th><th scope="col">City</th><th scope="col">Actions</th></tr></thead>
+                <tbody id="customers-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- DOCUMENTS -->
+        <section class="view" id="view-documents">
+          <div class="page-head">
+            <div><h2>Documents</h2><p>Track customer and application document status</p></div>
+            <div class="page-head-actions"><button class="a-btn a-btn-gold" id="add-document-btn"><svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg> Add document</button></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h3>Document records</h3><p>Metadata tracking (file storage can be added separately)</p></div></div>
+            <div class="table-wrap">
+              <table class="a-table">
+                <thead><tr><th scope="col">Title</th><th scope="col">Type</th><th scope="col">Customer/Application</th><th scope="col">Status</th><th scope="col">Updated</th><th scope="col">Actions</th></tr></thead>
+                <tbody id="documents-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- NOTIFICATIONS -->
+        <section class="view" id="view-notifications">
+          <div class="page-head">
+            <div><h2>Notifications</h2><p>In-app alerts and enquiry notifications</p></div>
+            <div class="page-head-actions">
+              <button class="a-btn a-btn-light" id="mark-all-notifs-read"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg> Mark all read</button>
+              <button class="a-btn a-btn-ghost danger" id="clear-notifs-btn"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg> Clear all</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h3>Notification feed</h3><p>New website enquiries create notifications automatically</p></div></div>
+            <div class="card-body" id="notifications-list"></div>
           </div>
         </section>
 

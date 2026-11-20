@@ -305,12 +305,15 @@
     if (force || localStorage.getItem('as_content_images') === null) store.set('as_content_images', {});
     if (force || localStorage.getItem('as_gallery') === null) store.set('as_gallery', seedGallery());
     if (force || localStorage.getItem('as_tasks') === null) store.set('as_tasks', seedTasks());
+    if (force || localStorage.getItem('as_customers') === null) store.set('as_customers', []);
+    if (force || localStorage.getItem('as_documents') === null) store.set('as_documents', []);
+    if (force || localStorage.getItem('as_notifications') === null) store.set('as_notifications', []);
     if (force || localStorage.getItem('as_settings') === null) store.set('as_settings', DEFAULT_SETTINGS);
     window.__asSeeding = false;
   }
 
   /* ---------------------------------------------------------------- state */
-  let leads = [], apps = [], products = [], partners = [], testimonials = [], posts = [], contentImages = {}, gallery = [], tasks = [], settings = {};
+  let leads = [], apps = [], products = [], partners = [], testimonials = [], posts = [], contentImages = {}, gallery = [], tasks = [], customers = [], documents = [], notifications = [], settings = {};
   let leadPage = 1, appPage = 1;
   const PAGE_SIZE = 8;
   const filters = { leadSearch: '', leadProduct: '', leadStatus: '', leadSource: '', appSearch: '', appLender: '', appStage: 'all', partnerType: '' };
@@ -331,9 +334,15 @@
     gallery = store.get('as_gallery', []);
     if (!Array.isArray(gallery)) gallery = [];
     tasks = store.get('as_tasks', []);
+    customers = store.get('as_customers', []);
+    documents = store.get('as_documents', []);
+    notifications = store.get('as_notifications', []);
     settings = Object.assign({}, DEFAULT_SETTINGS, store.get('as_settings', {}));
     settings.notifications = Object.assign({}, DEFAULT_SETTINGS.notifications, settings.notifications || {});
     if (!Array.isArray(leads)) leads = [];
+    if (!Array.isArray(customers)) customers = [];
+    if (!Array.isArray(documents)) documents = [];
+    if (!Array.isArray(notifications)) notifications = [];
   }
 
   const save = {
@@ -346,6 +355,9 @@
     contentImages: () => store.set('as_content_images', contentImages),
     gallery: () => store.set('as_gallery', gallery),
     tasks: () => store.set('as_tasks', tasks),
+    customers: () => store.set('as_customers', customers),
+    documents: () => store.set('as_documents', documents),
+    notifications: () => store.set('as_notifications', notifications),
     settings: () => store.set('as_settings', settings)
   };
 
@@ -829,7 +841,7 @@
 
   /* ---------------------------------------------------------------- navigation */
   const VIEW_TITLES = {
-    overview: 'Overview', leads: 'Leads', applications: 'Applications', reports: 'Reports',
+    overview: 'Overview', leads: 'Leads', applications: 'Applications', customers: 'Customers', documents: 'Documents', notifications: 'Notifications', reports: 'Reports',
     products: 'Loan products', partners: 'Bank partners', content: 'Website content', settings: 'Settings'
   };
 
@@ -853,13 +865,16 @@
 
   function renderView(view) {
     if (view === 'overview') renderOverview();
-    if (view === 'leads') renderLeads();
-    if (view === 'applications') renderApplications();
-    if (view === 'reports') renderReports();
-    if (view === 'products') renderProducts();
-    if (view === 'partners') renderPartners();
-    if (view === 'content') renderContent();
-    if (view === 'settings') renderSettings();
+    else if (view === 'leads') renderLeads();
+    else if (view === 'applications') renderApplications();
+    else if (view === 'customers') renderCustomers();
+    else if (view === 'documents') renderDocuments();
+    else if (view === 'notifications') renderNotifications();
+    else if (view === 'reports') renderReports();
+    else if (view === 'products') renderProducts();
+    else if (view === 'partners') renderPartners();
+    else if (view === 'content') renderContent();
+    else if (view === 'settings') renderSettings();
     syncChartRefs();
     requestAnimationFrame(() => requestAnimationFrame(redrawCharts));
   }
@@ -874,6 +889,9 @@
     const open = leads.filter(l => !['Sanctioned', 'Disbursed', 'Lost'].includes(l.status)).length;
     const el = $('#nav-lead-count');
     if (el) el.textContent = open;
+    const unread = Array.isArray(notifications) ? notifications.filter(n => n && !n.read).length : 0;
+    const nel = $('#nav-notif-count');
+    if (nel) { nel.textContent = unread; nel.style.display = unread ? '' : 'none'; }
   }
 
   function populateFilters() {
@@ -1591,6 +1609,159 @@
     });
   }
 
+  /* ---------------------------------------------------------------- customers */
+  function renderCustomers() {
+    const body = $('#customers-body');
+    if (!body) return;
+    if (!customers.length) {
+      body.innerHTML = '<tr><td colspan="7" class="table-empty"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg><br>No customers yet.<br><button class="a-btn a-btn-light a-btn-sm" style="margin-top:10px" id="add-customer-inline">Add customer</button></td></tr>';
+      const inline = $('#add-customer-inline');
+      if (inline) inline.addEventListener('click', () => customerModal());
+      return;
+    }
+    const rows = customers.slice().sort((a,b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+    body.innerHTML = rows.map(c =>
+      '<tr>' +
+      '<td><div class="cust"><span class="cust-avatar">' + initials(c.name || '?') + '</span><span><b>' + esc(c.name || 'Unnamed') + '</b><span>' + esc(c.id || '') + '</span></span></div></td>' +
+      '<td>' + esc(c.phone || '—') + '</td>' +
+      '<td>' + esc(c.email || '—') + '</td>' +
+      '<td>' + esc(c.product || c.interest || '—') + '</td>' +
+      '<td><span class="badge badge-' + String(c.status || 'new').toLowerCase().replace(/[^a-z]/g,'') + '">' + esc(c.status || 'New') + '</span></td>' +
+      '<td>' + esc(c.city || '—') + '</td>' +
+      '<td><div class="row-actions">' +
+        '<button class="a-btn-icon" data-action="edit-customer" data-id="' + esc(c.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
+        '<button class="a-btn-icon danger" data-action="delete-customer" data-id="' + esc(c.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
+      '</div></td></tr>'
+    ).join('');
+  }
+
+  function customerModal(id) {
+    const c = id ? customers.find(x => x.id === id) : null;
+    const statusOpts = ['New', 'Contacted', 'Qualified', 'Documents', 'Sanctioned', 'Disbursed', 'Inactive'].map(s => '<option ' + ((c ? c.status : 'New') === s ? 'selected' : '') + '>' + s + '</option>').join('');
+    openModal({
+      title: c ? 'Edit customer' : 'Add customer',
+      sub: 'Customer profile and relationship details.',
+      body:
+        '<div class="form-row"><div class="a-field"><label>Full name <span class="req">*</span></label><input name="name" required value="' + esc(c ? c.name : '') + '"></div>' +
+        '<div class="a-field"><label>Phone</label><input name="phone" value="' + esc(c ? c.phone : '') + '"></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Email</label><input name="email" type="email" value="' + esc(c ? c.email : '') + '"></div>' +
+        '<div class="a-field"><label>City</label><input name="city" value="' + esc(c ? c.city : '') + '"></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Product interest</label><input name="product" value="' + esc(c ? (c.product || c.interest || '') : '') + '" placeholder="e.g. Home Loan"></div>' +
+        '<div class="a-field"><label>Status</label><select name="status">' + statusOpts + '</select></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Assigned to</label><input name="owner" value="' + esc(c ? (c.owner || '') : '') + '"></div>' +
+        '<div class="a-field"><label>Source</label><input name="source" value="' + esc(c ? (c.source || '') : '') + '"></div></div>' +
+        '<div class="form-row one"><div class="a-field"><label>Notes</label><textarea name="notes">' + esc(c ? (c.notes || '') : '') + '</textarea></div></div>',
+      submitLabel: c ? 'Save changes' : 'Add customer',
+      onSubmit: (data) => {
+        const name = String(data.get('name') || '').trim();
+        if (!name) { toast('Customer name is required.', 'error'); return false; }
+        const now = new Date().toISOString();
+        const payload = {
+          name,
+          phone: String(data.get('phone') || '').trim(),
+          email: String(data.get('email') || '').trim(),
+          city: String(data.get('city') || '').trim(),
+          product: String(data.get('product') || '').trim(),
+          status: String(data.get('status') || 'New'),
+          owner: String(data.get('owner') || '').trim(),
+          source: String(data.get('source') || '').trim(),
+          notes: String(data.get('notes') || '').trim(),
+          updatedAt: now
+        };
+        if (c) { Object.assign(c, payload); toast('Customer updated.'); }
+        else { customers.unshift(Object.assign({ id: uid('CUS-', 4), createdAt: now }, payload)); toast('Customer added.'); }
+        save.customers();
+        renderAll();
+      }
+    });
+  }
+
+  /* ---------------------------------------------------------------- documents */
+  function renderDocuments() {
+    const body = $('#documents-body');
+    if (!body) return;
+    if (!documents.length) {
+      body.innerHTML = '<tr><td colspan="6" class="table-empty"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg><br>No document records yet.<br><button class="a-btn a-btn-light a-btn-sm" style="margin-top:10px" id="add-document-inline">Add document</button></td></tr>';
+      const inline = $('#add-document-inline');
+      if (inline) inline.addEventListener('click', () => documentModal());
+      return;
+    }
+    const rows = documents.slice().sort((a,b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+    body.innerHTML = rows.map(d =>
+      '<tr>' +
+      '<td><b>' + esc(d.title || 'Untitled') + '</b><div style="font-size:.66rem;color:#5b6b7e">' + esc(d.id || '') + '</div></td>' +
+      '<td>' + esc(d.type || d.docType || '—') + '</td>' +
+      '<td>' + esc(d.linkedTo || d.customer || d.applicationId || '—') + '</td>' +
+      '<td><span class="badge badge-' + String(d.status || 'pending').toLowerCase().replace(/[^a-z]/g,'') + '">' + esc(d.status || 'Pending') + '</span></td>' +
+      '<td title="' + fmtDate(d.updatedAt || d.createdAt) + '">' + fmtShort(d.updatedAt || d.createdAt) + '</td>' +
+      '<td><div class="row-actions">' +
+        '<button class="a-btn-icon" data-action="edit-document" data-id="' + esc(d.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
+        '<button class="a-btn-icon danger" data-action="delete-document" data-id="' + esc(d.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
+      '</div></td></tr>'
+    ).join('');
+  }
+
+  function documentModal(id) {
+    const d = id ? documents.find(x => x.id === id) : null;
+    const statusOpts = ['Pending', 'Requested', 'Received', 'Verified', 'Rejected'].map(s => '<option ' + ((d ? d.status : 'Pending') === s ? 'selected' : '') + '>' + s + '</option>').join('');
+    openModal({
+      title: d ? 'Edit document record' : 'Add document record',
+      sub: 'Track document metadata and status (file uploads can be integrated separately).',
+      body:
+        '<div class="form-row"><div class="a-field"><label>Title <span class="req">*</span></label><input name="title" required value="' + esc(d ? d.title : '') + '" placeholder="e.g. PAN card"></div>' +
+        '<div class="a-field"><label>Type</label><input name="type" value="' + esc(d ? (d.type || d.docType || '') : '') + '" placeholder="KYC / Income / Property"></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Customer/Application</label><input name="linkedTo" value="' + esc(d ? (d.linkedTo || d.customer || d.applicationId || '') : '') + '"></div>' +
+        '<div class="a-field"><label>Status</label><select name="status">' + statusOpts + '</select></div></div>' +
+        '<div class="form-row one"><div class="a-field"><label>Reference/Link (optional)</label><input name="url" value="' + esc(d ? (d.url || '') : '') + '" placeholder="https://... or reference"></div></div>' +
+        '<div class="form-row one"><div class="a-field"><label>Notes</label><textarea name="notes">' + esc(d ? (d.notes || '') : '') + '</textarea></div></div>',
+      submitLabel: d ? 'Save changes' : 'Add document',
+      onSubmit: (data) => {
+        const title = String(data.get('title') || '').trim();
+        if (!title) { toast('Document title is required.', 'error'); return false; }
+        const now = new Date().toISOString();
+        const payload = {
+          title,
+          type: String(data.get('type') || '').trim(),
+          linkedTo: String(data.get('linkedTo') || '').trim(),
+          status: String(data.get('status') || 'Pending'),
+          url: String(data.get('url') || '').trim(),
+          notes: String(data.get('notes') || '').trim(),
+          updatedAt: now
+        };
+        if (d) { Object.assign(d, payload); toast('Document updated.'); }
+        else { documents.unshift(Object.assign({ id: uid('DOC-', 4), createdAt: now }, payload)); toast('Document added.'); }
+        save.documents();
+        renderAll();
+      }
+    });
+  }
+
+  /* ---------------------------------------------------------------- notifications */
+  function renderNotifications() {
+    const host = $('#notifications-list');
+    if (!host) return;
+    const items = Array.isArray(notifications) ? notifications.slice().sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) : [];
+    if (!items.length) {
+      host.innerHTML = '<div class="empty-state" style="padding:24px"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg><h3>No notifications</h3><p>New website enquiries will appear here automatically.</p></div>';
+      return;
+    }
+    host.innerHTML = items.map(n => {
+      const unread = !n.read;
+      const when = n.createdAt ? (fmtShort(n.createdAt) + ' · ' + timeAgo(n.createdAt)) : '';
+      return '<div class="notif-row" style="display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #f2eee4;' + (unread ? 'background:rgba(201,162,39,.06);margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:10px;' : '') + '">' +
+        '<span class="n-icon" style="width:32px;height:32px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:var(--blue-soft);color:var(--blue)"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-bell"></use></svg></span>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b style="font-size:.82rem;color:var(--navy);display:block">' + esc(n.title || 'Notification') + '</b>' +
+            '<span style="font-size:.68rem;color:var(--muted);white-space:nowrap">' + esc(when) + '</span></div>' +
+          '<div style="font-size:.76rem;color:var(--muted);margin-top:2px;line-height:1.45">' + esc(n.message || '') + '</div>' +
+          '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">' +
+            '<button class="a-btn a-btn-light a-btn-sm" data-action="toggle-notification" data-id="' + esc(n.id) + '">' + (unread ? 'Mark read' : 'Mark unread') + '</button>' +
+            '<button class="a-btn a-btn-ghost a-btn-sm danger" data-action="delete-notification" data-id="' + esc(n.id) + '">Dismiss</button>' +
+          '</div>' +
+        '</div></div>';
+    }).join('');
+  }
+
   /* ---------------------------------------------------------------- reports */
   function renderReports() {
     const sanctioned = apps.filter(a => ['Sanctioned', 'Disbursed'].includes(a.stage));
@@ -1957,6 +2128,10 @@
 
     // add lead buttons
     $$('[data-add-lead]').forEach(b => b.addEventListener('click', () => leadModal()));
+    const addCustomerBtn = $('#add-customer-btn');
+    if (addCustomerBtn) addCustomerBtn.addEventListener('click', () => customerModal());
+    const addDocumentBtn = $('#add-document-btn');
+    if (addDocumentBtn) addDocumentBtn.addEventListener('click', () => documentModal());
 
     // lead filters
     $('#leads-search').addEventListener('input', debounce((e) => { filters.leadSearch = e.target.value; leadPage = 1; renderLeads(); }, 180));
@@ -2019,6 +2194,24 @@
     });
     $('#add-task-btn').addEventListener('click', taskModal);
 
+    const markAllNotifsBtn = $('#mark-all-notifs-read');
+    if (markAllNotifsBtn) markAllNotifsBtn.addEventListener('click', () => {
+      let changed = false;
+      notifications.forEach(n => { if (n && !n.read) { n.read = true; changed = true; } });
+      if (changed) { save.notifications(); renderAll(); toast('All notifications marked as read.'); }
+      else toast('No unread notifications.');
+    });
+    const clearNotifsBtn = $('#clear-notifs-btn');
+    if (clearNotifsBtn) clearNotifsBtn.addEventListener('click', () => {
+      if (!notifications.length) { toast('No notifications to clear.'); return; }
+      confirmDialog('Clear all notifications?', 'This will remove all in-app notifications.', () => {
+        notifications = [];
+        save.notifications();
+        renderAll();
+        toast('Notifications cleared.');
+      });
+    });
+
     // exports
     $('#export-leads-btn').addEventListener('click', exportLeads);
     $('#export-apps-btn').addEventListener('click', exportApps);
@@ -2052,7 +2245,7 @@
 
     $('#reset-data-btn').addEventListener('click', () => {
       confirmDialog('Reset demo data?', 'All leads, applications, products, partners and content will be replaced with the sample dataset.', () => {
-        ['as_leads', 'as_applications', 'as_products', 'as_partners', 'as_testimonials', 'as_posts', 'as_tasks', 'as_settings'].forEach(store.remove);
+        ['as_leads', 'as_applications', 'as_products', 'as_partners', 'as_testimonials', 'as_posts', 'as_tasks', 'as_customers', 'as_documents', 'as_notifications', 'as_settings'].forEach(store.remove);
         seedAll(true);
         loadData();
         renderAll();
@@ -2203,6 +2396,35 @@
         filters.leadSearch = filters.leadProduct = filters.leadStatus = filters.leadSource = '';
         $('#leads-search').value = ''; $('#leads-product-filter').value = ''; $('#leads-status-filter').value = ''; $('#leads-source-filter').value = '';
         leadPage = 1; renderLeads();
+      }
+      if (action === 'edit-customer') customerModal(id);
+      if (action === 'delete-customer') {
+        const c = customers.find(x => x.id === id);
+        if (c) confirmDialog('Delete this customer?', (c.name || 'This customer') + ' will be removed.', () => {
+          customers = customers.filter(x => x.id !== id);
+          save.customers();
+          renderAll();
+          toast('Customer deleted.');
+        });
+      }
+      if (action === 'edit-document') documentModal(id);
+      if (action === 'delete-document') {
+        const d = documents.find(x => x.id === id);
+        if (d) confirmDialog('Delete this document record?', (d.title || 'This document') + ' will be removed.', () => {
+          documents = documents.filter(x => x.id !== id);
+          save.documents();
+          renderAll();
+          toast('Document deleted.');
+        });
+      }
+      if (action === 'toggle-notification') {
+        const n = notifications.find(x => x.id === id);
+        if (n) { n.read = !n.read; save.notifications(); renderAll(); }
+      }
+      if (action === 'delete-notification') {
+        notifications = notifications.filter(x => x.id !== id);
+        save.notifications();
+        renderAll();
       }
       if (action === 'advance-app') advanceApp(id);
       if (action === 'edit-app') appModal(id);

@@ -23,6 +23,9 @@
     as_products: 'products',
     as_partners: 'partners',
     as_tasks: 'tasks',
+    as_customers: 'customers',
+    as_documents: 'documents',
+    as_notifications: 'notifications',
     as_settings: 'settings'
   };
 
