@@ -12,6 +12,13 @@
  *   PUT    /api/content/:section       replace testimonials | gallery | posts | images (auth + csrf)
  *   GET    /api/admin/store            all admin collections (auth)
  *   PUT    /api/admin/store/:name      replace leads|applications|products|partners|tasks|settings (auth + csrf)
+ *   GET    /api/admin/:collection      list/search collection items (auth)
+ *   POST   /api/admin/:collection      create collection item (auth + csrf)
+ *   GET    /api/admin/:collection/:id  get collection item (auth)
+ *   PATCH  /api/admin/:collection/:id  update collection item (auth + csrf)
+ *   DELETE /api/admin/:collection/:id  delete collection item (auth + csrf)
+ *   POST   /api/admin/uploads          upload document file (base64 JSON, auth + csrf)
+ *   GET    /api/admin/uploads/:file    download uploaded file (auth)
  *   POST   /api/enquiries              website enquiry (public, rate limited)
  *   GET    /api/enquiries              list enquiries (auth)
  *   PATCH  /api/enquiries/:id          mark handled / add a note (auth + csrf)
@@ -21,6 +28,9 @@
  */
 
 const path = require('node:path');
+const fs = require('node:fs/promises');
+const fsSync = require('node:fs');
+const crypto = require('node:crypto');
 const express = require('express');
 
 // Load environment variables from project root .env
@@ -89,7 +99,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: '6mb' }));
+app.use(express.json({ limit: '10mb' }));
 
 app.use('/api', (req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -415,9 +425,37 @@ app.post('/api/enquiries', asyncRoute(async (req, res) => {
 }));
 
 app.get('/api/enquiries', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
-  const enquiries = await store.listEnquiries();
+  let enquiries = await store.listEnquiries();
   const stats = await store.stats();
-  res.json({ enquiries, stats });
+
+  const q = validate.text(req.query.q, 120).toLowerCase();
+  const handled = typeof req.query.handled === 'string' ? req.query.handled.toLowerCase() : '';
+  if (handled === 'true' || handled === 'false') {
+    const want = handled === 'true';
+    enquiries = enquiries.filter((e) => Boolean(e && e.handled) === want);
+  }
+  if (q) {
+    enquiries = enquiries.filter((e) => {
+      const hay = [e && e.id, e && e.name, e && e.phone, e && e.email, e && e.product, e && e.city, e && e.message, e && e.source]
+        .filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+  const total = enquiries.length;
+  const hasLimit = req.query.limit !== undefined || req.query.offset !== undefined || req.query.page !== undefined;
+  let limit = Number(req.query.limit);
+  if (!Number.isFinite(limit) || limit <= 0) limit = hasLimit ? 50 : total || 0;
+  limit = Math.max(1, Math.min(limit, 500));
+  let offset = Number(req.query.offset);
+  if (!Number.isFinite(offset) || offset < 0) {
+    const page = Number(req.query.page);
+    offset = Number.isFinite(page) && page > 0 ? Math.floor((page - 1) * limit) : 0;
+  }
+  offset = Math.max(0, Math.floor(offset));
+  const paged = hasLimit ? enquiries.slice(offset, offset + limit) : enquiries;
+
+  res.json({ enquiries: paged, total, count: paged.length, limit: hasLimit ? limit : total, offset: hasLimit ? offset : 0, stats });
 }));
 
 app.patch('/api/enquiries/:id', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
@@ -475,6 +513,345 @@ app.put('/api/admin/store/:name', requireSession, requireRole('staff', 'admin', 
     count,
     updatedAt: stats.updatedAt
   });
+}));
+
+/* ------------------------------------- granular admin collection APIs */
+
+const ADMIN_ITEM_COLLECTIONS = (validate.ADMIN_ARRAYS || []).slice();
+
+function isAdminItemCollection(name) {
+  return ADMIN_ITEM_COLLECTIONS.includes(name);
+}
+
+function makeItemId(prefix) {
+  return String(prefix || 'ITM').toUpperCase() + '-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
+}
+
+async function readAdminCollection(name) {
+  const admin = await store.adminData();
+  const list = Array.isArray(admin[name]) ? admin[name].slice() : [];
+  return list;
+}
+
+async function writeAdminCollection(req, name, list) {
+  const safe = Array.isArray(list) ? list : [];
+  await store.setAdminCollection(name, safe);
+  const stats = await store.stats();
+  audit(req, { type: 'admin.store_updated', summary: 'Admin data updated: ' + name, targetType: 'admin_store', targetId: name, meta: { name, count: safe.length } });
+  return stats;
+}
+
+app.get('/api/admin/:collection', requireSession, requireRole('staff', 'admin', 'super_admin'), asyncRoute(async (req, res, next) => {
+  const collection = String(req.params.collection || '').toLowerCase();
+  if (collection === 'store' || collection === 'export') return next();
+  if (!isAdminItemCollection(collection)) return next();
+  let items = await readAdminCollection(collection);
+
+  const q = validate.text(req.query.q, 120).toLowerCase();
+  const status = validate.text(req.query.status, 60).toLowerCase();
+  const owner = validate.text(req.query.owner || req.query.assignedTo, 120).toLowerCase();
+  const type = validate.text(req.query.type, 60).toLowerCase();
+
+  if (status) {
+    items = items.filter((it) => String((it && (it.status || it.stage)) || '').toLowerCase() === status);
+  }
+  if (owner) {
+    items = items.filter((it) => {
+      const o = String((it && (it.owner || it.assignedTo || it.assignee)) || '').toLowerCase();
+      return o === owner;
+    });
+  }
+  if (type) {
+    items = items.filter((it) => String((it && (it.type || it.docType || it.category)) || '').toLowerCase() === type);
+  }
+  if (q) {
+    items = items.filter((it) => {
+      try {
+        const hay = JSON.stringify(it || {}).toLowerCase();
+        return hay.includes(q);
+      } catch (e) {
+        return false;
+      }
+    });
+  }
+
+  const total = items.length;
+  const hasLimit = req.query.limit !== undefined || req.query.offset !== undefined || req.query.page !== undefined;
+  let limit = Number(req.query.limit);
+  if (!Number.isFinite(limit) || limit <= 0) limit = hasLimit ? 50 : total || 0;
+  limit = Math.max(1, Math.min(limit, 500));
+  let offset = Number(req.query.offset);
+  if (!Number.isFinite(offset) || offset < 0) {
+    const page = Number(req.query.page);
+    offset = Number.isFinite(page) && page > 0 ? Math.floor((page - 1) * limit) : 0;
+  }
+  offset = Math.max(0, Math.floor(offset));
+
+  const paged = hasLimit ? items.slice(offset, offset + limit) : items;
+  res.json({
+    ok: true,
+    collection,
+    items: paged,
+    count: paged.length,
+    total,
+    limit: hasLimit ? limit : total,
+    offset: hasLimit ? offset : 0
+  });
+}));
+
+function applyCollectionRules(collection, item, existing, session) {
+  const out = Object.assign({}, item || {});
+  const actorEmail = session && session.email ? String(session.email) : '';
+  const actorId = session && session.userId ? String(session.userId) : '';
+  const actorName = actorEmail.split('@')[0] || '';
+
+  // ownership/assignment defaults
+  if (['leads', 'applications', 'customers', 'tasks', 'documents'].includes(collection)) {
+    if (!existing) {
+      if (!out.owner && !out.assignedTo && !out.assignee) out.owner = actorName || actorEmail || 'Admin';
+      if (!out.createdBy) out.createdBy = actorEmail || actorId || '';
+    }
+    if (out.owner && !out.assignedTo) out.assignedTo = out.owner;
+    if (out.assignedTo && !out.owner) out.owner = out.assignedTo;
+  }
+
+  // basic workflow normalization
+  if (collection === 'tasks' && typeof out.done !== 'boolean') out.done = Boolean(out.done);
+  if (collection === 'notifications' && typeof out.read !== 'boolean') out.read = Boolean(out.read);
+  if (collection === 'documents' && !out.status) out.status = existing && existing.status ? existing.status : 'Pending';
+  if (collection === 'leads' && !out.status) out.status = existing && existing.status ? existing.status : 'New';
+  if (collection === 'applications' && !out.stage) out.stage = existing && existing.stage ? existing.stage : 'Logged';
+
+  // simple status value guardrails (non-breaking: only normalize known aliases)
+  if (collection === 'documents') {
+    const map = { pending: 'Pending', requested: 'Requested', received: 'Received', verified: 'Verified', rejected: 'Rejected' };
+    const k = String(out.status || '').toLowerCase();
+    if (map[k]) out.status = map[k];
+  }
+  if (collection === 'tasks') {
+    const st = String(out.status || '').toLowerCase();
+    if (!out.status) out.status = out.done ? 'Done' : 'Open';
+    if (st === 'done' || st === 'completed') { out.done = true; out.status = 'Done'; }
+    if (st === 'open' || st === 'todo' || st === 'pending') { out.done = false; out.status = 'Open'; }
+  }
+
+  // prevent privilege/identity spoofing fields from client
+  delete out.__proto__;
+  return out;
+}
+
+app.post('/api/admin/:collection', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res, next) => {
+  const collection = String(req.params.collection || '').toLowerCase();
+  if (!isAdminItemCollection(collection)) return next();
+  const items = await readAdminCollection(collection);
+  const body = validate.adminItem ? validate.adminItem(req.body || {}) : (req.body || {});
+  const now = new Date().toISOString();
+  const prefixes = { leads: 'LEAD', applications: 'APP', products: 'PRD', partners: 'PRT', tasks: 'TSK', customers: 'CUS', documents: 'DOC', notifications: 'NTF' };
+  let item = Object.assign({}, body);
+  if (!item.id) item.id = makeItemId(prefixes[collection] || 'ITM');
+  if (items.some((x) => x && String(x.id) === String(item.id))) {
+    item.id = makeItemId(prefixes[collection] || 'ITM');
+  }
+  if (!item.createdAt) item.createdAt = now;
+  item.updatedAt = now;
+  item = applyCollectionRules(collection, item, null, req.session);
+  items.unshift(item);
+  if (items.length > 2000) items.length = 2000;
+  const stats = await writeAdminCollection(req, collection, items);
+  res.status(201).json({ ok: true, collection, item, count: items.length, updatedAt: stats.updatedAt });
+}));
+
+app.get('/api/admin/:collection/:id', requireSession, requireRole('staff', 'admin', 'super_admin'), asyncRoute(async (req, res, next) => {
+  const collection = String(req.params.collection || '').toLowerCase();
+  if (collection === 'store') return next();
+  if (!isAdminItemCollection(collection)) return next();
+  const id = String(req.params.id || '');
+  const items = await readAdminCollection(collection);
+  const item = items.find((x) => x && String(x.id) === id);
+  if (!item) { res.status(404).json({ error: 'Item not found.' }); return; }
+  res.json({ ok: true, collection, item });
+}));
+
+app.patch('/api/admin/:collection/:id', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res, next) => {
+  const collection = String(req.params.collection || '').toLowerCase();
+  if (!isAdminItemCollection(collection)) return next();
+  const id = String(req.params.id || '');
+  const items = await readAdminCollection(collection);
+  const idx = items.findIndex((x) => x && String(x.id) === id);
+  if (idx === -1) { res.status(404).json({ error: 'Item not found.' }); return; }
+  const patch = validate.adminItem ? validate.adminItem(req.body || {}) : (req.body || {});
+  const now = new Date().toISOString();
+  let nextItem = Object.assign({}, items[idx], patch, { id: items[idx].id || id, updatedAt: now });
+  if (!nextItem.createdAt && items[idx].createdAt) nextItem.createdAt = items[idx].createdAt;
+  nextItem = applyCollectionRules(collection, nextItem, items[idx], req.session);
+  nextItem.id = items[idx].id || id; // immutable
+  if (!nextItem.createdAt && items[idx].createdAt) nextItem.createdAt = items[idx].createdAt;
+  items[idx] = nextItem;
+  const stats = await writeAdminCollection(req, collection, items);
+  res.json({ ok: true, collection, item: nextItem, updatedAt: stats.updatedAt });
+}));
+
+app.delete('/api/admin/:collection/:id', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res, next) => {
+  const collection = String(req.params.collection || '').toLowerCase();
+  if (!isAdminItemCollection(collection)) return next();
+  const id = String(req.params.id || '');
+  const items = await readAdminCollection(collection);
+  const idx = items.findIndex((x) => x && String(x.id) === id);
+  if (idx === -1) { res.status(404).json({ error: 'Item not found.' }); return; }
+  items.splice(idx, 1);
+  const stats = await writeAdminCollection(req, collection, items);
+  res.json({ ok: true, collection, id, updatedAt: stats.updatedAt });
+}));
+
+/* --------------------------------------------------- file uploads */
+
+const UPLOAD_DIR = path.join(ROOT, 'data', 'uploads');
+const UPLOAD_MAX_BYTES = 5 * 1024 * 1024; // 5 MB decoded
+const UPLOAD_MIME = {
+  'application/pdf': 'pdf',
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'text/plain': 'txt',
+  'text/csv': 'csv',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.ms-excel': 'xls',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx'
+};
+
+function safeUploadName(name) {
+  const base = String(name || 'file').replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
+  return (base || 'file').slice(0, 120);
+}
+
+async function ensureUploadDir() {
+  await fs.mkdir(UPLOAD_DIR, { recursive: true });
+}
+
+app.post('/api/admin/uploads', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
+  const body = req.body || {};
+  const filename = safeUploadName(body.filename || body.name || 'document');
+  const contentType = String(body.contentType || body.mimeType || '').toLowerCase().trim();
+  const ext = UPLOAD_MIME[contentType];
+  if (!ext) {
+    res.status(400).json({ error: 'Unsupported file type. Allowed: PDF, JPG, PNG, WEBP, TXT, CSV, DOC, DOCX, XLS, XLSX.' });
+    return;
+  }
+  const b64 = String(body.dataBase64 || body.data || '').replace(/^data:[^;]+;base64,/i, '').replace(/\s+/g, '');
+  if (!b64) { res.status(400).json({ error: 'Missing file data.' }); return; }
+  let buf;
+  try { buf = Buffer.from(b64, 'base64'); } catch (e) { res.status(400).json({ error: 'Invalid file data.' }); return; }
+  if (!buf || !buf.length) { res.status(400).json({ error: 'File is empty.' }); return; }
+  if (buf.length > UPLOAD_MAX_BYTES) { res.status(400).json({ error: 'File is too large (max 5 MB).' }); return; }
+
+  const id = 'UPL-' + Date.now().toString(36).toUpperCase() + crypto.randomBytes(3).toString('hex').toUpperCase();
+  const storedName = id + '-' + filename.replace(/\.[^.]+$/, '') + '.' + ext;
+  let stored = false;
+  let storage = 'metadata';
+  let url = '';
+
+  // Local/dev disk storage (ephemeral on Vercel). Best-effort.
+  try {
+    await ensureUploadDir();
+    const outPath = path.join(UPLOAD_DIR, storedName);
+    await fs.writeFile(outPath, buf);
+    stored = true;
+    storage = 'local';
+    url = '/api/admin/uploads/' + encodeURIComponent(storedName);
+  } catch (err) {
+    console.warn('[upload] disk write failed (using metadata only):', err && err.message ? err.message : err);
+    stored = false;
+    storage = 'metadata';
+  }
+
+  const now = new Date().toISOString();
+  const file = {
+    id,
+    filename,
+    storedName: stored ? storedName : null,
+    contentType,
+    size: buf.length,
+    storage,
+    url: url || null,
+    uploadedAt: now,
+    uploadedBy: (req.session && (req.session.email || req.session.userId)) || ''
+  };
+
+  // Optionally attach/create a document record
+  let document = null;
+  const documentId = validate.text(body.documentId, 80);
+  const shouldCreateDoc = body.createDocument === true || String(body.createDocument || '').toLowerCase() === 'true';
+  if (store.adminData && store.setAdminCollection && (documentId || shouldCreateDoc)) {
+    try {
+      const items = await readAdminCollection('documents');
+      if (documentId) {
+        const idx = items.findIndex((d) => d && String(d.id) === documentId);
+        if (idx !== -1) {
+          items[idx] = Object.assign({}, items[idx], {
+            file,
+            url: file.url || items[idx].url || '',
+            filename: file.filename,
+            contentType: file.contentType,
+            size: file.size,
+            storage: file.storage,
+            status: items[idx].status || 'Received',
+            updatedAt: now
+          });
+          document = items[idx];
+          await writeAdminCollection(req, 'documents', items);
+        }
+      }
+      if (!document && shouldCreateDoc) {
+        document = applyCollectionRules('documents', {
+          id: makeItemId('DOC'),
+          title: validate.text(body.title, 200) || filename,
+          type: validate.text(body.type || body.docType, 80),
+          linkedTo: validate.text(body.linkedTo, 120),
+          status: validate.text(body.status, 40) || 'Received',
+          notes: validate.text(body.notes, 1000),
+          file,
+          url: file.url || '',
+          filename: file.filename,
+          contentType: file.contentType,
+          size: file.size,
+          storage: file.storage,
+          createdAt: now,
+          updatedAt: now
+        }, null, req.session);
+        items.unshift(document);
+        if (items.length > 2000) items.length = 2000;
+        await writeAdminCollection(req, 'documents', items);
+      }
+    } catch (err) {
+      console.warn('[upload] document link failed:', err && err.message ? err.message : err);
+    }
+  }
+
+  audit(req, { type: 'document.uploaded', summary: 'Document uploaded: ' + filename, targetType: 'upload', targetId: file.id, meta: { filename, size: file.size, contentType, storage, documentId: document ? document.id : (documentId || '') } });
+  res.status(201).json({ ok: true, file, document, storage });
+}));
+
+app.get('/api/admin/uploads/:file', requireSession, requireRole('staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
+  const name = String(req.params.file || '');
+  if (!/^[A-Za-z0-9._-]+$/.test(name) || name.includes('..')) {
+    res.status(400).json({ error: 'Invalid file name.' });
+    return;
+  }
+  const full = path.join(UPLOAD_DIR, name);
+  const resolved = path.resolve(full);
+  const base = path.resolve(UPLOAD_DIR);
+  if (!resolved.startsWith(base + path.sep)) {
+    res.status(400).json({ error: 'Invalid file path.' });
+    return;
+  }
+  try {
+    await fs.access(resolved, fsSync.constants.R_OK);
+  } catch (e) {
+    res.status(404).json({ error: 'File not found. It may have expired on ephemeral storage.' });
+    return;
+  }
+  res.sendFile(resolved);
 }));
 
 /* --------------------------------------------------- password & users */
@@ -613,8 +990,15 @@ app.get('/api/audit', requireSession, requireRole('super_admin', 'admin'), async
   if (!store.listAudit) { res.json({ entries: [] }); return; }
   const limit = Math.max(1, Math.min(Number(req.query.limit) || 100, 500));
   const type = req.query.type ? String(req.query.type) : '';
-  const entries = await store.listAudit({ limit, type: type || undefined });
-  res.json({ entries });
+  const q = validate.text(req.query.q, 120).toLowerCase();
+  let entries = await store.listAudit({ limit: q ? 500 : limit, type: type || undefined });
+  if (q) {
+    entries = entries.filter((e) => {
+      const hay = [e && e.type, e && e.summary, e && e.actorEmail, e && e.targetType, e && e.targetId].filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(q);
+    }).slice(0, limit);
+  }
+  res.json({ entries, count: entries.length, limit });
 }));
 
 app.get('/api/sessions', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {

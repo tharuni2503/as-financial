@@ -202,4 +202,13 @@ function adminCollection(name, payload) {
   return payload.map((item) => sanitize(item, 0, 8000));
 }
 
-module.exports = { HttpError, content, enquiry, text, adminCollection };
+function adminItem(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new HttpError(400, 'Item must be an object.');
+  }
+  const out = sanitize(payload, 0, 8000);
+  if (!out || typeof out !== 'object' || Array.isArray(out)) throw new HttpError(400, 'Item must be an object.');
+  return out;
+}
+
+module.exports = { HttpError, content, enquiry, text, adminCollection, adminItem, sanitize, ADMIN_ARRAYS };

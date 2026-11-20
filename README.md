@@ -39,6 +39,8 @@ Then open:
 - **Site-wide publishing**: testimonials, gallery posters, guides/posts, and homepage offering images saved in admin are stored on the server (`data/db.json`) and served to every visitor via `GET /api/content`.
 - **Enquiry capture**: website enquiry forms post to `POST /api/enquiries` (stored server-side, rate-limited, with a honeypot). New enquiries also create an in-app notification record (admin store `notifications`) for staff follow-up. When signed in, admin/staff can view, update, and remove enquiries.
 - **CRM/admin data collections**: server-backed collections for `leads`, `applications`, `products`, `partners`, `tasks`, `customers`, `documents`, `notifications`, and `settings` via `GET /api/admin/store` and `PUT /api/admin/store/:name` (RBAC-protected, CSRF-validated, audited).
+- **Granular admin APIs**: per-item CRUD via `GET/POST /api/admin/:collection` and `GET/PATCH/DELETE /api/admin/:collection/:id` with search/filter/pagination (`q`, `status`, `owner`/`assignedTo`, `type`, `limit`, `offset`/`page`) and basic ownership/workflow defaults.
+- **Document uploads**: `POST /api/admin/uploads` (base64 JSON, up to 5 MB; PDF/images/text/office docs) stores files locally under `data/uploads/` when available and serves them via authenticated `GET /api/admin/uploads/:file`; can create/link `documents` records. Use external object storage (S3/Supabase Storage/Vercel Blob) for durable production file hosting.
 - **Graceful fallback**: if the backend is not running, the site keeps working as a static demo - content falls back to browser `localStorage` and enquiries are saved on the device only.
 
 ### Admin sign-in
