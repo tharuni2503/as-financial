@@ -72,9 +72,9 @@ Then open <http://127.0.0.1:4173/>.
 ## Deployment (Vercel)
 
 - Import/connect the repository under **Project -> Settings -> Git** (production branch `main`).
-- `vercel.json` enables clean URLs, long-lived caching for `/assets`, no-cache HTML, security headers, and redirects `/calculators` to `/guides#calculators`.
+- `vercel.json` routes requests through the Express serverless handler (`api/index.js`, wrapping `server/index.js`) so API routes, clean URLs, and static serving behave consistently. Configure required environment variables in **Project -> Settings -> Environment Variables** (e.g. `DATABASE_URL`/`POSTGRES_URL` — prefer a pooled/transaction pooler URI, `ADMIN_PASSWORD` required in production, `APP_URL`, `SMTP_*` as needed) and redeploy.
 - `sitemap.xml` and `robots.txt` reference `https://as-financial-services-psi.vercel.app/`. Update these if the domain changes.
-- To run the Node backend on Vercel you need a server/adapter deployment and a durable database; without it the site deploys and runs in static/demo mode.
+- The filesystem on Vercel is not durable for the JSON datastore; use PostgreSQL (`DATABASE_URL`) for live/persistent backend data and verify `GET /api/health` reports `"backend":"postgres"`. Use `npm run migrate:pg` to import existing `data/db.json` into Postgres.
 
 ### Admin utilities
 

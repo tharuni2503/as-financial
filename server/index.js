@@ -868,54 +868,75 @@ app.use((error, req, res, next) => {
 
 /* ---------------------------------------------------------------- boot */
 
-async function boot() {
-  await store.load();
+let bootPromise = null;
 
-  if (typeof store.listUsers === 'function') {
-    await ensureBootstrapUser();
-  }
+async function boot(options) {
+  if (bootPromise) return bootPromise;
+  bootPromise = (async () => {
+    await store.load();
 
-  if (typeof auth.init === 'function') {
-    const sessionPersistence = (store.allSessions && store.saveSession && store.deleteSession)
-      ? {
-          loadAll: () => store.allSessions(),
-          save: (token, session) => store.saveSession(token, session),
-          remove: (token) => store.deleteSession(token),
-          removeExpired: () => store.deleteExpiredSessions ? store.deleteExpiredSessions() : Promise.resolve()
-        }
-      : null;
-    const securityPersistence = (store.getSecurityState && store.setSecurityState)
-      ? {
-          load: () => store.getSecurityState(),
-          save: (state) => store.setSecurityState(state)
-        }
-      : null;
-    await auth.init(sessionPersistence, securityPersistence);
-  }
+    if (typeof store.listUsers === 'function') {
+      await ensureBootstrapUser();
+    }
 
-  if (store.getSecurityState) {
-    try { loadBucketsFromState(await store.getSecurityState()); } catch (e) { /* ignore */ }
-  }
+    if (typeof auth.init === 'function') {
+      const sessionPersistence = (store.allSessions && store.saveSession && store.deleteSession)
+        ? {
+            loadAll: () => store.allSessions(),
+            save: (token, session) => store.saveSession(token, session),
+            remove: (token) => store.deleteSession(token),
+            removeExpired: () => store.deleteExpiredSessions ? store.deleteExpiredSessions() : Promise.resolve()
+          }
+        : null;
+      const securityPersistence = (store.getSecurityState && store.setSecurityState)
+        ? {
+            load: () => store.getSecurityState(),
+            save: (state) => store.setSecurityState(state)
+          }
+        : null;
+      await auth.init(sessionPersistence, securityPersistence);
+    }
 
-  const stats = await store.stats();
-  const desc = typeof store.describe === 'function' ? store.describe() : { backend: store.BACKEND || 'unknown', location: '' };
+    if (store.getSecurityState) {
+      try { loadBucketsFromState(await store.getSecurityState()); } catch (e) { /* ignore */ }
+    }
 
-  app.listen(PORT, () => {
-    console.log('');
-    console.log('  AS Financial backend running');
-    console.log('  Site:        http://localhost:' + PORT + '/');
-    console.log('  Admin:       http://localhost:' + PORT + '/admin.html');
-    console.log('  Health:      http://localhost:' + PORT + '/api/health');
-    console.log('  Storage:     ' + desc.backend + (desc.location ? ' (' + desc.location + ')' : ''));
-    console.log('  Content:     ' + stats.publishedTestimonials + ' published testimonials, ' +
-      stats.gallery + ' posters, ' + stats.images + ' image overrides, ' + stats.enquiries + ' enquiries');
-    console.log('  Admin data:  ' + (stats.leads || 0) + ' leads, ' + (stats.applications || 0) + ' applications, ' +
-      (stats.customers || 0) + ' customers, ' + (stats.documents || 0) + ' documents, ' + (stats.notifications || 0) + ' notifications, ' + (stats.users || 0) + ' users');
-    console.log('');
+    const stats = await store.stats();
+    const desc = typeof store.describe === 'function' ? store.describe() : { backend: store.BACKEND || 'unknown', location: '' };
+
+    const opts = options || {};
+    if (opts.listen !== false) {
+      app.listen(PORT, () => {
+        console.log('');
+        console.log('  AS Financial backend running');
+        console.log('  Site:        http://localhost:' + PORT + '/');
+        console.log('  Admin:       http://localhost:' + PORT + '/admin.html');
+        console.log('  Health:      http://localhost:' + PORT + '/api/health');
+        console.log('  Storage:     ' + desc.backend + (desc.location ? ' (' + desc.location + ')' : ''));
+        console.log('  Content:     ' + stats.publishedTestimonials + ' published testimonials, ' +
+          stats.gallery + ' posters, ' + stats.images + ' image overrides, ' + stats.enquiries + ' enquiries');
+        console.log('  Admin data:  ' + (stats.leads || 0) + ' leads, ' + (stats.applications || 0) + ' applications, ' +
+          (stats.customers || 0) + ' customers, ' + (stats.documents || 0) + ' documents, ' + (stats.notifications || 0) + ' notifications, ' + (stats.users || 0) + ' users');
+        console.log('');
+      });
+    }
+
+    return { stats, desc };
+  })().catch((error) => {
+    bootPromise = null;
+    throw error;
+  });
+  return bootPromise;
+}
+
+if (require.main === module) {
+  boot().catch((error) => {
+    console.error('[boot] failed to start:', error && error.message ? error.message : error);
+    process.exit(1);
   });
 }
 
-boot().catch((error) => {
-  console.error('[boot] failed to start:', error && error.message ? error.message : error);
-  process.exit(1);
-});
+module.exports = app;
+module.exports.app = app;
+module.exports.boot = boot;
+module.exports.ready = () => boot({ listen: false });
