@@ -82,7 +82,9 @@
             changed = true;
           }
         } else if (hasContent(local)) {
-          api.request('api/admin/store/' + name, { method: 'PUT', body: local }).catch(function () {});
+          // Avoid overwriting server with potentially stale local data.
+          // Keep local data in browser; server remains source of truth once populated.
+          console.info('[admin-sync] remote empty for', name, '- keeping local browser copy without overwriting server.');
         }
       });
       return changed;

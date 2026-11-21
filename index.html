@@ -9,7 +9,7 @@
   <meta property="og:description" content="Loan assistance for home, personal, business, mortgage, education and other needs in Medipalli, Hyderabad.">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="theme-color" content="#10294D">
+  <meta name="theme-color" content="#10294B">
   <meta name="color-scheme" content="light">
   <link rel="preload" as="image" href="assets/img/hero-family-home.jpg">
   <link rel="icon" href="assets/img/brand/favicon.png" type="image/png">
@@ -146,7 +146,6 @@
     </div>
     <a class="m-link" href="index.html" aria-current="page">Home</a>
     <a class="m-link" href="loans.html">Loan Products <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a>
-    <a class="m-link" href="#calculator">EMI Calculator</a>
     <a class="m-link" href="#calculator">Calculators</a>
     <a class="m-link" href="#why-us">Why AS</a>
     <a class="m-link" href="#partners">Our Partners</a>
@@ -167,13 +166,13 @@
     <section class="hero2 hero-clean" id="hero">
       <div class="container hero2-grid hero-ambak">
         <div class="hero2-copy">
-          <span class="pill pill-gold"><span class="dot"></span> Loan assistance &middot; Medipalli, Hyderabad</span>
-          <h1>Find the right loan, <span class="serif">with clear guidance.</span></h1>
-          <p class="hero2-lede">Compare lender options and get step-by-step support for your loan enquiry.</p>
+          <span class="pill pill-gold"><span class="dot"></span> Trusted Financial Services &middot; Hyderabad</span>
+          <h1>Your Financial Goals, <span class="serif">Our Trusted Solutions.</span></h1>
+          <p class="hero2-lede">Discover reliable financial solutions designed around your needs and future goals.</p>
 
           <div class="hero2-cta">
-            <button type="button" class="btn btn-gold btn-lg" data-popup-open="apply-popup">Apply now <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
-            <a class="btn btn-outline btn-lg" href="tel:+919182703079" data-setting="phone"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-phone"></use></svg> Call an advisor</a>
+            <a class="btn btn-gold btn-lg" href="#products">Explore Our Services <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
+            <a class="btn btn-outline btn-lg" href="contact.html">Get in Touch <svg class="icon icon-sm" aria-hidden="true"><use href="#i-phone"></use></svg></a>
           </div>
 
           <ul class="hero2-points" aria-label="What we help with">
@@ -877,14 +876,28 @@
     </div>
   </footer>
 
-  <!-- Floating actions -->
-  <div class="float-actions" data-float-actions">
-    <a class="fab fab-wa" href="https://wa.me/919182703079?text=Hi%20AS%20Financial%2C%20I%20need%20help%20with%20a%20loan." data-wa-link="Hi AS Financial, I need help with a loan." target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp">
-      <svg class="icon" aria-hidden="true"><use href="#i-whatsapp"></use></svg>
-    </a>
-    <a class="fab" href="tel:+919182703079" data-setting="phone" aria-label="Call AS Financial">
-      <svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg>
-    </a>
+  <!-- AI Assistant -->
+  <div class="as-assistant" id="as-assistant">
+    <button type="button" class="as-assistant-launcher" id="as-assistant-launcher" aria-label="Open AI assistant" aria-expanded="false" aria-controls="as-assistant-panel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3z"/><path d="M19 15l.9 2.1 2.1.9-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z"/></svg>
+      <span>Ask AI</span>
+    </button>
+    <div class="as-assistant-panel" id="as-assistant-panel" role="dialog" aria-modal="false" aria-label="AS Financial AI assistant" hidden>
+      <div class="as-assistant-head">
+        <div>
+          <strong>AS Financial Assistant</strong>
+          <p>Ask about loans, eligibility, documents, or process</p>
+        </div>
+        <button type="button" class="as-assistant-close" id="as-assistant-close" aria-label="Close assistant"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6l-12 12"/></svg></button>
+      </div>
+      <div class="as-assistant-messages" id="as-assistant-messages" aria-live="polite"></div>
+      <div class="as-assistant-quick" id="as-assistant-quick"></div>
+      <form class="as-assistant-form" id="as-assistant-form">
+        <label class="sr-only" for="as-assistant-input">Ask a question</label>
+        <input id="as-assistant-input" type="text" maxlength="300" placeholder="Ask about loans, documents, rates..." autocomplete="off">
+        <button type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+      </form>
+    </div>
   </div>
 
   <!-- Apply popup -->
@@ -969,6 +982,7 @@
   <script src="assets/js/calculators.js?v=20261120z40" defer></script>
   <script src="assets/js/icons.js?v=20261118z22" defer></script>
   <script src="assets/js/backend.js?v=20261118z22" defer></script><script src="assets/js/main.js?v=20261120z40" defer></script>  <script src="assets/js/lenders.js?v=20261120i" defer></script>
+  <script src="assets/js/assistant.js?v=20261121a" defer></script>
   <script src="assets/js/lenders-ui.js?v=20261120z40" defer></script>
 
   <script>

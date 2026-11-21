@@ -345,11 +345,7 @@ function hashResetToken(token) {
 
 function makeResetToken() {
   const token = crypto.randomBytes(24).toString('base64url');
-  return {
-    token,
-    tokenHash: hashResetToken(token),
-    expiresAt: new Date(Date.now() + RESET_TTL_MS).toISOString()
-  };
+  return { token, tokenHash: hashResetToken(token), expiresAt: new Date(Date.now() + RESET_TTL_MS).toISOString() };
 }
 
 function randomId(prefix) {

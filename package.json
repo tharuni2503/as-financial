@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
-    "test": "node --test tests/smoke.test.js",
+    "test": "node --test tests/smoke.test.js tests/security.test.js",
+    "test:all": "node --test tests/*.test.js",
     "migrate:pg": "node server/migrate-json-to-pg.js",
     "migrate:pg:dry": "node server/migrate-json-to-pg.js --dry-run"
   },
@@ -16,7 +17,7 @@
   },
   "dependencies": {
     "express": "^4.19.2",
-    "nodemailer": "^10.6.1",
+    "nodemailer": "^6.9.16",
     "pg": "^8.13.1"
   }
 }

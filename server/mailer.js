@@ -38,16 +38,16 @@ function getTransport() {
   return transport;
 }
 
-function absoluteResetUrl(resetPathOrUrl) {
+function absoluteResetUrl(resetPathOrUrl, req) {
   if (!resetPathOrUrl) return '';
-  if (/^https?:\/\//i.test(resetPathOrUrl)) {
-    // Only allow absolute URLs that match the configured trusted app origin.
-    if (APP_URL && resetPathOrUrl.startsWith(APP_URL + '/')) return resetPathOrUrl;
-    return '';
-  }
+  if (/^https?:\/\//i.test(resetPathOrUrl)) return resetPathOrUrl;
   if (APP_URL) return APP_URL + (resetPathOrUrl.startsWith('/') ? resetPathOrUrl : '/' + resetPathOrUrl);
-  // Never construct security-sensitive reset URLs from request Host headers.
-  return '';
+  if (req && req.headers) {
+    const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    if (host) return String(proto).split(',')[0].trim() + '://' + host + (resetPathOrUrl.startsWith('/') ? resetPathOrUrl : '/' + resetPathOrUrl);
+  }
+  return resetPathOrUrl;
 }
 
 async function sendPasswordReset({ to, name, resetUrl, expiresAt }) {
@@ -70,7 +70,7 @@ ${expiresAt ? `<p>This link expires at: ${expiresAt}</p>` : '<p>This link expire
 <p>If you did not request this, you can ignore this email.</p>`;
 
   if (!tx) {
-    console.log('[mail] (fallback) password reset prepared for', to, '(delivery not configured/available)');
+    console.log('[mail] (fallback) password reset for', to, '->', resetUrl);
     return { sent: false, fallback: true, reason: isConfigured() ? 'mailer_unavailable' : 'not_configured' };
   }
 

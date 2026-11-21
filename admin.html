@@ -6,7 +6,7 @@
   <title>Admin Dashboard | AS Financial Services and Solutions</title>
   <meta name="description" content="Private admin dashboard for AS Financial Services and Solutions.">
   <meta name="robots" content="noindex, nofollow">
-  <meta name="theme-color" content="#10294D">
+  <meta name="theme-color" content="#10294B">
   <meta name="color-scheme" content="light">
   <link rel="icon" href="assets/img/brand/favicon.png" type="image/png">
   <link rel="alternate icon" href="favicon.svg" type="image/svg+xml">
@@ -125,22 +125,21 @@
       </div>
 
       <nav class="sidebar-nav" aria-label="Dashboard">
-        <div class="sidebar-label">Workspace</div>
+        <div class="sidebar-label">Main</div>
         <button type="button" class="sidebar-link active" data-view="overview"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg> Overview</button>
-        <button type="button" class="sidebar-link" data-view="leads"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg> Leads <span class="badge-count" id="nav-lead-count">0</span></button>
-        <button type="button" class="sidebar-link" data-view="applications"><svg class="icon" aria-hidden="true"><use href="#i-folder"></use></svg> Applications</button>
-        <button type="button" class="sidebar-link" data-view="customers"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg> Customers</button>
-        <button type="button" class="sidebar-link" data-view="documents"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg> Documents</button>
-        <button type="button" class="sidebar-link" data-view="notifications"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg> Notifications <span class="badge-count" id="nav-notif-count">0</span></button>
-        <button type="button" class="sidebar-link" data-view="reports"><svg class="icon" aria-hidden="true"><use href="#i-report"></use></svg> Reports</button>
-
-        <div class="sidebar-label">Catalogue</div>
-        <button type="button" class="sidebar-link" data-view="products"><svg class="icon" aria-hidden="true"><use href="#i-box"></use></svg> Loan products</button>
-        <button type="button" class="sidebar-link" data-view="partners"><svg class="icon" aria-hidden="true"><use href="#i-handshake"></use></svg> Bank partners</button>
-        <button type="button" class="sidebar-link" data-view="content"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg> Website content</button>
-
-        <div class="sidebar-label">System</div>
+        <button type="button" class="sidebar-link" data-view="leads"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg> Enquiries <span class="badge-count" id="nav-lead-count">0</span></button>
+        <button type="button" class="sidebar-link" data-view="partners"><svg class="icon" aria-hidden="true"><use href="#i-handshake"></use></svg> Partners</button>
+        <button type="button" class="sidebar-link" data-view="content"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg> Reviews &amp; Products</button>
         <button type="button" class="sidebar-link" data-view="settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"></use></svg> Settings</button>
+
+        <details class="sidebar-more" style="margin-top:8px">
+          <summary class="sidebar-label" style="cursor:pointer;list-style:none">More tools</summary>
+          <button type="button" class="sidebar-link" data-view="customers"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg> Customers</button>
+          <button type="button" class="sidebar-link" data-view="notifications"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg> Notifications <span class="badge-count" id="nav-notif-count">0</span></button>
+          <button type="button" class="sidebar-link" data-view="reports"><svg class="icon" aria-hidden="true"><use href="#i-report"></use></svg> Reports</button>
+          <button type="button" class="sidebar-link" data-view="products"><svg class="icon" aria-hidden="true"><use href="#i-box"></use></svg> Loan products</button>
+        </details>
+
         <a class="sidebar-link" href="index.html" target="_blank" rel="noopener noreferrer"><svg class="icon" aria-hidden="true"><use href="#i-globe"></use></svg> View website <svg class="icon icon-sm" style="margin-left:auto" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a>
       </nav>
 
@@ -206,107 +205,77 @@
           <div class="page-head">
             <div>
               <h2><span id="greeting-text">Good morning</span>, <span class="serif" id="greeting-name">Admin</span></h2>
-              <p>A clear view of enquiries, applications and lending activity today.</p>
+              <p>Website visitor analytics and form activity.</p>
             </div>
             <div class="page-head-actions">
-              <button type="button" class="a-btn a-btn-light" id="download-report-btn"><svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg> Export report</button>
-              <button type="button" class="a-btn a-btn-gold" data-add-lead><svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg> Add lead</button>
+              <button type="button" class="a-btn a-btn-light" id="refresh-analytics-btn"><svg class="icon" aria-hidden="true"><use href="#i-refresh"></use></svg> Refresh</button>
             </div>
           </div>
 
           <div class="kpi-grid">
             <div class="kpi">
               <div class="kpi-top">
-                <span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg></span>
-                <span class="kpi-chip up" id="kpi-leads-chip">&#9650; 12.5%</span>
+                <span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-eye"></use></svg></span>
+                <span class="kpi-chip up" id="an-views-chip">All time</span>
               </div>
-              <div class="kpi-value" id="kpi-new-leads">0</div>
-              <div class="kpi-label">New leads this month</div>
-              <div class="kpi-sub"><b id="kpi-total-leads">0</b> total in pipeline</div>
+              <div class="kpi-value" id="an-total-views">0</div>
+              <div class="kpi-label">Page views</div>
+              <div class="kpi-sub"><b id="an-views-7d">0</b> in last 7 days</div>
             </div>
             <div class="kpi">
               <div class="kpi-top">
-                <span class="kpi-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-folder"></use></svg></span>
-                <span class="kpi-chip flat">In progress</span>
+                <span class="kpi-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg></span>
+                <span class="kpi-chip flat">Visitors</span>
               </div>
-              <div class="kpi-value" id="kpi-active-apps">0</div>
-              <div class="kpi-label">Applications being processed</div>
-              <div class="kpi-sub"><b id="kpi-sanctioned-count">0</b> sanctioned this month</div>
+              <div class="kpi-value" id="an-unique-visitors">0</div>
+              <div class="kpi-label">Unique visitors</div>
+              <div class="kpi-sub"><b id="an-visitors-7d">0</b> in last 7 days</div>
             </div>
             <div class="kpi">
               <div class="kpi-top">
-                <span class="kpi-icon green"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg></span>
-                <span class="kpi-chip up">&#9650; 8.2%</span>
+                <span class="kpi-icon green"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></span>
+                <span class="kpi-chip">Forms</span>
               </div>
-              <div class="kpi-value" id="kpi-sanctioned-amt">&#8377;0</div>
-              <div class="kpi-label">Sanctioned volume</div>
-              <div class="kpi-sub">This calendar month</div>
+              <div class="kpi-value" id="an-form-starts">0</div>
+              <div class="kpi-label">Started filling form</div>
+              <div class="kpi-sub"><b id="an-form-starts-7d">0</b> in last 7 days</div>
             </div>
             <div class="kpi">
               <div class="kpi-top">
-                <span class="kpi-icon purple"><svg class="icon" aria-hidden="true"><use href="#i-wallet"></use></svg></span>
-                <span class="kpi-chip up">&#9650; 16.4%</span>
+                <span class="kpi-icon purple"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg></span>
+                <span class="kpi-chip">Attempts</span>
               </div>
-              <div class="kpi-value" id="kpi-disbursed-amt">&#8377;0</div>
-              <div class="kpi-label">Disbursed volume</div>
-              <div class="kpi-sub">Year to date</div>
-            </div>
-          </div>
-
-          <div class="dash-grid">
-            <div class="card">
-              <div class="card-head">
-                <div><h3>Enquiry &amp; sanction trend</h3><p>Last 8 months</p></div>
-                <div class="chart-legend"><span><i style="background:var(--gold)"></i>Leads</span><span><i style="background:var(--navy)"></i>Sanctions</span></div>
-              </div>
-              <div class="card-body">
-                <div class="chart-wrap chart-tall"><canvas id="chart-leads" role="img" aria-label="Monthly leads and sanctions"></canvas></div>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="card-head"><div><h3>Loan mix</h3><p>By sanctioned value</p></div></div>
-              <div class="card-body">
-                <div class="chart-wrap chart-medium" style="height:180px"><canvas id="chart-mix" role="img" aria-label="Loan product mix"></canvas></div>
-                <div class="donut-legend" id="mix-legend"></div>
-              </div>
+              <div class="kpi-value" id="an-form-submits">0</div>
+              <div class="kpi-label">Form submit attempts</div>
+              <div class="kpi-sub" id="an-last-attempt">No attempts yet</div>
             </div>
           </div>
 
           <div class="dash-grid equal">
             <div class="card">
-              <div class="card-head"><div><h3>Sales pipeline</h3><p>Active leads by stage</p></div><button type="button" class="a-btn a-btn-ghost a-btn-sm" data-view-link="leads">View leads <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button></div>
-              <div class="card-body"><div class="pipeline" id="pipeline-list"></div></div>
+              <div class="card-head"><div><h3>Last 7 days activity</h3><p>Views and form activity by day</p></div></div>
+              <div class="table-wrap">
+                <table class="a-table">
+                  <thead><tr><th scope="col">Date</th><th scope="col">Page views</th><th scope="col">Form starts</th><th scope="col">Submit attempts</th></tr></thead>
+                  <tbody id="an-daily-body"><tr><td colspan="4" class="table-empty">No analytics data yet.</td></tr></tbody>
+                </table>
+              </div>
             </div>
 
             <div class="card">
-              <div class="card-head"><div><h3>Today's follow-ups</h3><p>Keep these moving</p></div><button type="button" class="a-btn a-btn-ghost a-btn-sm" id="add-task-btn"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"></use></svg> Add</button></div>
-              <div class="card-body" style="padding:8px 18px" id="task-list"></div>
+              <div class="card-head"><div><h3>Top pages</h3><p>Most viewed pages (30 days)</p></div></div>
+              <div class="card-body"><div class="pipeline" id="an-top-pages"><div class="empty-state" style="padding:18px"><p>No page view data yet.</p></div></div></div>
             </div>
           </div>
 
           <div class="card" style="margin-top:18px">
             <div class="card-head">
-              <div><h3>Latest enquiries</h3><p>Fresh from the website and phone</p></div>
-              <button type="button" class="a-btn a-btn-light a-btn-sm" data-view-link="leads">All leads <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+              <div><h3>Recent activity</h3><p>Latest views and form attempts</p></div>
             </div>
             <div class="table-wrap">
               <table class="a-table">
-                <thead><tr><th scope="col">Customer</th><th scope="col">Loan type</th><th scope="col">Amount</th><th scope="col">Source</th><th scope="col">Status</th><th scope="col">Received</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
-                <tbody id="recent-leads-body"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="card" style="margin-top:18px">
-            <div class="card-head">
-              <div><h3>Product performance</h3><p>Sanctioned value and conversion by loan type</p></div>
-              <button type="button" class="a-btn a-btn-ghost a-btn-sm" data-view-link="reports">Full report <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
-            </div>
-            <div class="table-wrap">
-              <table class="a-table">
-                <thead><tr><th scope="col">Product</th><th scope="col">Leads</th><th scope="col">Sanctioned</th><th scope="col">Conversion</th><th scope="col">Avg. ticket size</th><th scope="col">Trend</th></tr></thead>
-                <tbody id="product-perf-body"></tbody>
+                <thead><tr><th scope="col">Time</th><th scope="col">Event</th><th scope="col">Page</th><th scope="col">Visitor</th><th scope="col">Details</th></tr></thead>
+                <tbody id="an-recent-body"><tr><td colspan="5" class="table-empty">No analytics data yet.</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -315,7 +284,7 @@
         <!-- LEADS -->
         <section class="view" id="view-leads">
           <div class="page-head">
-            <div><h2>Leads</h2><p><span id="leads-count-label">0</span> enquiries across all channels</p></div>
+            <div><h2>Enquiries</h2><p><span id="leads-count-label">0</span> incoming enquiries — call, follow up, and update their status.</p></div>
             <div class="page-head-actions">
               <button type="button" class="a-btn a-btn-light" id="export-leads-btn"><svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg> Export CSV</button>
               <button type="button" class="a-btn a-btn-gold" data-add-lead><svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg> Add lead</button>
@@ -324,7 +293,7 @@
 
           <div class="mini-stats">
             <div class="mini-stat"><span>Open leads</span><b id="leads-open">0</b></div>
-            <div class="mini-stat"><span>Converted to applications</span><b id="leads-converted">0</b></div>
+            <div class="mini-stat"><span>Accepted</span><b id="leads-converted">0</b></div>
             <div class="mini-stat"><span>Pipeline value</span><b id="leads-value">&#8377;0</b></div>
           </div>
 
@@ -342,65 +311,17 @@
               <label class="sr-only" for="leads-status-filter">Filter by status</label>
               <select id="leads-status-filter">
                 <option value="">All statuses</option>
-                <option>New</option><option>Contacted</option><option>Qualified</option><option>Documents</option><option>Sanctioned</option><option>Disbursed</option><option>Lost</option>
-              </select>
-              <label class="sr-only" for="leads-source-filter">Filter by source</label>
-              <select id="leads-source-filter">
-                <option value="">All sources</option>
-                <option>Website form</option><option>Homepage popup</option><option>Phone call</option><option>WhatsApp</option><option>Walk-in</option><option>Referral</option>
+                <option>New</option><option>Contacted</option><option>Accepted</option><option>Declined</option>
               </select>
               <button type="button" class="a-btn a-btn-ghost a-btn-sm" id="clear-lead-filters">Reset</button>
             </div>
             <div class="table-wrap">
               <table class="a-table">
-                <thead><tr><th scope="col">Customer</th><th scope="col">Loan type</th><th scope="col">Amount</th><th scope="col">Source</th><th scope="col">Status</th><th scope="col">Priority</th><th scope="col">Date</th><th scope="col" style="text-align:right">Actions</th></tr></thead>
+                <thead><tr><th scope="col">Customer</th><th scope="col">Phone</th><th scope="col">Loan type</th><th scope="col">Amount</th><th scope="col">Status</th><th scope="col">Priority</th><th scope="col">Date</th><th scope="col" style="text-align:right">Actions</th></tr></thead>
                 <tbody id="leads-body"></tbody>
               </table>
             </div>
             <div class="pagination" id="leads-pagination"></div>
-          </div>
-        </section>
-
-        <!-- APPLICATIONS -->
-        <section class="view" id="view-applications">
-          <div class="page-head">
-            <div><h2>Applications</h2><p>Track every file from login to disbursal</p></div>
-            <div class="page-head-actions">
-              <button type="button" class="a-btn a-btn-light" id="export-apps-btn"><svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg> Export</button>
-              <button type="button" class="a-btn a-btn-gold" id="add-app-btn"><svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg> New application</button>
-            </div>
-          </div>
-
-          <div class="kpi-grid">
-            <div class="kpi"><div class="kpi-top"><span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-folder"></use></svg></span></div><div class="kpi-value" id="app-total">0</div><div class="kpi-label">Total files</div></div>
-            <div class="kpi"><div class="kpi-top"><span class="kpi-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg></span></div><div class="kpi-value" id="app-processing">0</div><div class="kpi-label">In processing</div></div>
-            <div class="kpi"><div class="kpi-top"><span class="kpi-icon green"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg></span></div><div class="kpi-value" id="app-sanctioned">0</div><div class="kpi-label">Sanctioned / disbursed</div></div>
-            <div class="kpi"><div class="kpi-top"><span class="kpi-icon purple"><svg class="icon" aria-hidden="true"><use href="#i-wallet"></use></svg></span></div><div class="kpi-value" id="app-value">&#8377;0</div><div class="kpi-label">Sanctioned value</div></div>
-          </div>
-
-          <div class="card">
-            <div class="stage-tabs" id="app-stage-tabs" class="stage-tabs">
-              <button type="button" class="stage-tab active" data-stage="all">All <span id="stage-all-count">0</span></button>
-              <button type="button" class="stage-tab" data-stage="Logged">Logged <span id="stage-logged-count">0</span></button>
-              <button type="button" class="stage-tab" data-stage="Documents">Documents <span id="stage-docs-count">0</span></button>
-              <button type="button" class="stage-tab" data-stage="Underwriting">Underwriting <span id="stage-uw-count">0</span></button>
-              <button type="button" class="stage-tab" data-stage="Sanctioned">Sanctioned <span id="stage-sanctioned-count">0</span></button>
-              <button type="button" class="stage-tab" data-stage="Disbursed">Disbursed <span id="stage-disbursed-count">0</span></button>
-              <button type="button" class="stage-tab" data-stage="Rejected">Rejected <span id="stage-rejected-count">0</span></button>
-            </div>
-            <div class="toolbar">
-              <div class="search-box"><svg class="icon" aria-hidden="true"><use href="#i-search"></use></svg><label class="sr-only" for="apps-search">Search applications by customer, ID or lender</label><input type="search" id="apps-search" placeholder="Search by customer, application ID or lenderÃƒÆ’Ã†â€™Ã‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ã‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ã‚Â¦"></div>
-              <label class="sr-only" for="apps-lender-filter">Filter by lender</label>
-              <select id="apps-lender-filter"><option value="">All lenders</option></select>
-              <button type="button" class="a-btn a-btn-ghost a-btn-sm" id="clear-app-filters">Reset</button>
-            </div>
-            <div class="table-wrap">
-              <table class="a-table">
-                <thead><tr><th scope="col">Application</th><th scope="col">Customer</th><th scope="col">Loan / amount</th><th scope="col">Lender</th><th scope="col">Stage</th><th scope="col">Progress</th><th scope="col" style="text-align:right">Actions</th></tr></thead>
-                <tbody id="apps-body"></tbody>
-              </table>
-            </div>
-            <div class="pagination" id="apps-pagination"></div>
           </div>
         </section>
 
@@ -448,25 +369,8 @@
         <section class="view" id="view-content">
           <div class="page-head">
             <div>
-              <h2>Website content</h2>
-              <p>Manage testimonials and guides shown on the public website. Publish, edit, or hide items in a few clicks.</p>
-            </div>
-          </div>
-
-          <div class="content-overview card" aria-label="Content overview">
-            <div class="content-overview-grid">
-              <div class="content-overview-item">
-                <span class="content-overview-icon"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg></span>
-                <div><b>Testimonials</b><span>Client reviews and homepage visibility</span></div>
-              </div>
-              <div class="content-overview-item">
-                <span class="content-overview-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg></span>
-                <div><b>Guides &amp; articles</b><span>Helpful content for prospective borrowers</span></div>
-              </div>
-              <div class="content-overview-item">
-                <span class="content-overview-icon soft"><svg class="icon" aria-hidden="true"><use href="#i-globe"></use></svg></span>
-                <div><b>Live on website</b><span>Changes are saved in this browser workspace</span></div>
-              </div>
+              <h2>Reviews &amp; Products</h2>
+              <p>Manage customer reviews and loan products shown on the website.</p>
             </div>
           </div>
 
@@ -478,8 +382,16 @@
                   <p class="content-summary" id="testimonials-summary">Manage reviews shown on the homepage.</p>
                 </div>
                 <div class="page-head-actions">
+                  <button type="button" class="a-btn a-btn-light a-btn-sm" id="fetch-google-reviews-btn"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-globe"></use></svg> Fetch Google reviews</button>
                   <button type="button" class="a-btn a-btn-primary a-btn-sm" id="add-testimonial-btn"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"></use></svg> Add testimonial</button>
                 </div>
+              </div>
+              <div id="google-reviews-panel" style="display:none;margin:0 0 14px;padding:14px;border:1px solid #e6edf6;border-radius:14px;background:#f8fbff">
+                <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px">
+                  <div><b style="color:var(--navy);font-size:.82rem">Google Maps reviews</b><div id="google-reviews-meta" style="font-size:.72rem;color:#5b6b7e;margin-top:2px">Select reviews to publish on the website.</div></div>
+                  <button type="button" class="a-btn a-btn-ghost a-btn-sm" id="close-google-reviews-btn">Close</button>
+                </div>
+                <div class="content-list" id="google-reviews-list"></div>
               </div>
               <div class="content-list" id="testimonials-list"></div>
             </div>
@@ -487,14 +399,14 @@
             <div class="card content-panel">
               <div class="card-head content-panel-head">
                 <div>
-                  <h3>Guides &amp; articles</h3>
-                  <p class="content-summary" id="posts-summary">Manage helpful articles for visitors and borrowers.</p>
+                  <h3>Loan products</h3>
+                  <p class="content-summary" id="content-products-summary">Products shown on the website. Manage details in Loan products.</p>
                 </div>
                 <div class="page-head-actions">
-                  <button type="button" class="a-btn a-btn-primary a-btn-sm" id="add-post-btn"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"></use></svg> Add article</button>
+                  <button type="button" class="a-btn a-btn-primary a-btn-sm" data-view-link="products">Manage products</button>
                 </div>
               </div>
-              <div class="content-list" id="posts-list"></div>
+              <div class="content-list" id="content-products-list"></div>
             </div>
           </div>
         </section>
@@ -510,8 +422,8 @@
           </div>
 
           <div class="kpi-grid">
-            <div class="kpi"><div class="kpi-top"><span class="kpi-icon green"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg></span><span class="kpi-chip up">&#9650; 16.4%</span></div><div class="kpi-value" id="report-disbursed">&#8377;0</div><div class="kpi-label">Total disbursed</div></div>
-            <div class="kpi"><div class="kpi-top"><span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-percent"></use></svg></span><span class="kpi-chip up">&#9650; 2.1%</span></div><div class="kpi-value" id="report-conversion">0%</div><div class="kpi-label">Lead-to-sanction conversion</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon green"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg></span><span class="kpi-chip" id="report-disbursed-chip">Live</span></div><div class="kpi-value" id="report-disbursed">&#8377;0</div><div class="kpi-label">Total disbursed</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-percent"></use></svg></span><span class="kpi-chip" id="report-conversion-chip">Live</span></div><div class="kpi-value" id="report-conversion">0%</div><div class="kpi-label">Lead-to-sanction conversion</div></div>
             <div class="kpi"><div class="kpi-top"><span class="kpi-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-wallet"></use></svg></span></div><div class="kpi-value" id="report-ticket">&#8377;0</div><div class="kpi-label">Average ticket size</div></div>
             <div class="kpi"><div class="kpi-top"><span class="kpi-icon purple"><svg class="icon" aria-hidden="true"><use href="#i-handshake"></use></svg></span></div><div class="kpi-value" id="report-lenders">0</div><div class="kpi-label">Active lending partners</div></div>
           </div>
@@ -563,23 +475,6 @@
           </div>
         </section>
 
-        <!-- DOCUMENTS -->
-        <section class="view" id="view-documents">
-          <div class="page-head">
-            <div><h2>Documents</h2><p>Track customer and application document status</p></div>
-            <div class="page-head-actions"><button type="button" class="a-btn a-btn-gold" id="add-document-btn"><svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg> Add document</button></div>
-          </div>
-          <div class="card">
-            <div class="card-head"><div><h3>Document records</h3><p>Metadata tracking (file storage can be added separately)</p></div></div>
-            <div class="table-wrap">
-              <table class="a-table">
-                <thead><tr><th scope="col">Title</th><th scope="col">Type</th><th scope="col">Customer/Application</th><th scope="col">Status</th><th scope="col">Updated</th><th scope="col">Actions</th></tr></thead>
-                <tbody id="documents-body"></tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
         <!-- NOTIFICATIONS -->
         <section class="view" id="view-notifications">
           <div class="page-head">
@@ -598,10 +493,19 @@
         <!-- SETTINGS -->
         <section class="view" id="view-settings">
           <div class="page-head">
-            <div><h2>Settings</h2><p>Business details, notifications and your account</p></div>
+            <div><h2>Settings</h2><p>Manage business details, your account, users, and sessions.</p></div>
           </div>
 
-          <div class="settings-grid">
+          <div class="card" style="margin-bottom:16px">
+            <div class="stage-tabs" id="settings-tabs" style="padding:12px 14px;gap:8px;flex-wrap:wrap">
+              <button type="button" class="stage-tab active" data-settings-tab="business">Business</button>
+              <button type="button" class="stage-tab" data-settings-tab="account">Account</button>
+              <button type="button" class="stage-tab" data-settings-tab="users">Users</button>
+              <button type="button" class="stage-tab" data-settings-tab="sessions">Sessions</button>
+            </div>
+          </div>
+
+          <div class="settings-tab-panel" data-settings-panel="business">
             <div class="card">
               <div class="card-head"><div><h3>Business profile</h3><p>These details appear across the public website</p></div></div>
               <form id="settings-form">
@@ -628,96 +532,73 @@
                   </div>
                 </div>
 
-                <div class="setting-block">
-                  <h3>Notifications</h3>
-                  <p>Choose what lands in your inbox.</p>
-                  <div class="toggle-row">
-                    <div><b>New lead alerts</b><span>Email me when a website enquiry arrives</span></div>
-                    <label class="switch"><input type="checkbox" id="notif-leads" checked><span></span></label>
-                  </div>
-                  <div class="toggle-row">
-                    <div><b>Application stage updates</b><span>Notify when a file moves stage</span></div>
-                    <label class="switch"><input type="checkbox" id="notif-apps" checked><span></span></label>
-                  </div>
-                  <div class="toggle-row">
-                    <div><b>Weekly summary</b><span>Monday morning performance digest</span></div>
-                    <label class="switch"><input type="checkbox" id="notif-weekly"><span></span></label>
-                  </div>
-                  <div class="toggle-row">
-                    <div><b>WhatsApp lead alerts</b><span>Instant message to the business number</span></div>
-                    <label class="switch"><input type="checkbox" id="notif-whatsapp" checked><span></span></label>
-                  </div>
-                </div>
-
                 <div class="setting-block" style="display:flex;justify-content:flex-end;gap:8px">
                   <button type="button" class="a-btn a-btn-light" id="settings-reset">Discard</button>
                   <button type="submit" class="a-btn a-btn-primary"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg> Save changes</button>
                 </div>
               </form>
             </div>
+          </div>
 
-            <div style="display:grid;gap:18px">
-              <div class="card">
-                <div class="card-head"><div><h3>Account</h3><p>Signed-in staff member</p></div></div>
-                <div class="card-body">
-                  <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px">
-                    <span class="cust-avatar" id="account-avatar" style="width:44px;height:44px;font-size:.9rem">AD</span>
-                    <div><b style="display:block;color:var(--navy)" id="account-name">Administrator</b><span style="font-size:.72rem;color:var(--muted)" id="account-email">Signed in</span></div>
+          <div class="settings-tab-panel" data-settings-panel="account" style="display:none">
+            <div class="card">
+              <div class="card-head"><div><h3>Account</h3><p>Signed-in staff member</p></div></div>
+              <div class="card-body">
+                <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px">
+                  <span class="cust-avatar" id="account-avatar" style="width:44px;height:44px;font-size:.9rem">AD</span>
+                  <div><b style="display:block;color:var(--navy)" id="account-name">Administrator</b><span style="font-size:.72rem;color:var(--muted)" id="account-email">Signed in</span></div>
+                </div>
+                <div class="detail-box" style="margin-bottom:10px"><small>Role</small><b id="account-role">Administrator</b></div>
+                <div class="detail-box" style="margin-bottom:10px"><small>Last sign in</small><b id="last-signin">Today</b></div>
+
+                <form id="change-password-form" style="margin-top:14px;display:grid;gap:10px;max-width:520px">
+                  <h4 style="margin:0;font-size:.9rem;color:var(--navy)">Change password</h4>
+                  <div class="a-field"><label for="cp-current">Current password</label><input id="cp-current" name="currentPassword" type="password" autocomplete="current-password" required></div>
+                  <div class="a-field"><label for="cp-new">New password</label><input id="cp-new" name="newPassword" type="password" autocomplete="new-password" minlength="6" required></div>
+                  <div class="a-field"><label for="cp-confirm">Confirm new password</label><input id="cp-confirm" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" required></div>
+                  <div id="change-password-msg" class="demo-note" style="display:none;margin:0"></div>
+                  <div><button type="submit" class="a-btn a-btn-primary a-btn-sm">Update password</button></div>
+                </form>
+              </div>
+            </div>
+            <div class="card" style="margin-top:16px">
+              <div class="card-body" style="display:flex;gap:10px;align-items:flex-start">
+                <svg class="icon" aria-hidden="true" style="color:var(--gold-deep);flex:none"><use href="#i-shield"></use></svg>
+                <p style="margin:0;font-size:.74rem;color:var(--muted)">Administrator and staff access only. Signed-in changes sync to the backend server.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-tab-panel" data-settings-panel="users" style="display:none">
+            <div class="card" id="user-management-card" style="display:none">
+              <div class="card-head"><div><h3>User management</h3><p>Manage admin and staff accounts</p></div><button class="a-btn a-btn-light a-btn-sm" id="refresh-users-btn" type="button">Refresh</button></div>
+              <div class="card-body" style="display:grid;gap:12px">
+                <form id="create-user-form" style="display:grid;gap:8px">
+                  <div class="form-row">
+                    <div class="a-field"><label for="nu-name">Name</label><input id="nu-name" name="name" type="text" placeholder="Full name"></div>
+                    <div class="a-field"><label for="nu-email">Email</label><input id="nu-email" name="email" type="email" required placeholder="user@example.com"></div>
                   </div>
-                  <div class="detail-box" style="margin-bottom:10px"><small>Role</small><b id="account-role">Administrator</b></div>
-                  <div class="detail-box" style="margin-bottom:10px"><small>Last sign in</small><b id="last-signin">Today</b></div>
-
-                  <form id="change-password-form" style="margin-top:14px;display:grid;gap:10px">
-                    <h4 style="margin:0;font-size:.9rem;color:var(--navy)">Change password</h4>
-                    <div class="a-field"><label for="cp-current">Current password</label><input id="cp-current" name="currentPassword" type="password" autocomplete="current-password" required></div>
-                    <div class="a-field"><label for="cp-new">New password</label><input id="cp-new" name="newPassword" type="password" autocomplete="new-password" minlength="6" required></div>
-                    <div class="a-field"><label for="cp-confirm">Confirm new password</label><input id="cp-confirm" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" required></div>
-                    <div id="change-password-msg" class="demo-note" style="display:none;margin:0"></div>
-                    <button type="submit" class="a-btn a-btn-primary a-btn-sm">Update password</button>
-                  </form>
-                </div>
+                  <div class="form-row">
+                    <div class="a-field"><label for="nu-role">Role</label><select id="nu-role" name="role"><option value="staff">Staff</option><option value="admin">Admin</option></select></div>
+                    <div class="a-field"><label for="nu-password">Password</label><input id="nu-password" name="password" type="password" minlength="6" required placeholder="At least 6 characters"></div>
+                  </div>
+                  <div><button type="submit" class="a-btn a-btn-primary a-btn-sm">Create user</button></div>
+                </form>
+                <div id="users-msg" class="demo-note" style="display:none;margin:0"></div>
+                <div class="table-wrap"><table class="table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody id="users-table-body"><tr><td colspan="5" class="table-empty">No users loaded.</td></tr></tbody></table></div>
               </div>
+            </div>
+            <div class="card" id="users-access-note">
+              <div class="card-body"><p style="margin:0;font-size:.78rem;color:var(--muted)">User management is available to administrators.</p></div>
+            </div>
+          </div>
 
-              <div class="card" id="user-management-card" style="display:none">
-                <div class="card-head"><div><h3>User management</h3><p>Manage staff accounts and roles (super admin)</p></div><button class="a-btn a-btn-light a-btn-sm" id="refresh-users-btn" type="button">Refresh</button></div>
-                <div class="card-body" style="display:grid;gap:12px">
-                  <form id="create-user-form" style="display:grid;gap:8px">
-                    <div class="form-row">
-                      <div class="a-field"><label for="nu-name">Name</label><input id="nu-name" name="name" type="text" placeholder="Full name"></div>
-                      <div class="a-field"><label for="nu-email">Email</label><input id="nu-email" name="email" type="email" required placeholder="user@example.com"></div>
-                    </div>
-                    <div class="form-row">
-                      <div class="a-field"><label for="nu-role">Role</label><select id="nu-role" name="role"><option value="advisor">Advisor</option><option value="staff">Staff</option><option value="admin">Admin</option><option value="super_admin">Super admin</option></select></div>
-                      <div class="a-field"><label for="nu-password">Password</label><input id="nu-password" name="password" type="password" minlength="6" required placeholder="At least 6 characters"></div>
-                    </div>
-                    <div><button type="submit" class="a-btn a-btn-primary a-btn-sm">Create user</button></div>
-                  </form>
-                  <div id="users-msg" class="demo-note" style="display:none;margin:0"></div>
-                  <div class="table-wrap"><table class="table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody id="users-table-body"><tr><td colspan="5" class="table-empty">No users loaded.</td></tr></tbody></table></div>
-                </div>
-              </div>
-
-              <div class="card" id="audit-log-card" style="display:none">
-                <div class="card-head"><div><h3>Audit log</h3><p>Recent security and account activity</p></div><button class="a-btn a-btn-light a-btn-sm" id="refresh-audit-btn" type="button">Refresh</button></div>
-                <div class="card-body" style="display:grid;gap:10px">
-                  <div id="audit-msg" class="demo-note" style="display:none;margin:0"></div>
-                  <div class="table-wrap"><table class="table"><thead><tr><th>Time</th><th>Event</th><th>Actor</th><th>Details</th></tr></thead><tbody id="audit-table-body"><tr><td colspan="4" class="table-empty">No audit entries loaded.</td></tr></tbody></table></div>
-                </div>
-              </div>
-
-              <div class="card" id="sessions-card">
-                <div class="card-head"><div><h3>Active sessions</h3><p>Devices and browsers signed in to your account</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="a-btn a-btn-light a-btn-sm" id="refresh-sessions-btn" type="button">Refresh</button><button class="a-btn a-btn-light a-btn-sm" id="revoke-other-sessions-btn" type="button">Sign out others</button></div></div>
-                <div class="card-body" style="display:grid;gap:10px">
-                  <div id="sessions-msg" class="demo-note" style="display:none;margin:0"></div>
-                  <div class="table-wrap"><table class="table"><thead><tr><th>When</th><th>Device / IP</th><th>Status</th><th>Action</th></tr></thead><tbody id="sessions-table-body"><tr><td colspan="4" class="table-empty">No sessions loaded.</td></tr></tbody></table></div>
-                </div>
-              </div>
-
-              <div class="card">
-                <div class="card-body" style="display:flex;gap:10px;align-items:flex-start">
-                  <svg class="icon" aria-hidden="true" style="color:var(--gold-deep);flex:none"><use href="#i-shield"></use></svg>
-                  <p style="margin:0;font-size:.74rem;color:var(--muted)">Administrator access only. Signed-in changes sync to the backend server.</p>
-                </div>
+          <div class="settings-tab-panel" data-settings-panel="sessions" style="display:none">
+            <div class="card" id="sessions-card">
+              <div class="card-head"><div><h3>Active sessions</h3><p>Devices and browsers signed in to your account</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="a-btn a-btn-light a-btn-sm" id="refresh-sessions-btn" type="button">Refresh</button><button class="a-btn a-btn-light a-btn-sm" id="revoke-other-sessions-btn" type="button">Sign out others</button></div></div>
+              <div class="card-body" style="display:grid;gap:10px">
+                <div id="sessions-msg" class="demo-note" style="display:none;margin:0"></div>
+                <div class="table-wrap"><table class="table"><thead><tr><th>When</th><th>Device / IP</th><th>Status</th><th>Action</th></tr></thead><tbody id="sessions-table-body"><tr><td colspan="4" class="table-empty">No sessions loaded.</td></tr></tbody></table></div>
               </div>
             </div>
           </div>

@@ -25,6 +25,24 @@
 
   const settings = Object.assign({}, DEFAULT_SETTINGS, read('as_settings', {}));
 
+  function getVisitorId() {
+    try {
+      let id = localStorage.getItem('as_vid');
+      if (!id) {
+        id = 'V-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+        localStorage.setItem('as_vid', id);
+      }
+      return id;
+    } catch (e) { return ''; }
+  }
+
+  function trackEvent(type, meta) {
+    try {
+      const payload = { type: type, page: location.pathname + (location.hash || ''), visitorId: getVisitorId(), meta: meta || {} };
+      fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), keepalive: true }).catch(() => {});
+    } catch (e) {}
+  }
+
   /* ---------- inject business details ---------- */
   function setAnchorText(el, key) {
     const val = settings[key];
@@ -68,6 +86,7 @@
     if (wa) wa.href = 'https://wa.me/' + settings.whatsapp + '?text=' + encodeURIComponent(wa.dataset.waLink || 'Hi AS Financial, I need help with a loan.');
   }
   applySettings();
+  trackEvent('page_view', { title: document.title || '' });
 
   /* ---------- toast ---------- */
   window.asToast = function (message, type) {
@@ -523,15 +542,73 @@
     return (value || '').replace(/[^\d]/g, '').replace(/^91(?=\d{10}$)/, '');
   }
 
+  const TURNSTILE_SITE_KEY = (window.AS_TURNSTILE_SITE_KEY || (document.querySelector('meta[name="turnstile-site-key"]') || {}).content || '').trim();
+  let turnstileScriptPromise = null;
+  function ensureTurnstileScript() {
+    if (!TURNSTILE_SITE_KEY) return Promise.resolve(false);
+    if (window.turnstile) return Promise.resolve(true);
+    if (turnstileScriptPromise) return turnstileScriptPromise;
+    turnstileScriptPromise = new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      s.async = true; s.defer = true;
+      s.onload = () => resolve(true);
+      s.onerror = () => resolve(false);
+      document.head.appendChild(s);
+    });
+    return turnstileScriptPromise;
+  }
+  function mountTurnstile(form) {
+    if (!TURNSTILE_SITE_KEY) return;
+    let wrap = form.querySelector('.turnstile-wrap');
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.className = 'turnstile-wrap';
+      wrap.style.margin = '10px 0 4px';
+      const submit = form.querySelector('button[type="submit"], .btn[type="submit"]');
+      (submit ? submit.parentElement : form).insertBefore(wrap, submit);
+    }
+    if (wrap.dataset.widgetId) return;
+    ensureTurnstileScript().then((ok) => {
+      if (!ok || !window.turnstile || wrap.dataset.widgetId) return;
+      try {
+        const id = window.turnstile.render(wrap, { sitekey: TURNSTILE_SITE_KEY, theme: 'light' });
+        wrap.dataset.widgetId = String(id);
+      } catch (e) { /* no-op */ }
+    });
+  }
+  function turnstileToken(form) {
+    if (!TURNSTILE_SITE_KEY || !window.turnstile) return '';
+    const wrap = form.querySelector('.turnstile-wrap');
+    const id = wrap && wrap.dataset.widgetId;
+    if (!id) return '';
+    try { return window.turnstile.getResponse(id) || ''; } catch (e) { return ''; }
+  }
+  function resetTurnstile(form) {
+    if (!window.turnstile) return;
+    const wrap = form.querySelector('.turnstile-wrap');
+    const id = wrap && wrap.dataset.widgetId;
+    if (!id) return;
+    try { window.turnstile.reset(id); } catch (e) { /* no-op */ }
+  }
+
   document.querySelectorAll('[data-lead-form]').forEach(form => {
     form.noValidate = true;
+    mountTurnstile(form);
     const submitBtn = form.querySelector('button[type="submit"], .btn[type="submit"]');
     const success = form.querySelector('.form-success');
     if (success) success.setAttribute('aria-live', 'polite');
 
+    let formStarted = false;
     form.querySelectorAll('input, select, textarea').forEach(control => {
       const evt = (control.type === 'checkbox' || control.tagName === 'SELECT') ? 'change' : 'input';
-      control.addEventListener(evt, () => clearFieldError(control));
+      control.addEventListener(evt, () => {
+        clearFieldError(control);
+        if (!formStarted) {
+          formStarted = true;
+          trackEvent('form_start', { form: form.id || form.getAttribute('name') || 'lead-form', source: form.dataset.source || 'Website form' });
+        }
+      });
     });
 
     form.addEventListener('submit', (e) => {
@@ -574,6 +651,14 @@
         showFieldError(consent, 'Please accept the consent note so we can contact you.');
         firstInvalid = firstInvalid || consent;
       }
+      if (TURNSTILE_SITE_KEY && !turnstileToken(form)) {
+        asToast('Please complete the verification check and try again.', 'error');
+        if (!firstInvalid) {
+          const tw = form.querySelector('.turnstile-wrap');
+          if (tw) tw.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
 
       if (firstInvalid) {
         asToast('Please check the highlighted fields and try again.', 'error');
@@ -581,6 +666,7 @@
         return;
       }
 
+      trackEvent('form_submit', { form: form.id || form.getAttribute('name') || 'lead-form', source: form.dataset.source || 'Website form' });
       const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
       if (submitBtn) {
         submitBtn.disabled = true;
@@ -590,6 +676,7 @@
       }
 
       const escape = (value) => String(value).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+      const submissionId = 'SUB-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 10).toUpperCase();
       const payload = {
         name,
         phone,
@@ -602,7 +689,9 @@
         message: data.get('message') || '',
         source: form.dataset.source || 'Website form',
         consent: true,
-        website: (data.get('website') || '').toString()
+        website: (data.get('website') || '').toString(),
+        turnstileToken: turnstileToken(form),
+        submissionId
       };
 
       // Send to the backend when one is running; otherwise keep the local copy.
@@ -612,7 +701,8 @@
         : Promise.resolve(false);
 
       delivery.then((delivered) => {
-        saveLead(payload);
+        trackEvent(delivered ? 'form_submit_success' : 'form_submit_failed', { form: form.id || form.getAttribute('name') || 'lead-form', source: form.dataset.source || 'Website form' });
+        if (!delivered) saveLead(payload);
 
         if (submitBtn) {
           submitBtn.disabled = false;
@@ -644,6 +734,7 @@
           success.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
         form.reset();
+        resetTurnstile(form);
         form.querySelectorAll('.field-error.show').forEach(el => el.classList.remove('show'));
         asToast(delivered
           ? 'Enquiry received. We will call you back shortly.'

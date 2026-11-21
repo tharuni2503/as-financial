@@ -6,9 +6,9 @@
  * All public methods are async to match the store interface.
  */
 
-const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 
 const DATA_DIR = process.env.AS_DATA_DIR
   ? path.resolve(process.env.AS_DATA_DIR)
@@ -17,28 +17,20 @@ const DB_FILE = path.join(DATA_DIR, 'db.json');
 const TMP_FILE = path.join(DATA_DIR, 'db.tmp.json');
 const BACKUP_FILE = path.join(DATA_DIR, 'db.backup.json');
 
-let DEFAULT_LENDERS = [];
-try {
-  // eslint-disable-next-line global-require
-  DEFAULT_LENDERS = require(path.join(__dirname, 'default-lenders.json'));
-  if (!Array.isArray(DEFAULT_LENDERS)) DEFAULT_LENDERS = [];
-} catch (e) {
-  DEFAULT_LENDERS = [];
-}
-
-const SECTIONS = ['testimonials', 'gallery', 'posts', 'lenders'];
-const ADMIN_COLLECTIONS = ['leads', 'applications', 'products', 'partners', 'tasks', 'customers', 'documents', 'notifications'];
+const SECTIONS = ['testimonials', 'gallery', 'posts'];
+const ADMIN_COLLECTIONS = ['leads', 'products', 'partners', 'tasks', 'customers', 'documents', 'notifications'];
 const MAX_ENQUIRIES = 2000;
 const MAX_AUDIT = 2000;
+const MAX_ANALYTICS_EVENTS = 5000;
 
 function emptyContent() {
-  return { testimonials: [], gallery: [], posts: [], lenders: [], images: {} };
+  return { testimonials: [], gallery: [], posts: [], images: {} };
 }
 
 function emptyAdmin() {
   return {
     leads: [],
-    applications: [],
+    // applications removed
     products: [],
     partners: [],
     tasks: [],
@@ -49,8 +41,12 @@ function emptyAdmin() {
   };
 }
 
+function emptyAnalytics() {
+  return { events: [] };
+}
+
 function emptyDb() {
-  return { version: 5, updatedAt: null, content: emptyContent(), enquiries: [], admin: emptyAdmin(), users: [], sessions: {}, audit: [], security: {} };
+  return { version: 5, updatedAt: null, content: emptyContent(), enquiries: [], admin: emptyAdmin(), users: [], sessions: {}, audit: [], security: {}, analytics: emptyAnalytics() };
 }
 
 let db = emptyDb();
@@ -64,9 +60,6 @@ function normalise(parsed) {
   SECTIONS.forEach((key) => {
     if (Array.isArray(source[key])) content[key] = source[key];
   });
-  if (!Array.isArray(source.lenders) && DEFAULT_LENDERS.length) {
-    content.lenders = DEFAULT_LENDERS;
-  }
   if (source.images && typeof source.images === 'object' && !Array.isArray(source.images)) {
     content.images = source.images;
   }
@@ -82,6 +75,11 @@ function normalise(parsed) {
     ? parsed.sessions : {};
   const security = parsed && parsed.security && typeof parsed.security === 'object' && !Array.isArray(parsed.security)
     ? parsed.security : {};
+  const analyticsSrc = parsed && parsed.analytics && typeof parsed.analytics === 'object' && !Array.isArray(parsed.analytics)
+    ? parsed.analytics : {};
+  const analytics = {
+    events: Array.isArray(analyticsSrc.events) ? analyticsSrc.events.slice(-MAX_ANALYTICS_EVENTS) : []
+  };
 
   return {
     version: 5,
@@ -92,7 +90,8 @@ function normalise(parsed) {
     users: parsed && Array.isArray(parsed.users) ? parsed.users : [],
     sessions,
     audit: parsed && Array.isArray(parsed.audit) ? parsed.audit.slice(0, MAX_AUDIT) : [],
-    security
+    security,
+    analytics
   };
 }
 
@@ -109,18 +108,26 @@ async function load() {
   return db;
 }
 
+let persistWarningLogged = false;
 async function save() {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
   db.updatedAt = new Date().toISOString();
-  fs.writeFileSync(TMP_FILE, JSON.stringify(db, null, 2), 'utf8');
-  if (fs.existsSync(DB_FILE)) {
-    try {
-      fs.copyFileSync(DB_FILE, BACKUP_FILE);
-    } catch (error) {
-      console.warn('[store:json] backup failed:', error.message);
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(TMP_FILE, JSON.stringify(db, null, 2), 'utf8');
+    if (fs.existsSync(DB_FILE)) {
+      try { fs.copyFileSync(DB_FILE, BACKUP_FILE); } catch (error) { console.warn('[store:json] backup failed:', error.message); }
     }
+    fs.renameSync(TMP_FILE, DB_FILE);
+  } catch (error) {
+    if (['EROFS', 'EACCES', 'EPERM', 'READONLY'].includes(error.code) || /read-?only/i.test(String(error.message || ''))) {
+      if (!persistWarningLogged) {
+        persistWarningLogged = true;
+        console.warn('[store:json] persistence unavailable, running in-memory only:', error.message);
+      }
+      return;
+    }
+    throw error;
   }
-  fs.renameSync(TMP_FILE, DB_FILE);
 }
 
 async function content() {
@@ -195,14 +202,11 @@ async function findUserById(id) {
   return db.users.find((u) => u && u.id === id) || null;
 }
 
-function hashResetToken(token) {
-  return crypto.createHash('sha256').update(String(token || '')).digest('hex');
-}
-
 async function findUserByResetToken(token) {
   if (!token) return null;
-  const hashed = hashResetToken(token);
-  return db.users.find((u) => u && (u.resetToken === hashed || u.resetTokenHash === hashed)) || null;
+  const raw = String(token);
+  const hash = crypto.createHash('sha256').update(raw).digest('hex');
+  return db.users.find((u) => u && (u.resetToken === hash || u.resetToken === raw)) || null;
 }
 
 async function upsertUser(user) {
@@ -370,20 +374,22 @@ async function setSecurityState(state) {
   return db.security;
 }
 
-const rateLimitBuckets = new Map();
-async function takeRateLimit(key, limit, windowMs) {
-  const k = String(key || '').slice(0, 200);
-  const lim = Math.max(1, Number(limit) || 1);
-  const win = Math.max(1000, Number(windowMs) || 60000);
-  const now = Date.now();
-  const rec = rateLimitBuckets.get(k);
-  if (!rec || rec.resetAt <= now) {
-    const next = { count: 1, resetAt: now + win };
-    rateLimitBuckets.set(k, next);
-    return { allowed: true, remaining: Math.max(0, lim - 1), resetAt: new Date(next.resetAt).toISOString(), count: 1, limit: lim };
+/* ------------------------------------------------------------- analytics */
+
+async function addAnalyticsEvent(event) {
+  if (!db.analytics || !Array.isArray(db.analytics.events)) db.analytics = emptyAnalytics();
+  const record = Object.assign({ id: 'AEV-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 7).toUpperCase(), at: new Date().toISOString() }, event || {});
+  db.analytics.events.push(record);
+  if (db.analytics.events.length > MAX_ANALYTICS_EVENTS) {
+    db.analytics.events = db.analytics.events.slice(-MAX_ANALYTICS_EVENTS);
   }
-  rec.count += 1;
-  return { allowed: rec.count <= lim, remaining: Math.max(0, lim - rec.count), resetAt: new Date(rec.resetAt).toISOString(), count: rec.count, limit: lim };
+  await save();
+  return record;
+}
+
+async function getAnalytics() {
+  if (!db.analytics || !Array.isArray(db.analytics.events)) db.analytics = emptyAnalytics();
+  return db.analytics;
 }
 
 async function stats() {
@@ -397,7 +403,7 @@ async function stats() {
     enquiries: db.enquiries.length,
     unreadEnquiries: db.enquiries.filter((item) => item && !item.handled).length,
     leads: db.admin.leads.length,
-    applications: db.admin.applications.length,
+    applications: 0,
     customers: Array.isArray(db.admin.customers) ? db.admin.customers.length : 0,
     documents: Array.isArray(db.admin.documents) ? db.admin.documents.length : 0,
     notifications: Array.isArray(db.admin.notifications) ? db.admin.notifications.length : 0,
@@ -447,7 +453,8 @@ module.exports = {
   listAudit,
   getSecurityState,
   setSecurityState,
-  takeRateLimit,
+  addAnalyticsEvent,
+  getAnalytics,
   stats,
   describe
 };

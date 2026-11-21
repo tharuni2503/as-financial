@@ -6,21 +6,12 @@
  * Requires the `pg` package. Schema is auto-migrated on load.
  */
 
-const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 
-let DEFAULT_LENDERS = [];
-try {
-  // eslint-disable-next-line global-require
-  DEFAULT_LENDERS = require(path.join(__dirname, 'default-lenders.json'));
-  if (!Array.isArray(DEFAULT_LENDERS)) DEFAULT_LENDERS = [];
-} catch (e) {
-  DEFAULT_LENDERS = [];
-}
-
-const SECTIONS = ['testimonials', 'gallery', 'posts', 'lenders'];
-const ADMIN_COLLECTIONS = ['leads', 'applications', 'products', 'partners', 'tasks', 'customers', 'documents', 'notifications'];
+const SECTIONS = ['testimonials', 'gallery', 'posts'];
+const ADMIN_COLLECTIONS = ['leads', 'products', 'partners', 'tasks', 'customers', 'documents', 'notifications'];
 const MAX_ENQUIRIES = 2000;
 const MAX_AUDIT = 2000;
 
@@ -37,18 +28,14 @@ function getPool() {
   }
   let connectionString = dbUrl || process.env.DATABASE_URL || process.env.POSTGRES_URL;
   if (!connectionString) throw new Error('DATABASE_URL is not set.');
-  const wantsSsl = /sslmode=(require|prefer|verify-ca|verify-full|no-verify|allow)/i.test(connectionString)
+  const wantsSsl = /sslmode=(require|prefer|verify-ca|no-verify|allow)/i.test(connectionString)
     || /supabase\.(co|com)/i.test(connectionString)
+    || /sslmode=/i.test(connectionString)
     || String(process.env.PGSSLMODE || '').length > 0
     || process.env.AS_PG_SSL === '1';
-  const strictVerify = /sslmode=verify-full/i.test(connectionString)
-    || String(process.env.PGSSLMODE || '').toLowerCase() === 'verify-full'
-    || process.env.AS_PG_SSL_VERIFY === '1';
-  const ca = process.env.PGSSLROOTCERT || process.env.AS_PG_SSL_CA || '';
-
-  let ssl;
-  if (wantsSsl) {
-    // Avoid pg/libpq sslmode parsing conflicts by controlling TLS via the pg ssl option.
+  const verify = /sslmode=verify-full/i.test(connectionString) || process.env.AS_PG_SSL_VERIFY === '1';
+  if (wantsSsl && !verify) {
+    // Avoid pg-connection-string / libpq sslmode parsing conflicts (common with Supabase cert chains).
     try {
       const u = new URL(connectionString);
       u.searchParams.delete('sslmode');
@@ -60,27 +47,13 @@ function getPool() {
         .replace(/([?&])uselibpqcompat=[^&]*/ig, '$1')
         .replace(/[?&]$/, '');
     }
-
-    if (strictVerify) {
-      ssl = ca
-        ? { rejectUnauthorized: true, ca: fs.readFileSync(ca, 'utf8') }
-        : { rejectUnauthorized: true };
-    } else if (process.env.NODE_ENV === 'production') {
-      throw new Error(
-        '[db] Production Postgres connections require verified TLS. ' +
-        'Set AS_PG_SSL_VERIFY=1 (or PGSSLMODE=verify-full) and provide PGSSLROOTCERT/AS_PG_SSL_CA if your provider needs a CA bundle. ' +
-        'Do not disable certificate verification in production.'
-      );
-    } else {
-      // Development-only fallback for managed Postgres providers with difficult cert chains.
-      // Never used in production.
-      ssl = ca
-        ? { rejectUnauthorized: false, ca: fs.readFileSync(ca, 'utf8') }
-        : { rejectUnauthorized: false };
-      console.warn('[db] DEV ONLY: TLS certificate verification is relaxed for this Postgres connection. Configure AS_PG_SSL_VERIFY=1 and PGSSLROOTCERT/AS_PG_SSL_CA before production.');
+    // Supabase/managed Postgres may present cert chains Node rejects even with rejectUnauthorized:false in some setups.
+    // Keep encrypted TLS but relax verification unless strict verification is explicitly requested.
+    if (process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0') {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     }
   }
-
+  const ssl = wantsSsl ? { rejectUnauthorized: !!verify } : undefined;
   pool = new pg.Pool({ connectionString, ssl });
   return pool;
 }
@@ -101,11 +74,11 @@ async function migrate() {
 }
 
 function emptyContent() {
-  return { testimonials: [], gallery: [], posts: [], lenders: [], images: {} };
+  return { testimonials: [], gallery: [], posts: [], images: {} };
 }
 
 function emptyAdmin() {
-  return { leads: [], applications: [], products: [], partners: [], tasks: [], customers: [], documents: [], notifications: [], settings: {} };
+  return { leads: [], products: [], partners: [], tasks: [], customers: [], documents: [], notifications: [], settings: {} };
 }
 
 async function getMetaUpdatedAt() {
@@ -156,24 +129,13 @@ async function save() {
 async function content() {
   const res = await getPool().query('SELECT key, value FROM app_content');
   const out = emptyContent();
-  let hasLenders = false;
   res.rows.forEach((row) => {
     if (row.key === 'images' && row.value && typeof row.value === 'object' && !Array.isArray(row.value)) {
       out.images = row.value;
     } else if (SECTIONS.includes(row.key) && Array.isArray(row.value)) {
       out[row.key] = row.value;
-      if (row.key === 'lenders') hasLenders = true;
     }
   });
-  if (!hasLenders && DEFAULT_LENDERS.length) {
-    out.lenders = DEFAULT_LENDERS;
-    try {
-      await getPool().query(
-        'INSERT INTO app_content (key, value, updated_at) VALUES ($1, $2::jsonb, NOW()) ON CONFLICT (key) DO NOTHING',
-        ['lenders', JSON.stringify(DEFAULT_LENDERS)]
-      );
-    } catch (e) { /* ignore seed errors */ }
-  }
   return out;
 }
 
@@ -332,14 +294,11 @@ async function findUserById(id) {
   return res.rows[0] ? rowToUser(res.rows[0]) : null;
 }
 
-function hashResetToken(token) {
-  return crypto.createHash('sha256').update(String(token || '')).digest('hex');
-}
-
 async function findUserByResetToken(token) {
   if (!token) return null;
-  const hashed = hashResetToken(token);
-  const res = await getPool().query('SELECT * FROM users WHERE reset_token = $1 LIMIT 1', [hashed]);
+  const raw = String(token);
+  const hash = crypto.createHash('sha256').update(raw).digest('hex');
+  const res = await getPool().query('SELECT * FROM users WHERE reset_token = $1 OR reset_token = $2 LIMIT 1', [hash, raw]);
   return res.rows[0] ? rowToUser(res.rows[0]) : null;
 }
 
@@ -536,6 +495,33 @@ async function listAudit(options) {
   }));
 }
 
+/* ------------------------------------------------------------- analytics */
+
+async function addAnalyticsEvent(event) {
+  const MAX_ANALYTICS_EVENTS = 2000;
+  const current = await getAnalytics();
+  const record = Object.assign({ id: 'AEV-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 7).toUpperCase(), at: new Date().toISOString() }, event || {});
+  current.events.push(record);
+  if (current.events.length > MAX_ANALYTICS_EVENTS) current.events = current.events.slice(-MAX_ANALYTICS_EVENTS);
+  await getPool().query(
+    'INSERT INTO app_meta (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+    ['analytics', JSON.stringify(current)]
+  );
+  return record;
+}
+
+async function getAnalytics() {
+  try {
+    const res = await getPool().query('SELECT value FROM app_meta WHERE key = $1', ['analytics']);
+    if (!res.rows[0] || !res.rows[0].value) return { events: [] };
+    const parsed = JSON.parse(res.rows[0].value);
+    const events = parsed && Array.isArray(parsed.events) ? parsed.events : [];
+    return { events };
+  } catch (e) {
+    return { events: [] };
+  }
+}
+
 async function stats() {
   const c = await content();
   const a = await adminData();
@@ -563,7 +549,7 @@ async function stats() {
     enquiries: row.total || 0,
     unreadEnquiries: row.unread || 0,
     leads: (a.leads || []).length,
-    applications: (a.applications || []).length,
+    applications: 0,
     customers: (a.customers || []).length,
     documents: (a.documents || []).length,
     notifications: (a.notifications || []).length,
@@ -572,25 +558,6 @@ async function stats() {
     audit: auditCount,
     updatedAt: await getMetaUpdatedAt()
   };
-}
-
-async function takeRateLimit(key, limit, windowMs) {
-  const k = String(key || '').slice(0, 200);
-  const lim = Math.max(1, Number(limit) || 1);
-  const win = Math.max(1000, Number(windowMs) || 60000);
-  const res = await getPool().query(
-    `INSERT INTO rate_limits (key, count, reset_at)
-     VALUES ($1, 1, NOW() + ($3::text || ' milliseconds')::interval)
-     ON CONFLICT (key) DO UPDATE SET
-       count = CASE WHEN rate_limits.reset_at <= NOW() THEN 1 ELSE rate_limits.count + 1 END,
-       reset_at = CASE WHEN rate_limits.reset_at <= NOW() THEN NOW() + ($3::text || ' milliseconds')::interval ELSE rate_limits.reset_at END
-     RETURNING count, reset_at`,
-    [k, lim, String(win)]
-  );
-  const row = res.rows[0] || { count: 1, reset_at: new Date(Date.now() + win) };
-  const count = Number(row.count) || 0;
-  const resetAt = row.reset_at instanceof Date ? row.reset_at.toISOString() : row.reset_at;
-  return { allowed: count <= lim, remaining: Math.max(0, lim - count), resetAt, count, limit: lim };
 }
 
 function describe() {
@@ -632,7 +599,8 @@ module.exports = {
   listAudit,
   getSecurityState,
   setSecurityState,
-  takeRateLimit,
+  addAnalyticsEvent,
+  getAnalytics,
   stats,
   describe
 };

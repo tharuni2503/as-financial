@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 /*
  * AS Financial Services and Solutions - site + content API.
@@ -46,62 +46,10 @@ const validate = require('./validate');
 const mailer = require('./mailer');
 
 const ROOT = path.join(__dirname, '..');
-
-function collectInlineScriptHashes() {
-  try {
-    const crypto = require('node:crypto');
-    const files = fsSync.readdirSync(ROOT).filter((f) => f.endsWith('.html'));
-    const hashes = new Set();
-    for (const f of files) {
-      const html = fsSync.readFileSync(path.join(ROOT, f), 'utf8');
-      const re = /<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/gi;
-      let m;
-      while ((m = re.exec(html))) {
-        const attrs = String(m[1] || '');
-        const type = (attrs.match(/\btype=["']([^"']+)["']/i) || [])[1] || '';
-        if (type && type.toLowerCase() !== 'text/javascript' && type.toLowerCase() !== 'module') continue;
-        const content = String(m[2] || '');
-        const hash = 'sha256-' + crypto.createHash('sha256').update(content, 'utf8').digest('base64');
-        hashes.add("'" + hash + "'");
-      }
-    }
-    return Array.from(hashes);
-  } catch (err) {
-    console.warn('[csp] inline script hash collection failed:', err && err.message ? err.message : err);
-    return [];
-  }
-}
-const INLINE_SCRIPT_HASHES = collectInlineScriptHashes();
 const PORT = Number(process.env.PORT || 3000);
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@asfinancial.in').toLowerCase();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'AS@2026';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
-const TURNSTILE_SECRET = String(process.env.AS_TURNSTILE_SECRET_KEY || process.env.TURNSTILE_SECRET_KEY || '').trim();
-
-async function verifyTurnstile(token, ip) {
-  if (!TURNSTILE_SECRET) return { ok: true, skipped: true };
-  const t = String(token || '').trim();
-  if (!t) return { ok: false, error: 'Verification required. Please try again.' };
-  try {
-    const body = new URLSearchParams();
-    body.set('secret', TURNSTILE_SECRET);
-    body.set('response', t);
-    if (ip) body.set('remoteip', String(ip));
-    const ctrl = AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined;
-    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body,
-      signal: ctrl
-    });
-    const json = await res.json().catch(() => ({}));
-    if (json && json.success) return { ok: true };
-    return { ok: false, error: 'Verification failed. Please try again.' };
-  } catch (err) {
-    console.warn('[turnstile] verification error:', err && err.message ? err.message : err);
-    return { ok: false, error: 'Verification unavailable. Please try again shortly.' };
-  }
-}
 
 if (!process.env.ADMIN_PASSWORD) {
   if (IS_PRODUCTION) {
@@ -143,85 +91,38 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
 app.use((req, res, next) => {
-  const secure = cookieSecure(req);
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
-  if (req.path === '/admin.html' || req.path.startsWith('/admin') || req.path.startsWith('/api/admin')) {
-    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
-  }
-  if (secure || IS_PRODUCTION) {
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  }
-  // Transitional CSP: allows current inline scripts/styles and Google Fonts used by the site.
-  // Tighten further by migrating inline scripts/styles to nonces or hashed external files.
-  const scriptSrc = ["'self'", "'unsafe-inline'"].concat(INLINE_SCRIPT_HASHES).join(' ');
-  res.setHeader('Content-Security-Policy', [
-    "default-src 'self'",
-    "base-uri 'self'",
-    "object-src 'none'",
-    "frame-ancestors 'self'",
-    "img-src 'self' data: https:",
-    "font-src 'self' https://fonts.gstatic.com data:",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "script-src " + scriptSrc,
-    "connect-src 'self'",
-    "form-action 'self'",
-    "frame-src 'self' https://www.google.com https://maps.google.com"
-  ].join('; '));
+  if (cookieSecure(req)) res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   next();
 });
 
 app.use(express.json({ limit: '10mb' }));
 
-const API_LIMIT = Number(process.env.AS_API_RATE_LIMIT || 300);
-const API_WINDOW_MS = 5 * 60 * 1000;
-
-async function takeLimit(key, limit, windowMs) {
-  if (store && typeof store.takeRateLimit === 'function') {
-    return store.takeRateLimit(key, limit, windowMs);
-  }
-  const now = Date.now();
-  const k = String(key || 'unknown');
-  const bucket = takeLimit._mem.get(k);
-  if (!bucket || bucket.resetAt <= now) {
-    const rec = { count: 1, resetAt: now + windowMs };
-    takeLimit._mem.set(k, rec);
-    return { allowed: 1 <= limit, remaining: Math.max(0, limit - 1), resetAt: new Date(rec.resetAt).toISOString(), count: 1, limit };
-  }
-  bucket.count += 1;
-  return { allowed: bucket.count <= limit, remaining: Math.max(0, limit - bucket.count), resetAt: new Date(bucket.resetAt).toISOString(), count: bucket.count, limit };
-}
-takeLimit._mem = new Map();
-
-async function apiRateLimited(ip) {
-  const r = await takeLimit('api:' + String(ip || 'unknown'), API_LIMIT, API_WINDOW_MS);
-  return !r.allowed;
-}
-
-app.use('/api', asyncRoute(async (req, res, next) => {
+app.use('/api', (req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   const started = Date.now();
   res.on('finish', () => {
     console.log('[api]', req.method, req.originalUrl, res.statusCode, (Date.now() - started) + 'ms');
   });
-  if (await apiRateLimited(req.ip)) {
-    res.status(429).json({ error: 'Too many requests. Please wait a moment and try again.' });
-    return;
-  }
   next();
-}));
+});
 
+const enquiriesByIp = new Map();
 const ENQUIRY_LIMIT = 6;
 const ENQUIRY_WINDOW_MS = 10 * 60 * 1000;
 
-async function enquiryRateLimited(ip) {
-  const r = await takeLimit('enquiry:' + String(ip || 'unknown'), ENQUIRY_LIMIT, ENQUIRY_WINDOW_MS);
-  return !r.allowed;
+function enquiryRateLimited(ip) {
+  const now = Date.now();
+  const hits = (enquiriesByIp.get(ip) || []).filter((time) => now - time < ENQUIRY_WINDOW_MS);
+  hits.push(now);
+  enquiriesByIp.set(ip, hits);
+  if (enquiriesByIp.size > 5000) enquiriesByIp.clear();
+  scheduleSecurityPersist(false);
+  return hits.length > ENQUIRY_LIMIT;
 }
 
 function requireSession(req, res, next) {
@@ -276,25 +177,13 @@ function requireRole(...roles) {
 
 let securitySaveTimer = null;
 
-function bucketHits(rec) {
-  if (Array.isArray(rec)) return rec;
-  if (rec && Array.isArray(rec.hits)) return rec.hits;
-  return [];
-}
-
 function pruneBucketMap(map, windowMs) {
   const now = Date.now();
   const w = windowMs || 15 * 60 * 1000;
   let changed = false;
   map.forEach((rec, key) => {
-    const hits = bucketHits(rec).filter((t) => now - Number(t) < w);
-    if (hits.length) {
-      if (Array.isArray(rec)) map.set(key, hits);
-      else rec.hits = hits;
-    } else {
-      map.delete(key);
-      changed = true;
-    }
+    const hits = Array.isArray(rec && rec.hits) ? rec.hits.filter((t) => now - Number(t) < w) : [];
+    if (hits.length) { rec.hits = hits; } else { map.delete(key); changed = true; }
   });
   if (map.size > 5000) { map.clear(); changed = true; }
   return changed;
@@ -305,53 +194,30 @@ function serializeBucketMap(map, windowMs) {
   const w = windowMs || 15 * 60 * 1000;
   const out = {};
   map.forEach((rec, key) => {
-    const hits = bucketHits(rec).filter((t) => now - Number(t) < w).slice(-100);
+    const hits = Array.isArray(rec && rec.hits) ? rec.hits.filter((t) => now - Number(t) < w).slice(-100) : [];
     if (hits.length) out[key] = { hits };
   });
   return out;
 }
 
 function loadBucketsFromState(state) {
-  // Legacy in-memory bucket restore. Atomic DB rate limiting (store.takeRateLimit) is preferred when available.
   const sec = state && typeof state === 'object' ? state : {};
   const pw = sec.pwBuckets && typeof sec.pwBuckets === 'object' ? sec.pwBuckets : {};
   const enq = sec.enquiryBuckets && typeof sec.enquiryBuckets === 'object' ? sec.enquiryBuckets : {};
-  const api = sec.apiBuckets && typeof sec.apiBuckets === 'object' ? sec.apiBuckets : {};
-  const mem = takeLimit && takeLimit._mem ? takeLimit._mem : null;
-  if (!mem) return;
-  const now = Date.now();
-  const restore = (src, prefix, windowMs) => {
-    Object.keys(src).forEach((k) => {
-      const hits = bucketHits(src[k]).filter((t) => now - Number(t) < windowMs);
-      if (!hits.length) return;
-      const resetAt = Math.max(...hits) + windowMs;
-      if (resetAt > now) mem.set(prefix + k, { count: hits.length, resetAt });
-    });
-  };
-  restore(pw, 'pw:', 15 * 60 * 1000);
-  restore(enq, 'enquiry:', ENQUIRY_WINDOW_MS);
-  restore(api, 'api:', API_WINDOW_MS);
+  Object.keys(pw).forEach((k) => { const hits = Array.isArray(pw[k] && pw[k].hits) ? pw[k].hits : []; if (hits.length) pwAttemptsByIp.set(k, { hits: hits.slice() }); });
+  Object.keys(enq).forEach((k) => { const hits = Array.isArray(enq[k] && enq[k].hits) ? enq[k].hits : []; if (hits.length) enquiriesByIp.set(k, hits.slice()); });
+  pruneBucketMap(pwAttemptsByIp, 15 * 60 * 1000);
+  pruneBucketMap(enquiriesByIp, ENQUIRY_WINDOW_MS);
 }
 
 async function persistSecurityNow() {
   if (!store || typeof store.getSecurityState !== 'function' || typeof store.setSecurityState !== 'function') return;
   try {
+    pruneBucketMap(pwAttemptsByIp, 15 * 60 * 1000);
+    pruneBucketMap(enquiriesByIp, ENQUIRY_WINDOW_MS);
     const state = await store.getSecurityState() || {};
-    // When DB atomic rate limiting is active, in-memory buckets are not authoritative.
-    if (!(store && typeof store.takeRateLimit === 'function')) {
-      const mem = takeLimit && takeLimit._mem ? takeLimit._mem : new Map();
-      const toBuckets = (prefix) => {
-        const out = {};
-        mem.forEach((rec, key) => {
-          if (!key.startsWith(prefix) || !rec || rec.resetAt <= Date.now()) return;
-          out[key.slice(prefix.length)] = { hits: Array.from({ length: Math.min(rec.count, 100) }, (_, i) => rec.resetAt - 1 - i) };
-        });
-        return out;
-      };
-      state.pwBuckets = toBuckets('pw:');
-      state.enquiryBuckets = toBuckets('enquiry:');
-      state.apiBuckets = toBuckets('api:');
-    }
+    state.pwBuckets = serializeBucketMap(pwAttemptsByIp, 15 * 60 * 1000);
+    state.enquiryBuckets = serializeBucketMap(enquiriesByIp, ENQUIRY_WINDOW_MS);
     state.savedAt = Date.now();
     await store.setSecurityState(state);
   } catch (err) {
@@ -480,13 +346,66 @@ app.get('/api/session', asyncRoute(async (req, res) => {
   });
 }));
 
+function partnerCategory(type) {
+  const t = String(type || '').toLowerCase();
+  if (t.includes('public')) return 'psu';
+  if (t.includes('private')) return 'private';
+  return 'nbfc';
+}
+
+function partnerToLender(p) {
+  const name = String((p && p.name) || '').trim();
+  if (!name) return null;
+  const rateNum = Number(p && p.rate);
+  const displayRate = String((p && p.interestRate) || '').trim() || (Number.isFinite(rateNum) && rateNum > 0 ? (rateNum.toFixed(2).replace(/\.00$/, '') + '% p.a. onwards*') : 'Indicative*');
+  return {
+    n: name,
+    c: partnerCategory(p && p.type),
+    logo: String((p && p.logo) || '').trim(),
+    r: displayRate,
+    t: String((p && p.tenure) || '').trim() || 'As per lender*',
+    amt: String((p && p.amount) || '').trim() || 'As per profile & product*',
+    fee: String((p && p.fee) || '').trim() || 'As per lender schedule*',
+    b: Array.isArray(p && p.benefits) ? p.benefits.filter(Boolean).slice(0, 8) : [],
+    p: Array.isArray(p && p.products) ? p.products.filter(Boolean).slice(0, 12) : [],
+    active: p ? p.active !== false : true,
+    published: true,
+    source: 'partner'
+  };
+}
+
+function mergeLendersWithPartners(contentLenders, adminPartners, includeInactive) {
+  const out = [];
+  const seen = new Set();
+  const push = (item) => {
+    if (!item) return;
+    const name = String(item.n || item.name || '').trim();
+    if (!name) return;
+    const key = name.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(item);
+  };
+  (Array.isArray(contentLenders) ? contentLenders : []).forEach((l) => {
+    if (!includeInactive && (l.active === false || l.published === false)) return;
+    push(l);
+  });
+  (Array.isArray(adminPartners) ? adminPartners : []).forEach((p) => {
+    if (!includeInactive && p && p.active === false) return;
+    push(partnerToLender(p));
+  });
+  return out;
+}
+
 app.get('/api/content', asyncRoute(async (req, res) => {
   const session = auth.read(auth.tokenFrom(req));
   const wantsAdmin = req.query.scope === 'admin';
-  const canViewAdmin = Boolean(session) && roleAtLeast(session.role || 'advisor', 'admin');
+  const canViewAdmin = Boolean(session) && roleAtLeast(session.role || 'advisor', 'staff');
   const admin = wantsAdmin && canViewAdmin;
   const content = await store.content();
   const stats = await store.stats();
+  const adminData = await store.adminData();
+  const lenders = mergeLendersWithPartners(content.lenders || [], adminData.partners || [], admin);
 
   res.json({
     scope: admin ? 'admin' : 'public',
@@ -494,12 +413,12 @@ app.get('/api/content', asyncRoute(async (req, res) => {
     testimonials: admin ? content.testimonials : content.testimonials.filter((item) => item && item.published),
     gallery: content.gallery,
     posts: admin ? content.posts : content.posts.filter((item) => item && item.published),
-    lenders: admin ? (content.lenders || []) : (content.lenders || []).filter((item) => item && item.active !== false && item.published !== false),
+    lenders,
     images: content.images
   });
 }));
 
-app.put('/api/content/:section', requireSession, requireRole('admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
+app.put('/api/content/:section', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
   const section = String(req.params.section || '').toLowerCase();
   const value = validate.content(section, req.body);
   await store.setSection(section, value);
@@ -511,14 +430,8 @@ app.put('/api/content/:section', requireSession, requireRole('admin', 'super_adm
 
 app.post('/api/enquiries', asyncRoute(async (req, res) => {
   const ip = req.ip || 'unknown';
-  if (await enquiryRateLimited(ip)) {
+  if (enquiryRateLimited(ip)) {
     res.status(429).json({ error: 'Too many enquiries from this connection. Please call us instead.' });
-    return;
-  }
-
-  const turnstile = await verifyTurnstile(req.body && (req.body.turnstileToken || req.body['cf-turnstile-response']), ip);
-  if (!turnstile.ok) {
-    res.status(400).json({ error: turnstile.error || 'Verification failed. Please try again.' });
     return;
   }
 
@@ -550,7 +463,7 @@ app.post('/api/enquiries', asyncRoute(async (req, res) => {
         id: 'NTF-' + Date.now().toString(36).toUpperCase(),
         type: 'enquiry.new',
         title: 'New enquiry received',
-        message: [enquiry.name, enquiry.phone, enquiry.product].filter(Boolean).join(' â€¢ ').slice(0, 240),
+        message: [enquiry.name, enquiry.phone, enquiry.product].filter(Boolean).join(' • ').slice(0, 240),
         targetType: 'enquiry',
         targetId: enquiry.id,
         read: false,
@@ -566,7 +479,7 @@ app.post('/api/enquiries', asyncRoute(async (req, res) => {
   res.status(201).json({ ok: true, id: enquiry.id });
 }));
 
-app.get('/api/enquiries', requireSession, requireRole('admin', 'super_admin'), asyncRoute(async (req, res) => {
+app.get('/api/enquiries', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
   let enquiries = await store.listEnquiries();
   const stats = await store.stats();
 
@@ -600,8 +513,16 @@ app.get('/api/enquiries', requireSession, requireRole('admin', 'super_admin'), a
   res.json({ enquiries: paged, total, count: paged.length, limit: hasLimit ? limit : total, offset: hasLimit ? offset : 0, stats });
 }));
 
-app.patch('/api/enquiries/:id', requireSession, requireRole('admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
+app.patch('/api/enquiries/:id', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
   const patch = {};
+  const allowedStatus = new Set(['New', 'Contacted', 'Accepted', 'Qualified', 'Documents', 'Sanctioned', 'Disbursed', 'Declined', 'Lost']);
+  if (req.body && typeof req.body.status === 'string') {
+    const status = String(req.body.status).trim();
+    if (allowedStatus.has(status)) {
+      patch.status = status;
+      patch.handled = status !== 'New';
+    }
+  }
   if (req.body && typeof req.body.handled === 'boolean') patch.handled = req.body.handled;
   if (req.body && typeof req.body.note === 'string') patch.note = validate.text(req.body.note, 500);
   const updated = await store.updateEnquiry(String(req.params.id), patch);
@@ -613,7 +534,7 @@ app.patch('/api/enquiries/:id', requireSession, requireRole('admin', 'super_admi
   res.json({ ok: true, enquiry: updated });
 }));
 
-app.delete('/api/enquiries/:id', requireSession, requireRole('admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
+app.delete('/api/enquiries/:id', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
   const id = String(req.params.id);
   const removed = await store.removeEnquiry(id);
   if (!removed) {
@@ -624,14 +545,13 @@ app.delete('/api/enquiries/:id', requireSession, requireRole('admin', 'super_adm
   res.json({ ok: true });
 }));
 
-app.get('/api/admin/store', requireSession, requireRole('admin', 'super_admin'), asyncRoute(async (req, res) => {
+app.get('/api/admin/store', requireSession, requireRole('staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
   const admin = await store.adminData();
   const stats = await store.stats();
   res.json({
     ok: true,
     updatedAt: stats.updatedAt,
     leads: admin.leads || [],
-    applications: admin.applications || [],
     products: admin.products || [],
     partners: admin.partners || [],
     tasks: admin.tasks || [],
@@ -642,7 +562,7 @@ app.get('/api/admin/store', requireSession, requireRole('admin', 'super_admin'),
   });
 }));
 
-app.put('/api/admin/store/:name', requireSession, requireRole('admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
+app.put('/api/admin/store/:name', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
   const name = String(req.params.name || '').toLowerCase();
   const value = validate.adminCollection(name, req.body);
   await store.setAdminCollection(name, value);
@@ -683,7 +603,166 @@ async function writeAdminCollection(req, name, list) {
   return stats;
 }
 
-app.get('/api/admin/:collection', requireSession, requireRole('admin', 'super_admin'), asyncRoute(async (req, res, next) => {
+app.post('/api/track', asyncRoute(async (req, res) => {
+  const ip = req.ip || 'unknown';
+  if (pwRateLimited('track:' + ip, 120, 60 * 1000)) {
+    res.status(429).json({ error: 'Too many requests.' });
+    return;
+  }
+  const body = req.body && typeof req.body === 'object' ? req.body : {};
+  const type = validate.text(body.type, 40).toLowerCase();
+  const allowed = ['page_view', 'form_start', 'form_submit', 'form_submit_success', 'form_submit_failed'];
+  if (!allowed.includes(type)) {
+    res.status(400).json({ error: 'Invalid event type.' });
+    return;
+  }
+  const page = validate.text(body.page || req.get('referer') || '/', 200).slice(0, 200);
+  const visitorId = validate.text(body.visitorId, 80).slice(0, 80);
+  const meta = body.meta && typeof body.meta === 'object' && !Array.isArray(body.meta) ? {} : {};
+  const safeMeta = {};
+  if (body.meta && typeof body.meta === 'object' && !Array.isArray(body.meta)) {
+    ['form', 'product', 'source', 'field', 'reason'].forEach((k) => {
+      if (body.meta[k] != null) safeMeta[k] = validate.text(body.meta[k], 120);
+    });
+  }
+  await store.addAnalyticsEvent({
+    type,
+    page,
+    visitorId: visitorId || null,
+    ip: crypto.createHash('sha256').update(String(ip)).digest('hex').slice(0, 16),
+    ua: validate.text(req.get('user-agent') || '', 160),
+    meta: safeMeta
+  });
+  res.json({ ok: true });
+}));
+
+app.get('/api/admin/analytics', requireSession, requireRole('staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
+  const data = await store.getAnalytics();
+  const events = Array.isArray(data.events) ? data.events : [];
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+  const since7 = now - 7 * dayMs;
+  const since30 = now - 30 * dayMs;
+  const inRange = (e, since) => { const t = new Date(e.at || 0).getTime(); return t >= since; };
+  const events7 = events.filter((e) => inRange(e, since7));
+  const events30 = events.filter((e) => inRange(e, since30));
+  const count = (arr, type) => arr.filter((e) => e && e.type === type).length;
+  const uniq = (arr, type) => {
+    const s = new Set();
+    arr.forEach((e) => { if (e && (!type || e.type === type)) s.add(e.visitorId || e.ip || 'unknown'); });
+    return s.size;
+  };
+  const byDayMap = {};
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now - i * dayMs);
+    const key = d.toISOString().slice(0, 10);
+    byDayMap[key] = { date: key, pageViews: 0, formStarts: 0, formSubmits: 0 };
+  }
+  events7.forEach((e) => {
+    const key = String(e.at || '').slice(0, 10);
+    if (!byDayMap[key]) return;
+    if (e.type === 'page_view') byDayMap[key].pageViews += 1;
+    if (e.type === 'form_start') byDayMap[key].formStarts += 1;
+    if (e.type === 'form_submit' || e.type === 'form_submit_success') byDayMap[key].formSubmits += 1;
+  });
+  const pageMap = {};
+  events30.forEach((e) => {
+    if (!e || e.type !== 'page_view') return;
+    const page = String(e.page || '/').slice(0, 120);
+    pageMap[page] = (pageMap[page] || 0) + 1;
+  });
+  const topPages = Object.entries(pageMap).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([page, views]) => ({ page, views }));
+  const recent = events.slice(-20).reverse().map((e) => ({
+    at: e.at, type: e.type, page: e.page || '', visitorId: e.visitorId || '', meta: e.meta || {}
+  }));
+  const lastFormAttempt = [...events].reverse().find((e) => e && ['form_start', 'form_submit', 'form_submit_success', 'form_submit_failed'].includes(e.type));
+  res.json({
+    ok: true,
+    summary: {
+      totalPageViews: count(events, 'page_view'),
+      uniqueVisitors: uniq(events.filter((e) => e.type === 'page_view')),
+      formStarts: count(events, 'form_start'),
+      formSubmits: count(events, 'form_submit') + count(events, 'form_submit_success'),
+      formSubmitSuccess: count(events, 'form_submit_success'),
+      last7PageViews: count(events7, 'page_view'),
+      last7UniqueVisitors: uniq(events7.filter((e) => e.type === 'page_view')),
+      last7FormStarts: count(events7, 'form_start'),
+      last7FormSubmits: count(events7, 'form_submit') + count(events7, 'form_submit_success'),
+      lastFormAttemptAt: lastFormAttempt ? lastFormAttempt.at : null,
+      lastFormAttemptType: lastFormAttempt ? lastFormAttempt.type : null
+    },
+    daily: Object.values(byDayMap),
+    topPages,
+    recent
+  });
+}));
+
+app.get('/api/admin/import-article', requireSession, requireRole('staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
+  const rawUrl = validate.text(req.query.url, 1000);
+  let u;
+  try { u = new URL(rawUrl); } catch (e) { res.status(400).json({ error: 'Invalid URL.' }); return; }
+  if (!['http:', 'https:'].includes(u.protocol)) { res.status(400).json({ error: 'Only http/https URLs are allowed.' }); return; }
+  const ctrl = (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(10000) : undefined;
+  const r = await fetch(u.toString(), { signal: ctrl, headers: { 'Accept': 'text/html,application/xhtml+xml', 'User-Agent': 'ASFinancialAdmin/1.0' } });
+  if (!r.ok) { res.status(502).json({ error: 'Could not fetch URL (' + r.status + ').' }); return; }
+  const html = (await r.text()).slice(0, 300000);
+  const pick = (re) => { const m = html.match(re); return m ? String(m[1] || '').replace(/\s+/g, ' ').trim() : ''; };
+  const title = pick(/<title[^>]*>([\s\S]*?)<\/title>/i)
+    || pick(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)
+    || pick(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
+  const desc = pick(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)
+    || pick(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i)
+    || pick(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)
+    || pick(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i);
+  res.json({ ok: true, article: { title: title.slice(0, 180), excerpt: desc.slice(0, 300), url: u.toString() } });
+}));
+
+app.get('/api/admin/google-reviews', requireSession, requireRole('staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
+  const apiKey = String(process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_MAPS_API_KEY || '').trim();
+  const placeId = String(req.query.placeId || process.env.GOOGLE_PLACE_ID || process.env.GOOGLE_MAPS_PLACE_ID || '').trim();
+  if (!apiKey) {
+    res.status(400).json({ error: 'Google Places API key is not configured on the server.' });
+    return;
+  }
+  if (!placeId) {
+    res.status(400).json({ error: 'Google Place ID is not configured. Set GOOGLE_PLACE_ID on the server or pass placeId.' });
+    return;
+  }
+  const endpoint = 'https://maps.googleapis.com/maps/api/place/details/json?place_id=' + encodeURIComponent(placeId) + '&fields=name,rating,user_ratings_total,reviews,url&reviews_sort=newest&key=' + encodeURIComponent(apiKey);
+  const ctrl = (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(10000) : undefined;
+  const r = await fetch(endpoint, { signal: ctrl, headers: { 'Accept': 'application/json' } });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || !data || data.status !== 'OK') {
+    const msg = (data && (data.error_message || data.status)) ? String(data.error_message || data.status) : 'Could not fetch Google reviews.';
+    res.status(502).json({ error: msg });
+    return;
+  }
+  const result = data.result || {};
+  const reviews = Array.isArray(result.reviews) ? result.reviews.map((rv, i) => ({
+    id: 'GREV-' + (rv.time || Date.now()) + '-' + i,
+    author: String(rv.author_name || 'Google user').trim(),
+    rating: Number(rv.rating) || 0,
+    text: String(rv.text || '').trim(),
+    time: rv.time ? new Date(rv.time * 1000).toISOString() : null,
+    relativeTime: String(rv.relative_time_description || '').trim(),
+    profilePhoto: String(rv.profile_photo_url || '').trim(),
+    source: 'google_maps',
+    placeName: String(result.name || '').trim(),
+    placeUrl: String(result.url || '').trim()
+  })) : [];
+  res.json({
+    ok: true,
+    place: {
+      name: String(result.name || '').trim(),
+      rating: Number(result.rating) || 0,
+      total: Number(result.user_ratings_total) || 0,
+      url: String(result.url || '').trim()
+    },
+    reviews
+  });
+}));
+
+app.get('/api/admin/:collection', requireSession, requireRole('staff', 'admin', 'super_admin'), asyncRoute(async (req, res, next) => {
   const collection = String(req.params.collection || '').toLowerCase();
   if (collection === 'store' || collection === 'export') return next();
   if (!isAdminItemCollection(collection)) return next();
@@ -748,7 +827,7 @@ function applyCollectionRules(collection, item, existing, session) {
   const actorName = actorEmail.split('@')[0] || '';
 
   // ownership/assignment defaults
-  if (['leads', 'applications', 'customers', 'tasks', 'documents'].includes(collection)) {
+  if (['leads', 'customers', 'tasks', 'documents'].includes(collection)) {
     if (!existing) {
       if (!out.owner && !out.assignedTo && !out.assignee) out.owner = actorName || actorEmail || 'Admin';
       if (!out.createdBy) out.createdBy = actorEmail || actorId || '';
@@ -762,7 +841,6 @@ function applyCollectionRules(collection, item, existing, session) {
   if (collection === 'notifications' && typeof out.read !== 'boolean') out.read = Boolean(out.read);
   if (collection === 'documents' && !out.status) out.status = existing && existing.status ? existing.status : 'Pending';
   if (collection === 'leads' && !out.status) out.status = existing && existing.status ? existing.status : 'New';
-  if (collection === 'applications' && !out.stage) out.stage = existing && existing.stage ? existing.stage : 'Logged';
 
   // simple status value guardrails (non-breaking: only normalize known aliases)
   if (collection === 'documents') {
@@ -782,13 +860,13 @@ function applyCollectionRules(collection, item, existing, session) {
   return out;
 }
 
-app.post('/api/admin/:collection', requireSession, requireRole('admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res, next) => {
+app.post('/api/admin/:collection', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res, next) => {
   const collection = String(req.params.collection || '').toLowerCase();
   if (!isAdminItemCollection(collection)) return next();
   const items = await readAdminCollection(collection);
   const body = validate.adminItem ? validate.adminItem(req.body || {}) : (req.body || {});
   const now = new Date().toISOString();
-  const prefixes = { leads: 'LEAD', applications: 'APP', products: 'PRD', partners: 'PRT', tasks: 'TSK', customers: 'CUS', documents: 'DOC', notifications: 'NTF' };
+  const prefixes = { leads: 'LEAD', products: 'PRD', partners: 'PRT', tasks: 'TSK', customers: 'CUS', documents: 'DOC', notifications: 'NTF' };
   let item = Object.assign({}, body);
   if (!item.id) item.id = makeItemId(prefixes[collection] || 'ITM');
   if (items.some((x) => x && String(x.id) === String(item.id))) {
@@ -803,7 +881,7 @@ app.post('/api/admin/:collection', requireSession, requireRole('admin', 'super_a
   res.status(201).json({ ok: true, collection, item, count: items.length, updatedAt: stats.updatedAt });
 }));
 
-app.get('/api/admin/:collection/:id', requireSession, requireRole('admin', 'super_admin'), asyncRoute(async (req, res, next) => {
+app.get('/api/admin/:collection/:id', requireSession, requireRole('staff', 'admin', 'super_admin'), asyncRoute(async (req, res, next) => {
   const collection = String(req.params.collection || '').toLowerCase();
   if (collection === 'store') return next();
   if (!isAdminItemCollection(collection)) return next();
@@ -814,7 +892,7 @@ app.get('/api/admin/:collection/:id', requireSession, requireRole('admin', 'supe
   res.json({ ok: true, collection, item });
 }));
 
-app.patch('/api/admin/:collection/:id', requireSession, requireRole('admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res, next) => {
+app.patch('/api/admin/:collection/:id', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res, next) => {
   const collection = String(req.params.collection || '').toLowerCase();
   if (!isAdminItemCollection(collection)) return next();
   const id = String(req.params.id || '');
@@ -833,7 +911,7 @@ app.patch('/api/admin/:collection/:id', requireSession, requireRole('admin', 'su
   res.json({ ok: true, collection, item: nextItem, updatedAt: stats.updatedAt });
 }));
 
-app.delete('/api/admin/:collection/:id', requireSession, requireRole('admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res, next) => {
+app.delete('/api/admin/:collection/:id', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res, next) => {
   const collection = String(req.params.collection || '').toLowerCase();
   if (!isAdminItemCollection(collection)) return next();
   const id = String(req.params.id || '');
@@ -843,120 +921,6 @@ app.delete('/api/admin/:collection/:id', requireSession, requireRole('admin', 's
   items.splice(idx, 1);
   const stats = await writeAdminCollection(req, collection, items);
   res.json({ ok: true, collection, id, updatedAt: stats.updatedAt });
-}));
-
-/* ----------------------------------------------- auto logo resolve */
-
-const LENDER_LOGO_ASSETS = (() => {
-  const dir = path.join(ROOT, 'assets', 'img', 'lenders');
-  const map = {
-    'sbi': 'sbi', 'state bank of india': 'sbi', 'hdfc bank': 'hdfc-bank', 'icici bank': 'icici-bank', 'axis bank': 'axis-bank',
-    'kotak mahindra bank': 'kotak-mahindra-bank', 'bank of baroda': 'bank-of-baroda', 'canara bank': 'canara-bank',
-    'union bank of india': 'union-bank-of-india', 'punjab national bank': 'punjab-national-bank', 'indian bank': 'indian-bank',
-    'idfc first bank': 'idfc-first-bank', 'yes bank': 'yes-bank', 'federal bank': 'federal-bank', 'indusind bank': 'indusind-bank',
-    'bandhan bank': 'bandhan-bank', 'uco bank': 'uco-bank', 'central bank of india': 'central-bank-of-india',
-    'indian overseas bank': 'indian-overseas-bank', 'bank of india': 'bank-of-india', 'idbi bank': 'idbi-bank',
-    'bajaj finserv': 'bajaj-finserv', 'bajaj housing finance': 'bajaj-finserv', 'bajaj finance': 'bajaj-finserv',
-    'tata capital': 'tata-capital', 'hdb financial services': 'hdb-financial-services', 'l&t finance': 'lt-finance',
-    'lic housing finance': 'lic-housing-finance', 'muthoot finance': 'muthoot-finance', 'shriram finance': 'shriram-finance',
-    'cholamandalam': 'cholamandalam', 'edelweiss': 'edelweiss', 'iifl finance': 'iifl-finance', 'sundaram finance': 'sundaram-finance',
-    'mahindra finance': 'mahindra-finance', 'hero fincorp': 'hero-fincorp', 'shriram city': 'shriram-city',
-    'creditaccess grameen': 'creditaccess-grameen', 'tata motors finance': 'tata-motors-finance', 'reliance home finance': 'reliance-home-finance'
-  };
-  const out = {};
-  Object.keys(map).forEach((name) => {
-    const base = map[name];
-    const exts = ['.svg', '.png', '.jpg', '.webp'];
-    for (let i = 0; i < exts.length; i++) {
-      const file = base + exts[i];
-      try {
-        if (fs.existsSync(path.join(dir, file))) { out[name] = 'assets/img/lenders/' + file; return; }
-      } catch (e) { /* ignore */ }
-    }
-  });
-  return out;
-})();
-
-function normalizeBankName(name) {
-  return String(name || '').toLowerCase().replace(/&amp;/g, '&').replace(/[^a-z0-9&]+/g, ' ').trim().replace(/\s+/g, ' ');
-}
-
-function findLocalLenderLogo(name) {
-  const n = normalizeBankName(name);
-  if (!n) return '';
-  if (LENDER_LOGO_ASSETS[n]) return LENDER_LOGO_ASSETS[n];
-  const keys = Object.keys(LENDER_LOGO_ASSETS);
-  for (let i = 0; i < keys.length; i++) {
-    if (n === keys[i] || n.indexOf(keys[i]) > -1 || keys[i].indexOf(n) > -1) return LENDER_LOGO_ASSETS[keys[i]];
-  }
-  return '';
-}
-
-function guessDomains(name) {
-  const n = normalizeBankName(name).replace(/&/g, 'and');
-  const compact = n.replace(/[^a-z0-9]/g, '');
-  const words = n.split(' ').filter(Boolean);
-  const joined = words.join('');
-  const noCommon = words.filter(w => !/^(bank|finance|financial|services|service|ltd|limited|india|of|the|co|company)$/.test(w)).join('');
-  const candidates = new Set();
-  [compact, joined, noCommon].forEach((v) => {
-    if (!v || v.length < 3) return;
-    candidates.add(v + '.com');
-    candidates.add(v + '.co.in');
-    candidates.add(v + '.in');
-  });
-  if (words[0] && words[0].length >= 3) {
-    candidates.add(words[0] + 'bank.com');
-    candidates.add(words[0] + '.com');
-  }
-  return Array.from(candidates).slice(0, 8);
-}
-
-async function fetchLogoFromInternet(name) {
-  if (typeof fetch !== 'function') return '';
-  const domains = guessDomains(name);
-  const urls = [];
-  domains.forEach((d) => {
-    urls.push('https://www.google.com/s2/favicons?domain=' + encodeURIComponent(d) + '&sz=128');
-    urls.push('https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://' + encodeURIComponent(d) + '&size=128');
-  });
-  for (let i = 0; i < urls.length; i++) {
-    const url = urls[i];
-    try {
-      const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-      const timer = setTimeout(() => { try { if (ctrl) ctrl.abort(); } catch (e) {} }, 7000);
-      const res = await fetch(url, Object.assign({ redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0' } }, ctrl ? { signal: ctrl.signal } : {}));
-      clearTimeout(timer);
-      if (!res || !res.ok) continue;
-      const ct = String(res.headers.get('content-type') || '').toLowerCase();
-      if (!/^image\//.test(ct) && ct.indexOf('icon') === -1 && ct.indexOf('octet-stream') === -1) continue;
-      const ab = await res.arrayBuffer();
-      const buf = Buffer.from(ab);
-      if (!buf || buf.length < 80) continue; // skip tiny/invalid placeholders
-      let mime = ct.split(';')[0].trim();
-      if (!/^image\//.test(mime)) {
-        if (buf[0] === 0x89 && buf[1] === 0x50) mime = 'image/png';
-        else if (buf[0] === 0xff && buf[1] === 0xd8) mime = 'image/jpeg';
-        else if (buf.slice(0, 4).toString() === 'RIFF') mime = 'image/webp';
-        else mime = 'image/png';
-      }
-      return 'data:' + mime + ';base64,' + buf.toString('base64');
-    } catch (e) { /* try next */ }
-  }
-  return '';
-}
-
-app.post('/api/admin/resolve-logo', requireSession, requireRole('admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
-  const body = req.body || {};
-  const name = validate.text(body.name, 120, { label: 'name' });
-  if (!name) { res.status(400).json({ error: 'Bank/lender name is required.' }); return; }
-  let logo = findLocalLenderLogo(name);
-  let source = logo ? 'local' : '';
-  if (!logo) {
-    logo = await fetchLogoFromInternet(name);
-    source = logo ? 'internet' : '';
-  }
-  res.json({ ok: true, name, logo: logo || '', source: source || 'none' });
 }));
 
 /* --------------------------------------------------- file uploads */
@@ -985,7 +949,7 @@ async function ensureUploadDir() {
   await fs.mkdir(UPLOAD_DIR, { recursive: true });
 }
 
-app.post('/api/admin/uploads', requireSession, requireRole('admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
+app.post('/api/admin/uploads', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
   const body = req.body || {};
   const filename = safeUploadName(body.filename || body.name || 'document');
   const contentType = String(body.contentType || body.mimeType || '').toLowerCase().trim();
@@ -1088,7 +1052,7 @@ app.post('/api/admin/uploads', requireSession, requireRole('admin', 'super_admin
   res.status(201).json({ ok: true, file, document, storage });
 }));
 
-app.get('/api/admin/uploads/:file', requireSession, requireRole('admin', 'super_admin'), asyncRoute(async (req, res) => {
+app.get('/api/admin/uploads/:file', requireSession, requireRole('staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
   const name = String(req.params.file || '');
   if (!/^[A-Za-z0-9._-]+$/.test(name) || name.includes('..')) {
     res.status(400).json({ error: 'Invalid file name.' });
@@ -1107,23 +1071,22 @@ app.get('/api/admin/uploads/:file', requireSession, requireRole('admin', 'super_
     res.status(404).json({ error: 'File not found. It may have expired on ephemeral storage.' });
     return;
   }
-  const ext = path.extname(name).toLowerCase();
-  const inlineTypes = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.txt', '.csv']);
-  const disposition = (inlineTypes.has(ext) ? 'inline' : 'attachment') + '; filename="' + path.basename(name) + '"';
-  res.sendFile(resolved, {
-    dotfiles: 'deny',
-    headers: {
-      'Content-Disposition': disposition,
-      'X-Content-Type-Options': 'nosniff'
-    }
-  });
+  res.sendFile(resolved);
 }));
 
 /* --------------------------------------------------- password & users */
 
-async function pwRateLimited(ip, limit, windowMs) {
-  const r = await takeLimit('pw:' + String(ip || 'unknown'), limit || 10, windowMs || 15 * 60 * 1000);
-  return !r.allowed;
+const pwAttemptsByIp = new Map();
+function pwRateLimited(ip, limit, windowMs) {
+  const now = Date.now();
+  const key = ip || 'unknown';
+  const rec = pwAttemptsByIp.get(key) || { hits: [] };
+  rec.hits = rec.hits.filter((t) => now - t < (windowMs || 15 * 60 * 1000));
+  rec.hits.push(now);
+  pwAttemptsByIp.set(key, rec);
+  if (pwAttemptsByIp.size > 5000) pwAttemptsByIp.clear();
+  scheduleSecurityPersist(false);
+  return rec.hits.length > (limit || 10);
 }
 
 function validatePassword(pw) {
@@ -1135,7 +1098,9 @@ function validatePassword(pw) {
 
 function normalizeRole(role) {
   const r = String(role || '').toLowerCase();
-  return ['advisor', 'staff', 'admin', 'super_admin'].includes(r) ? r : null;
+  if (r === 'super_admin') return 'admin';
+  if (r === 'advisor') return 'staff';
+  return ['staff', 'admin'].includes(r) ? r : null;
 }
 
 function userPublic(user) {
@@ -1144,7 +1109,7 @@ function userPublic(user) {
 
 app.post('/api/change-password', requireSession, requireCsrf, asyncRoute(async (req, res) => {
   const ip = req.ip || 'unknown';
-  if (await pwRateLimited(ip, 12, 15 * 60 * 1000)) {
+  if (pwRateLimited(ip, 12, 15 * 60 * 1000)) {
     res.status(429).json({ error: 'Too many attempts. Please try again later.' });
     return;
   }
@@ -1176,7 +1141,7 @@ app.post('/api/change-password', requireSession, requireCsrf, asyncRoute(async (
 
 app.post('/api/forgot-password', asyncRoute(async (req, res) => {
   const ip = req.ip || 'unknown';
-  if (await pwRateLimited('forgot:' + ip, 6, 15 * 60 * 1000)) {
+  if (pwRateLimited('forgot:' + ip, 6, 15 * 60 * 1000)) {
     res.status(429).json({ error: 'Too many requests. Please try again later.' });
     return;
   }
@@ -1189,35 +1154,31 @@ app.post('/api/forgot-password', asyncRoute(async (req, res) => {
   user.resetToken = rt.tokenHash;
   user.resetExpiresAt = rt.expiresAt;
   await store.upsertUser(user);
-
   const resetPath = '/admin.html?reset=' + encodeURIComponent(rt.token);
-  const resetUrl = (mailer && mailer.absoluteResetUrl) ? mailer.absoluteResetUrl(resetPath) : '';
+  const resetUrl = (mailer && mailer.absoluteResetUrl) ? mailer.absoluteResetUrl(resetPath, req) : resetPath;
   let mailResult = { sent: false, configured: false };
-  const emailConfigured = !!(mailer && mailer.isConfigured && mailer.isConfigured());
-  if (emailConfigured && resetUrl) {
-    mailResult = await mailer.sendPasswordReset({ to: user.email, name: user.name, resetUrl, expiresAt: rt.expiresAt })
-      .catch(() => ({ sent: false, fallback: true, reason: 'send_exception' }));
+  if (mailer && mailer.isConfigured && mailer.isConfigured()) {
+    mailResult = await mailer.sendPasswordReset({ to: user.email, name: user.name, resetUrl, expiresAt: rt.expiresAt }).catch(() => ({ sent: false, fallback: true, reason: 'send_exception' }));
     mailResult.configured = true;
-  } else {
-    mailResult = { sent: false, configured: emailConfigured, reason: !emailConfigured ? 'not_configured' : 'app_url_missing' };
   }
   const emailSent = !!mailResult.sent;
+  const emailConfigured = !!(mailer && mailer.isConfigured && mailer.isConfigured());
   if (IS_PRODUCTION && !emailSent) {
     console.warn('[auth] Password reset requested in production but email was not delivered (configured=' + emailConfigured + ', reason=' + (mailResult.reason || 'unknown') + ') for', user.email);
   }
   audit(req, { type: 'auth.forgot_password', actorEmail: user.email, summary: 'Password reset requested', targetType: 'user', targetId: user.id, meta: { emailSent, emailConfigured, reason: mailResult.reason || null } });
-  console.log('[auth] Password reset requested for', user.email, 'expires', rt.expiresAt, 'emailSent=' + emailSent + ' emailConfigured=' + emailConfigured);
+  console.log('[auth] Password reset requested for', user.email, 'token expires', rt.expiresAt, 'url', resetUrl, 'emailSent=' + emailSent + ' emailConfigured=' + emailConfigured);
   if (!IS_PRODUCTION) {
-    res.json(Object.assign({}, generic, { devResetToken: rt.token, devResetUrl: resetPath, resetUrl: resetUrl || resetPath, expiresAt: rt.expiresAt, emailSent, emailConfigured }));
+    res.json(Object.assign({}, generic, { devResetToken: rt.token, devResetUrl: resetPath, resetUrl, expiresAt: rt.expiresAt, emailSent, emailConfigured }));
   } else {
-    // In production do not expose tokens or reset URLs.
+    // In production do not expose tokens; delivery relies on configured email or admin-issued reset.
     res.json(Object.assign({}, generic, { emailSent, emailConfigured }));
   }
 }));
 
 app.post('/api/reset-password', asyncRoute(async (req, res) => {
   const ip = req.ip || 'unknown';
-  if (await pwRateLimited('reset:' + ip, 10, 15 * 60 * 1000)) {
+  if (pwRateLimited('reset:' + ip, 10, 15 * 60 * 1000)) {
     res.status(429).json({ error: 'Too many attempts. Please try again later.' });
     return;
   }
@@ -1262,7 +1223,7 @@ app.get('/api/audit', requireSession, requireRole('super_admin', 'admin'), async
   res.json({ entries, count: entries.length, limit });
 }));
 
-app.get('/api/sessions', requireSession, requireRole('admin', 'super_admin'), asyncRoute(async (req, res) => {
+app.get('/api/sessions', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
   const isAdmin = roleAtLeast(req.session.role || 'advisor', 'admin');
   const scopeAll = isAdmin && String(req.query.scope || '') === 'all';
   const currentToken = req.authToken || auth.tokenFrom(req);
@@ -1377,7 +1338,7 @@ app.post('/api/users', requireSession, requireRole('super_admin'), requireCsrf, 
   const body = req.body || {};
   const email = String(body.email || '').trim().toLowerCase();
   const name = String(body.name || '').trim().slice(0, 120);
-  const role = normalizeRole(body.role) || 'advisor';
+  const role = normalizeRole(body.role) || 'staff';
   const password = String(body.password || '');
   const pwErr = validatePassword(password);
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { res.status(400).json({ error: 'A valid email address is required.' }); return; }
@@ -1447,22 +1408,15 @@ app.post('/api/users/:id/reset-token', requireSession, requireRole('super_admin'
   user.resetExpiresAt = rt.expiresAt;
   await store.upsertUser(user);
   const resetPath = '/admin.html?reset=' + encodeURIComponent(rt.token);
-  const absoluteResetUrl = (mailer && mailer.absoluteResetUrl) ? mailer.absoluteResetUrl(resetPath) : '';
+  const resetUrl = (mailer && mailer.absoluteResetUrl) ? mailer.absoluteResetUrl(resetPath, req) : resetPath;
   let emailSent = false;
-  const emailConfigured = !!(mailer && mailer.isConfigured && mailer.isConfigured());
-  if (emailConfigured && absoluteResetUrl) {
-    const mailResult = await mailer.sendPasswordReset({ to: user.email, name: user.name, resetUrl: absoluteResetUrl, expiresAt: rt.expiresAt }).catch(() => ({ sent: false }));
+  if (mailer && mailer.isConfigured && mailer.isConfigured()) {
+    const mailResult = await mailer.sendPasswordReset({ to: user.email, name: user.name, resetUrl, expiresAt: rt.expiresAt }).catch(() => ({ sent: false }));
     emailSent = !!(mailResult && mailResult.sent);
   }
-  audit(req, { type: 'user.reset_token_generated', summary: 'Reset token generated for ' + user.email, targetType: 'user', targetId: user.id, meta: { emailSent, emailConfigured } });
+  audit(req, { type: 'user.reset_token_generated', summary: 'Reset token generated for ' + user.email, targetType: 'user', targetId: user.id, meta: { emailSent } });
   console.log('[auth] Reset token generated for', user.email, 'expires', rt.expiresAt, 'emailSent=' + emailSent);
-  const response = { ok: true, user: userPublic(user), expiresAt: rt.expiresAt, emailSent, emailConfigured };
-  if (!IS_PRODUCTION) {
-    response.resetToken = rt.token;
-    response.resetUrl = resetPath;
-    response.absoluteResetUrl = absoluteResetUrl || resetPath;
-  }
-  res.json(response);
+  res.json({ ok: true, user: userPublic(user), resetToken: rt.token, resetUrl: resetPath, absoluteResetUrl: resetUrl, expiresAt: rt.expiresAt, emailSent });
 }));
 
 app.use('/api', (req, res) => {
@@ -1494,71 +1448,28 @@ app.use((req, res, next) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') return next();
   if (path.extname(req.path)) return next();
   const name = req.path === '/' ? 'index' : req.path.replace(/\/+$/, '');
-  res.sendFile(path.join(ROOT, name + '.html'), { headers: { 'Cache-Control': 'no-cache' } }, (error) => {
+  res.sendFile(path.join(ROOT, name + '.html'), (error) => {
     if (error) next();
   });
 });
 
-// Block static serving of internal/sensitive project files.
-app.use((req, res, next) => {
-  const p = String(req.path || '/').toLowerCase();
-  const blockedPrefixes = ['/server/', '/data/', '/tests/', '/node_modules/', '/.git/', '/.github/', '/.vscode/', '/.opencode/', '/.agents/'];
-  if (blockedPrefixes.some((prefix) => p === prefix.slice(0, -1) || p.startsWith(prefix))) {
-    return res.status(404).type('text/plain').send('Not found');
-  }
-  const base = path.posix.basename(p);
-  const blockedNames = new Set(['.env', '.env.example', '.gitignore', '.vercelignore', 'package.json', 'package-lock.json', 'vercel.json', 'implementation_plan.md', 'readme.md']);
-  const blockedExts = ['.md', '.bak', '.lock', '.sql', '.map', '.pem', '.key', '.pfx', '.p12', '.crt'];
-  if (blockedNames.has(base) || blockedExts.some((ext) => base.endsWith(ext))) {
-    return res.status(404).type('text/plain').send('Not found');
-  }
-  if (base.startsWith('.env')) {
-    return res.status(404).type('text/plain').send('Not found');
-  }
-  next();
-});
-
-app.use('/assets', express.static(path.join(ROOT, 'assets'), {
-  dotfiles: 'ignore',
-  etag: true,
-  maxAge: IS_PRODUCTION ? '7d' : 0,
-  setHeaders(res, filePath) {
-    if (/\.(html?)$/i.test(filePath)) res.setHeader('Cache-Control', 'no-cache');
-  }
-}));
-
-app.use(express.static(ROOT, {
-  dotfiles: 'ignore',
-  extensions: ['html'],
-  etag: true,
-  setHeaders(res, filePath) {
-    if (/\.(html?)$/i.test(filePath)) {
-      res.setHeader('Cache-Control', 'no-cache');
-    } else if (/\.(css|js|mjs|svg|png|jpg|jpeg|webp|gif|ico|woff2?|ttf)$/i.test(filePath)) {
-      res.setHeader('Cache-Control', IS_PRODUCTION ? 'public, max-age=3600' : 'no-cache');
-    }
-  }
-}));
+app.use(express.static(ROOT, { dotfiles: 'ignore', extensions: ['html'], etag: true }));
 
 app.use((req, res) => {
-  res.status(404).sendFile(path.join(ROOT, '404.html'), { headers: { 'Cache-Control': 'no-cache' } }, (error) => {
+  res.status(404).sendFile(path.join(ROOT, '404.html'), (error) => {
     if (error) res.type('text/plain').send('Not found');
   });
 });
 
 app.use((error, req, res, next) => {
   if (res.headersSent) return next(error);
-  const isHttpError = error instanceof validate.HttpError;
-  const status = isHttpError ? error.status : (Number(error && error.status) || 500);
+  const status = error instanceof validate.HttpError ? error.status : (error.status || 500);
   if (status >= 500) console.error('[error]', error);
-  const safeClientMessage = status >= 500
-    ? 'Something went wrong. Please try again.'
-    : (isHttpError ? String(error.message || 'Request could not be completed.') : 'Request could not be completed.');
   if (req.path.startsWith('/api/')) {
-    res.status(status).json({ error: safeClientMessage });
+    res.status(status).json({ error: status >= 500 ? 'Something went wrong. Please try again.' : error.message });
     return;
   }
-  res.status(status).type('text/plain').send(status >= 500 ? 'Something went wrong.' : safeClientMessage);
+  res.status(status).type('text/plain').send(status >= 500 ? 'Something went wrong.' : error.message);
 });
 
 /* ---------------------------------------------------------------- boot */
@@ -1610,7 +1521,7 @@ async function boot(options) {
         console.log('  Storage:     ' + desc.backend + (desc.location ? ' (' + desc.location + ')' : ''));
         console.log('  Content:     ' + stats.publishedTestimonials + ' published testimonials, ' +
           stats.gallery + ' posters, ' + stats.images + ' image overrides, ' + stats.enquiries + ' enquiries');
-        console.log('  Admin data:  ' + (stats.leads || 0) + ' leads, ' + (stats.applications || 0) + ' applications, ' +
+        console.log('  Admin data:  ' + (stats.leads || 0) + ' leads, ' +
           (stats.customers || 0) + ' customers, ' + (stats.documents || 0) + ' documents, ' + (stats.notifications || 0) + ' notifications, ' + (stats.users || 0) + ' users');
         console.log('');
       });
@@ -1635,4 +1546,3 @@ module.exports = app;
 module.exports.app = app;
 module.exports.boot = boot;
 module.exports.ready = () => boot({ listen: false });
-

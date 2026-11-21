@@ -68,7 +68,7 @@
 
   const STAGES = ['Logged', 'Documents', 'Underwriting', 'Sanctioned', 'Disbursed', 'Rejected'];
   const STAGE_PROGRESS = { Logged: 15, Documents: 35, Underwriting: 60, Sanctioned: 85, Disbursed: 100, Rejected: 0 };
-  const STATUSES = ['New', 'Contacted', 'Qualified', 'Documents', 'Sanctioned', 'Disbursed', 'Lost'];
+  const STATUSES = ['New', 'Contacted', 'Accepted', 'Declined'];
 
   const store = {
     get(key, fallback) {
@@ -133,7 +133,7 @@
     const flag = 'as_admin_samples_cleared_v2';
     try {
       if (localStorage.getItem(flag) !== '1') {
-        ['as_leads', 'as_applications', 'as_products', 'as_partners', 'as_testimonials', 'as_posts', 'as_tasks', 'as_gallery', 'as_content_images', 'as_customers', 'as_documents', 'as_notifications'].forEach((key) => {
+        ['as_leads', 'as_applications', 'as_products', 'as_partners', 'as_testimonials', 'as_posts', 'as_tasks', 'as_gallery', 'as_content_images', 'as_customers', 'as_notifications'].forEach((key) => {
           store.remove(key);
         });
         localStorage.setItem(flag, '1');
@@ -148,10 +148,11 @@
   }
 
   /* ---------------------------------------------------------------- state */
-  let leads = [], apps = [], products = [], partners = [], testimonials = [], posts = [], contentImages = {}, gallery = [], tasks = [], customers = [], documents = [], notifications = [], settings = {};
-  let leadPage = 1, appPage = 1;
+  let leads = [], products = [], partners = [], testimonials = [], posts = [], contentImages = {}, gallery = [], tasks = [], customers = [], notifications = [], settings = {};
+  let apps = []; // applications removed from UI; kept as empty stub to avoid stale refs
+  let leadPage = 1;
   const PAGE_SIZE = 8;
-  const filters = { leadSearch: '', leadProduct: '', leadStatus: '', leadSource: '', appSearch: '', appLender: '', appStage: 'all', partnerType: '' };
+  const filters = { leadSearch: '', leadProduct: '', leadStatus: '', partnerType: '' };
   let currentView = 'overview';
   let activeLeadId = null;
   let charts = {};
@@ -160,7 +161,6 @@
 
   function loadData() {
     leads = store.get('as_leads', []);
-    apps = store.get('as_applications', []);
     products = store.get('as_products', []);
     partners = store.get('as_partners', []);
     testimonials = store.get('as_testimonials', []);
@@ -170,19 +170,16 @@
     if (!Array.isArray(gallery)) gallery = [];
     tasks = store.get('as_tasks', []);
     customers = store.get('as_customers', []);
-    documents = store.get('as_documents', []);
     notifications = store.get('as_notifications', []);
     settings = Object.assign({}, DEFAULT_SETTINGS, store.get('as_settings', {}));
     settings.notifications = Object.assign({}, DEFAULT_SETTINGS.notifications, settings.notifications || {});
     if (!Array.isArray(leads)) leads = [];
     if (!Array.isArray(customers)) customers = [];
-    if (!Array.isArray(documents)) documents = [];
     if (!Array.isArray(notifications)) notifications = [];
   }
 
   const save = {
     leads: () => store.set('as_leads', leads.filter(l => !l._server)),
-    apps: () => store.set('as_applications', apps),
     products: () => store.set('as_products', products),
     partners: () => store.set('as_partners', partners),
     testimonials: () => store.set('as_testimonials', testimonials),
@@ -191,7 +188,6 @@
     gallery: () => store.set('as_gallery', gallery),
     tasks: () => store.set('as_tasks', tasks),
     customers: () => store.set('as_customers', customers),
-    documents: () => store.set('as_documents', documents),
     notifications: () => store.set('as_notifications', notifications),
     settings: () => store.set('as_settings', settings)
   };
@@ -208,7 +204,7 @@
       amount: amountToNumber(e.amount) || 0,
       source: e.source || 'Website form',
       employment: e.employment || '',
-      status: e.handled ? 'Contacted' : 'New',
+      status: (['New','Contacted','Accepted','Qualified','Documents','Sanctioned','Disbursed','Declined','Lost'].indexOf(e.status) !== -1) ? e.status : (e.handled ? 'Contacted' : 'New'),
       priority: 'Medium',
       owner: 'Admin',
       message: e.message || '',
@@ -428,8 +424,8 @@
   function redrawCharts() {
     if (currentView === 'overview') {
       const trend = leadTrend(8);
-      drawLineChart(charts.leads, trend.labels, trend.leads, trend.sanctions);
-      renderMixChart();
+      if (charts.leads) drawLineChart(charts.leads, trend.labels, trend.leads, trend.sanctions);
+      if (charts.mix) renderMixChart();
     }
     if (currentView === 'reports') {
       drawBarChart(charts.disb, monthLabels(6), monthlyDisbursements(), '#c9a227');
@@ -525,8 +521,9 @@
   }
 
   function roleLabel(role) {
-    const map = { super_admin: 'Super admin', admin: 'Admin', staff: 'Staff', advisor: 'Advisor' };
-    return map[role] || role || 'User';
+    const r = role === 'super_admin' ? 'admin' : (role === 'advisor' ? 'staff' : role);
+    const map = { admin: 'Admin', staff: 'Staff' };
+    return map[r] || 'Staff';
   }
 
   function renderAccount() {
@@ -540,11 +537,11 @@
     const rl = $('#account-role'); if (rl) rl.textContent = roleLabel(user.role);
     const isAdmin = user.role === 'super_admin' || user.role === 'admin';
     const um = $('#user-management-card'); if (um) um.style.display = isAdmin ? '' : 'none';
-    const ac = $('#audit-log-card'); if (ac) ac.style.display = isAdmin ? '' : 'none';
+    const un = $('#users-access-note'); if (un) un.style.display = isAdmin ? 'none' : '';
   }
 
   function isAllowedAdminRole(user) {
-    return !!(user && (user.role === 'admin' || user.role === 'super_admin'));
+    return !!(user && (user.role === 'admin' || user.role === 'super_admin' || user.role === 'staff'));
   }
 
   function denyAccess(message) {
@@ -590,7 +587,7 @@
     syncServerEnquiries();
     setView('overview', true);
     loadSessions();
-    if (currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin')) { loadUsers(); loadAudit(); }
+    if (currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin')) { loadUsers(); }
     document.dispatchEvent(new Event('as:auth-ready'));
   }
 
@@ -644,29 +641,7 @@
     }).join('');
   }
 
-  async function loadAudit() {
-    const api = window.ASBackend;
-    if (!api || !currentUser || (currentUser.role !== 'super_admin' && currentUser.role !== 'admin')) return;
-    try {
-      const data = await api.request('api/audit?limit=50');
-      renderAudit((data && data.entries) || []);
-    } catch (e) {
-      renderAudit([], e && e.message ? e.message : 'Could not load audit log.');
-    }
-  }
 
-  function renderAudit(entries, error) {
-    const tbody = $('#audit-table-body');
-    if (!tbody) return;
-    if (error) { tbody.innerHTML = '<tr><td colspan="4" class="table-empty">' + esc(error) + '</td></tr>'; return; }
-    if (!entries || !entries.length) { tbody.innerHTML = '<tr><td colspan="4" class="table-empty">No audit entries yet.</td></tr>'; return; }
-    tbody.innerHTML = entries.map(e => {
-      const when = e.at ? new Date(e.at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
-      const actor = (e.actorEmail || '—') + (e.actorRole ? ' (' + esc(roleLabel(e.actorRole)) + ')' : '');
-      const details = (e.summary || '') + (e.targetId ? ' [' + esc(e.targetId) + ']' : '');
-      return '<tr><td>' + esc(when) + '</td><td>' + esc(e.type || 'event') + '</td><td>' + actor + '</td><td>' + esc(details || '—') + '</td></tr>';
-    }).join('');
-  }
 
   async function loadSessions() {
     const api = window.ASBackend;
@@ -696,8 +671,8 @@
 
   /* ---------------------------------------------------------------- navigation */
   const VIEW_TITLES = {
-    overview: 'Overview', leads: 'Leads', applications: 'Applications', customers: 'Customers', documents: 'Documents', notifications: 'Notifications', reports: 'Reports',
-    products: 'Loan products', partners: 'Bank partners', content: 'Website content', settings: 'Settings'
+    overview: 'Overview', leads: 'Enquiries', customers: 'Customers', notifications: 'Notifications', reports: 'Reports',
+    products: 'Loan products', partners: 'Bank partners', content: 'Reviews & Products', settings: 'Settings'
   };
 
   function setView(view, skipHash) {
@@ -721,9 +696,7 @@
   function renderView(view) {
     if (view === 'overview') renderOverview();
     else if (view === 'leads') renderLeads();
-    else if (view === 'applications') renderApplications();
     else if (view === 'customers') renderCustomers();
-    else if (view === 'documents') renderDocuments();
     else if (view === 'notifications') renderNotifications();
     else if (view === 'reports') renderReports();
     else if (view === 'products') renderProducts();
@@ -738,6 +711,7 @@
     updateCounts();
     renderView(currentView);
     populateFilters();
+    renderNotifications();
   }
 
   function updateCounts() {
@@ -747,6 +721,10 @@
     const unread = Array.isArray(notifications) ? notifications.filter(n => n && !n.read).length : 0;
     const nel = $('#nav-notif-count');
     if (nel) { nel.textContent = unread; nel.style.display = unread ? '' : 'none'; }
+    const dot = document.querySelector('#notif-btn .notif-dot');
+    if (dot) dot.style.display = unread ? '' : 'none';
+    const menuCount = $('#notif-menu-count');
+    if (menuCount) menuCount.textContent = unread ? (unread + ' unread') : 'No new alerts';
   }
 
   function populateFilters() {
@@ -767,63 +745,46 @@
   }
 
   /* ---------------------------------------------------------------- overview */
-  function renderOverview() {
-    const now = new Date();
-    const thisMonth = leads.filter(l => { const d = new Date(l.createdAt); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).length;
-    const activeApps = apps.filter(a => ['Logged', 'Documents', 'Underwriting'].includes(a.stage)).length;
-    const sanctioned = apps.filter(a => ['Sanctioned', 'Disbursed'].includes(a.stage));
-    const sanctionedThisMonth = sanctioned.filter(a => { const d = new Date(a.sanctionedAt || a.appliedAt); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
-    const sanctionedAmt = sanctioned.reduce((s, a) => s + Number(a.amount || 0), 0);
-    const disbursedAmt = apps.filter(a => a.stage === 'Disbursed').reduce((s, a) => s + Number(a.amount || 0), 0);
+  async function renderOverview() {
+    const api = window.ASBackend;
+    const setText = (id, val) => { const el = $('#' + id); if (el) el.textContent = val; };
+    if (!api) return;
+    try {
+      const data = await api.request('api/admin/analytics');
+      const s = (data && data.summary) || {};
+      setText('an-total-views', Number(s.totalPageViews || 0));
+      setText('an-views-7d', Number(s.last7PageViews || 0));
+      setText('an-unique-visitors', Number(s.uniqueVisitors || 0));
+      setText('an-visitors-7d', Number(s.last7UniqueVisitors || 0));
+      setText('an-form-starts', Number(s.formStarts || 0));
+      setText('an-form-starts-7d', Number(s.last7FormStarts || 0));
+      setText('an-form-submits', Number(s.formSubmits || 0));
+      const lastAttempt = s.lastFormAttemptAt ? (timeAgo(s.lastFormAttemptAt) + ' · ' + String(s.lastFormAttemptType || '').replace(/_/g, ' ')) : 'No attempts yet';
+      setText('an-last-attempt', lastAttempt);
 
-    $('#kpi-new-leads').textContent = thisMonth;
-    $('#kpi-total-leads').textContent = leads.length;
-    $('#kpi-active-apps').textContent = activeApps;
-    $('#kpi-sanctioned-count').textContent = sanctionedThisMonth.length;
-    $('#kpi-sanctioned-amt').textContent = compact(sanctionedThisMonth.reduce((s, a) => s + Number(a.amount || 0), 0));
-    $('#kpi-disbursed-amt').textContent = compact(disbursedAmt);
-    $('#kpi-leads-chip').textContent = thisMonth > 4 ? '↑ 12.5%' : '→ steady';
+      const dailyBody = $('#an-daily-body');
+      const daily = Array.isArray(data.daily) ? data.daily : [];
+      if (dailyBody) dailyBody.innerHTML = daily.length ? daily.map(d =>
+        '<tr><td>' + esc(fmtShort(d.date)) + '</td><td class="num">' + Number(d.pageViews || 0) + '</td><td class="num">' + Number(d.formStarts || 0) + '</td><td class="num">' + Number(d.formSubmits || 0) + '</td></tr>'
+      ).join('') : '<tr><td colspan="4" class="table-empty">No analytics data yet.</td></tr>';
 
-    // pipeline
-    const stageMap = [
-      ['New', leads.filter(l => l.status === 'New').length, '#2b6cb0'],
-      ['Contacted / Qualified', leads.filter(l => ['Contacted', 'Qualified'].includes(l.status)).length, '#c9a227'],
-      ['Documents in progress', leads.filter(l => l.status === 'Documents').length, '#2b6cb0'],
-      ['Sanctioned / Disbursed', leads.filter(l => ['Sanctioned', 'Disbursed'].includes(l.status)).length, '#137a5b']
-    ];
-    const maxStage = Math.max(...stageMap.map(s => s[1]), 1);
-    $('#pipeline-list').innerHTML = stageMap.map(([label, count]) =>
-      '<div class="pipeline-row"><div class="p-top"><span>' + label + '</span><b>' + count + ' leads</b></div><div class="pipeline-track"><span style="width:' + Math.round(count / maxStage * 100) + '%"></span></div></div>'
-    ).join('');
+      const top = Array.isArray(data.topPages) ? data.topPages : [];
+      const maxViews = Math.max(...top.map(p => Number(p.views || 0)), 1);
+      const topHost = $('#an-top-pages');
+      if (topHost) topHost.innerHTML = top.length ? top.map(p =>
+        '<div class="pipeline-row"><div class="p-top"><span>' + esc(p.page || '/') + '</span><b>' + Number(p.views || 0) + ' views</b></div><div class="pipeline-track"><span style="width:' + Math.round((Number(p.views || 0) / maxViews) * 100) + '%"></span></div></div>'
+      ).join('') : '<div class="empty-state" style="padding:18px"><p>No page view data yet.</p></div>';
 
-    // recent leads
-    $('#recent-leads-body').innerHTML = leads.slice(0, 5).map(l =>
-      '<tr>' +
-      '<td><div class="cust"><span class="cust-avatar">' + initials(l.name) + '</span><span><b>' + esc(l.name) + '</b><span>' + esc(l.phone) + '</span></span></div></td>' +
-      '<td>' + esc(l.product) + '</td>' +
-      '<td class="num">' + compact(amountToNumber(l.amount)) + '</td>' +
-      '<td><span class="badge badge-inactive">' + esc(l.source || 'Website') + '</span></td>' +
-      '<td><span class="badge badge-' + String(l.status).toLowerCase() + '">' + esc(l.status) + '</span></td>' +
-      '<td title="' + fmtDate(l.createdAt) + '">' + timeAgo(l.createdAt) + '</td>' +
-      '<td><button class="a-btn-icon" data-action="view-lead" data-id="' + esc(l.id) + '" aria-label="View lead"><svg class="icon" aria-hidden="true"><use href="#i-eye"></use></svg></button></td>' +
-      '</tr>'
-    ).join('') || '<tr><td colspan="7" class="table-empty">No enquiries yet.</td></tr>';
-
-    // product performance
-    const perProduct = products.filter(p => p.visible).slice(0, 5).map(p => {
-      const pl = leads.filter(l => l.product === p.name);
-      const pApps = apps.filter(a => a.product === p.name && (a.stage === 'Sanctioned' || a.stage === 'Disbursed'));
-      const amt = pApps.reduce((s, a) => s + Number(a.amount || 0), 0);
-      const conv = pl.length ? Math.round(pApps.length / pl.length * 100) : 0;
-      return { name: p.name, leads: pl.length, amt, conv, avg: pApps.length ? amt / pApps.length : 0 };
-    });
-    $('#product-perf-body').innerHTML = perProduct.map(p =>
-      '<tr><td><div class="product-cell"><span class="p-ic"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-' + (products.find(x => x.name === p.name) || { icon: 'doc' }).icon + '"></use></svg></span><b>' + esc(p.name) + '</b></div></td>' +
-      '<td>' + p.leads + '</td><td class="num">' + compact(p.amt) + '</td><td><span class="badge badge-' + (p.conv >= 40 ? 'active' : 'inactive') + '">' + p.conv + '%</span></td><td>' + (p.avg ? compact(p.avg) : '—') + '</td>' +
-      '<td><span class="stars">' + (p.conv >= 40 ? '↑ growing' : '→ steady') + '</span></td></tr>'
-    ).join('');
-
-    renderTasks();
+      const recent = Array.isArray(data.recent) ? data.recent : [];
+      const recentBody = $('#an-recent-body');
+      if (recentBody) recentBody.innerHTML = recent.length ? recent.map(e => {
+        const detail = e.meta && (e.meta.form || e.meta.source || e.meta.product) ? [e.meta.form, e.meta.source, e.meta.product].filter(Boolean).join(' · ') : '—';
+        return '<tr><td title="' + esc(fmtDate(e.at)) + '">' + esc(timeAgo(e.at)) + '</td><td>' + esc(String(e.type || '').replace(/_/g, ' ')) + '</td><td>' + esc(e.page || '/') + '</td><td>' + esc(e.visitorId || '—') + '</td><td>' + esc(detail) + '</td></tr>';
+      }).join('') : '<tr><td colspan="5" class="table-empty">No analytics data yet.</td></tr>';
+    } catch (e) {
+      const recentBody = $('#an-recent-body');
+      if (recentBody) recentBody.innerHTML = '<tr><td colspan="5" class="table-empty">Could not load analytics.</td></tr>';
+    }
   }
 
   function renderTasks() {
@@ -848,7 +809,6 @@
       if (q && !(l.name + ' ' + l.phone + ' ' + l.email + ' ' + l.id).toLowerCase().includes(q)) return false;
       if (filters.leadProduct && l.product !== filters.leadProduct) return false;
       if (filters.leadStatus && l.status !== filters.leadStatus) return false;
-      if (filters.leadSource && l.source !== filters.leadSource) return false;
       return true;
     }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
@@ -861,21 +821,21 @@
     const pageItems = list.slice(start, start + PAGE_SIZE);
 
     $('#leads-count-label').textContent = list.length;
-    $('#leads-open').textContent = leads.filter(l => !['Sanctioned', 'Disbursed', 'Lost'].includes(l.status)).length;
-    $('#leads-converted').textContent = apps.length;
+    $('#leads-open').textContent = leads.filter(l => ['New', 'Contacted'].includes(l.status)).length;
+    $('#leads-converted').textContent = leads.filter(l => l.status === 'Accepted').length;
     $('#leads-value').textContent = compact(leads.reduce((s, l) => s + amountToNumber(l.amount), 0));
 
     $('#leads-body').innerHTML = pageItems.length ? pageItems.map(l =>
       '<tr>' +
-      '<td><div class="cust"><span class="cust-avatar">' + initials(l.name) + '</span><span><b>' + esc(l.name) + '</b><span>' + esc(l.phone) + ' · ' + esc(l.id) + '</span></span></div></td>' +
+      '<td><div class="cust"><span class="cust-avatar">' + initials(l.name) + '</span><span><b>' + esc(l.name) + '</b><span>' + esc(l.id) + '</span></span></div></td>' +
+      '<td>' + esc(l.phone) + '</td>' +
       '<td>' + esc(l.product) + '<div style="font-size:.66rem;color:#5b6b7e">' + esc(l.city || 'Hyderabad') + '</div></td>' +
       '<td class="num">' + compact(amountToNumber(l.amount)) + '</td>' +
-      '<td><span class="badge badge-inactive">' + esc(l.source || 'Website') + '</span></td>' +
       '<td><span class="badge badge-' + String(l.status).toLowerCase() + '">' + esc(l.status) + '</span></td>' +
       '<td><span class="badge badge-' + String(l.priority || 'medium').toLowerCase() + '">' + esc(l.priority || 'Medium') + '</span></td>' +
       '<td title="' + fmtDate(l.createdAt) + '">' + fmtShort(l.createdAt) + '</td>' +
       '<td><div class="row-actions">' +
-        '<button class="a-btn-icon" data-action="view-lead" data-id="' + esc(l.id) + '" title="View"><svg class="icon" aria-hidden="true"><use href="#i-eye"></use></svg></button>' +
+        '<a class="a-btn-icon" href="https://wa.me/' + esc(String(l.phone || "").replace(/\D/g, "").replace(/^0/, "91").slice(-12)) + '" target="_blank" rel="noopener noreferrer" title="WhatsApp"><svg class="icon" aria-hidden="true"><use href="#i-whatsapp"></use></svg></a>' +
         '<button class="a-btn-icon" data-action="edit-lead" data-id="' + esc(l.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
         '<button class="a-btn-icon danger" data-action="delete-lead" data-id="' + esc(l.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
       '</div></td></tr>'
@@ -930,7 +890,7 @@
         '<div class="a-field"><label>Owner</label><input name="owner" value="' + esc(lead ? lead.owner : 'Admin') + '"></div></div>' +
         '<div class="form-row one"><div class="a-field"><label>Enquiry notes</label><textarea name="message" placeholder="What is the customer looking for?">' + esc(lead ? lead.message : '') + '</textarea></div></div>',
       submitLabel: lead ? 'Save changes' : 'Add lead',
-      onSubmit: (data) => {
+      onSubmit: async (data) => {
         const name = String(data.get('name') || '').trim();
         const phone = String(data.get('phone') || '').trim();
         if (!name || !phone) { toast('Name and mobile number are required.', 'error'); return false; }
@@ -947,12 +907,33 @@
           owner: String(data.get('owner') || 'Admin'),
           message: String(data.get('message') || '')
         };
-        if (lead) {
-          Object.assign(lead, payload);
-          toast('Lead updated.');
-        } else {
-          leads.unshift(Object.assign({ id: uid('ASL-'), createdAt: new Date().toISOString(), notes: [] }, payload));
-          toast('Lead added to the pipeline.');
+        const api = window.ASBackend;
+        const canUseApi = api && api.request;
+        try {
+          if (lead) {
+            if (lead._server && canUseApi) {
+              await api.request('api/enquiries/' + lead.id, { method: 'PATCH', body: { status: payload.status, handled: payload.status !== 'New', note: payload.message || '' } }).catch(()=>{});
+              Object.assign(lead, payload);
+            } else if (canUseApi) {
+              const res = await api.request('api/admin/leads/' + encodeURIComponent(lead.id), { method: 'PATCH', body: payload }).catch(() => null);
+              Object.assign(lead, (res && res.item) ? res.item : payload);
+            } else {
+              Object.assign(lead, payload);
+            }
+            toast('Lead updated.');
+          } else {
+            if (canUseApi) {
+              const res = await api.request('api/admin/leads', { method: 'POST', body: payload }).catch(() => null);
+              const item = (res && res.item) ? res.item : Object.assign({ id: uid('ASL-'), createdAt: new Date().toISOString(), notes: [] }, payload);
+              leads.unshift(item);
+            } else {
+              leads.unshift(Object.assign({ id: uid('ASL-'), createdAt: new Date().toISOString(), notes: [] }, payload));
+            }
+            toast('Lead added to the pipeline.');
+          }
+        } catch (e) {
+          if (lead) Object.assign(lead, payload); else leads.unshift(Object.assign({ id: uid('ASL-'), createdAt: new Date().toISOString(), notes: [] }, payload));
+          toast('Saved locally. Server sync may be pending.', 'error');
         }
         save.leads();
         renderAll();
@@ -1016,9 +997,9 @@
     $('#drawer-status').addEventListener('change', (e) => {
       lead.status = e.target.value;
       if (lead._server && window.ASBackend && window.ASBackend.request) {
-        var handled = ['Contacted', 'Qualified', 'Documents', 'Sanctioned', 'Disbursed', 'Lost'].indexOf(lead.status) !== -1;
+        var handled = ['New'].indexOf(lead.status) === -1;
         lead._handled = handled;
-        window.ASBackend.request('api/enquiries/' + lead.id, { method: 'PATCH', body: { handled: handled } }).catch(function () {});
+        window.ASBackend.request('api/enquiries/' + lead.id, { method: 'PATCH', body: { status: lead.status, handled: handled } }).catch(function () {});
       }
       save.leads();
       toast('Status updated to ' + lead.status + '.');
@@ -1051,112 +1032,6 @@
         toast('Lead deleted.');
       });
     });
-  }
-
-  /* ---------------------------------------------------------------- applications */
-  function filteredApps() {
-    const q = filters.appSearch.toLowerCase();
-    return apps.filter(a => {
-      if (filters.appStage !== 'all' && a.stage !== filters.appStage) return false;
-      if (filters.appLender && a.lender !== filters.appLender) return false;
-      if (q && !(a.customer + ' ' + a.id + ' ' + a.lender + ' ' + a.product).toLowerCase().includes(q)) return false;
-      return true;
-    }).sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt));
-  }
-
-  function renderApplications() {
-    const list = filteredApps();
-    const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
-    if (appPage > totalPages) appPage = totalPages;
-    const start = (appPage - 1) * PAGE_SIZE;
-    const pageItems = list.slice(start, start + PAGE_SIZE);
-    const count = (stage) => apps.filter(a => a.stage === stage).length;
-
-    $('#app-total').textContent = apps.length;
-    $('#app-processing').textContent = apps.filter(a => ['Logged', 'Documents', 'Underwriting'].includes(a.stage)).length;
-    $('#app-sanctioned').textContent = apps.filter(a => ['Sanctioned', 'Disbursed'].includes(a.stage)).length;
-    $('#app-value').textContent = compact(apps.filter(a => ['Sanctioned', 'Disbursed'].includes(a.stage)).reduce((s, a) => s + Number(a.amount || 0), 0));
-
-    $('#stage-all-count').textContent = apps.length;
-    $('#stage-logged-count').textContent = count('Logged');
-    $('#stage-docs-count').textContent = count('Documents');
-    $('#stage-uw-count').textContent = count('Underwriting');
-    $('#stage-sanctioned-count').textContent = count('Sanctioned');
-    $('#stage-disbursed-count').textContent = count('Disbursed');
-    $('#stage-rejected-count').textContent = count('Rejected');
-
-    $('#apps-body').innerHTML = pageItems.length ? pageItems.map(a =>
-      '<tr>' +
-      '<td><b style="color:var(--navy);font-size:.78rem">' + esc(a.id) + '</b><div style="font-size:.65rem;color:var(--muted-2)">' + fmtShort(a.appliedAt) + '</div></td>' +
-      '<td><div class="cust"><span class="cust-avatar">' + initials(a.customer) + '</span><span><b>' + esc(a.customer) + '</b><span>' + esc(a.phone) + '</span></span></div></td>' +
-      '<td><b style="color:var(--navy);font-size:.78rem">' + esc(a.product) + '</b><div style="font-size:.66rem;color:var(--muted-2)">' + compact(a.amount) + '</div></td>' +
-      '<td>' + esc(a.lender) + '</td>' +
-      '<td><span class="badge badge-' + String(a.stage).toLowerCase() + '">' + esc(a.stage) + '</span></td>' +
-      '<td><div class="progress"><div class="progress-track"><span style="width:' + (STAGE_PROGRESS[a.stage] || 0) + '%;background:' + (a.stage === 'Rejected' ? '#b3423a' : '#137a5b') + '"></span></div><b>' + (STAGE_PROGRESS[a.stage] || 0) + '%</b></div></td>' +
-      '<td><div class="row-actions">' +
-        (a.stage !== 'Disbursed' && a.stage !== 'Rejected' ? '<button class="a-btn-icon" data-action="advance-app" data-id="' + esc(a.id) + '" title="Advance stage"><svg class="icon" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>' : '') +
-        '<button class="a-btn-icon" data-action="edit-app" data-id="' + esc(a.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
-        '<button class="a-btn-icon danger" data-action="delete-app" data-id="' + esc(a.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
-      '</div></td></tr>'
-    ).join('') : '<tr><td colspan="7" class="table-empty"><svg class="icon" aria-hidden="true"><use href="#i-folder"></use></svg><br>No applications match these filters.</td></tr>';
-
-    renderPagination('#apps-pagination', list.length, appPage, (p) => { appPage = p; renderApplications(); }, PAGE_SIZE);
-  }
-
-  function appModal(id) {
-    const app = id ? apps.find(a => a.id === id) : null;
-    const productOpts = products.map(p => '<option ' + (app && app.product === p.name ? 'selected' : '') + '>' + esc(p.name) + '</option>').join('');
-    const lenderOpts = partners.filter(p => p.active).map(p => '<option ' + (app && app.lender === p.name ? 'selected' : '') + '>' + esc(p.name) + '</option>').join('');
-    const stageOpts = STAGES.map(s => '<option ' + (app && app.stage === s ? 'selected' : '') + '>' + s + '</option>').join('');
-    openModal({
-      title: app ? 'Edit application' : 'New application',
-      sub: app ? 'Update the file for ' + app.id : 'Log a sanction or move a lead into processing.',
-      body:
-        '<div class="form-row"><div class="a-field"><label>Customer name <span class="req">*</span></label><input name="customer" required value="' + esc(app ? app.customer : '') + '"></div>' +
-        '<div class="a-field"><label>Mobile <span class="req">*</span></label><input name="phone" required value="' + esc(app ? app.phone : '') + '"></div></div>' +
-        '<div class="form-row"><div class="a-field"><label>Loan product</label><select name="product">' + productOpts + '</select></div>' +
-        '<div class="a-field"><label>Loan amount (₹)</label><input name="amount" type="number" min="0" step="10000" value="' + esc(app ? app.amount : '') + '"></div></div>' +
-        '<div class="form-row"><div class="a-field"><label>Lender</label><select name="lender">' + lenderOpts + '</select></div>' +
-        '<div class="a-field"><label>Interest rate (%)</label><input name="rate" type="number" step="0.05" min="0" max="30" value="' + esc(app ? app.rate : '') + '"></div></div>' +
-        '<div class="form-row"><div class="a-field"><label>Stage</label><select name="stage">' + stageOpts + '</select></div>' +
-        '<div class="a-field"><label>Applied on</label><input name="appliedAt" type="date" value="' + (app ? String(app.appliedAt).slice(0, 10) : new Date().toISOString().slice(0, 10)) + '"></div></div>' +
-        '<div class="form-row one"><div class="a-field"><label>Internal notes</label><textarea name="notes">' + esc(app ? app.notes : '') + '</textarea></div></div>',
-      submitLabel: app ? 'Save changes' : 'Create application',
-      onSubmit: (data) => {
-        const customer = String(data.get('customer') || '').trim();
-        const phone = String(data.get('phone') || '').trim();
-        if (!customer || !phone) { toast('Customer name and mobile are required.', 'error'); return false; }
-        const stage = data.get('stage');
-        const payload = {
-          customer, phone,
-          product: data.get('product'),
-          amount: Number(data.get('amount')) || 0,
-          lender: data.get('lender'),
-          rate: Number(data.get('rate')) || 0,
-          stage,
-          appliedAt: data.get('appliedAt') ? new Date(data.get('appliedAt')).toISOString() : new Date().toISOString(),
-          sanctionedAt: (stage === 'Sanctioned' || stage === 'Disbursed') ? (app && app.sanctionedAt ? app.sanctionedAt : new Date().toISOString()) : '',
-          notes: String(data.get('notes') || '')
-        };
-        if (app) { Object.assign(app, payload); toast('Application updated.'); }
-        else { apps.unshift(Object.assign({ id: uid('ASF-'), owner: 'Admin' }, payload)); toast('Application created.'); }
-        save.apps();
-        renderAll();
-      }
-    });
-  }
-
-  function advanceApp(id) {
-    const app = apps.find(a => a.id === id);
-    if (!app) return;
-    const order = ['Logged', 'Documents', 'Underwriting', 'Sanctioned', 'Disbursed'];
-    const idx = order.indexOf(app.stage);
-    if (idx === -1 || idx === order.length - 1) { toast('This application is already complete.', 'error'); return; }
-    app.stage = order[idx + 1];
-    if (app.stage === 'Sanctioned' || app.stage === 'Disbursed') app.sanctionedAt = new Date().toISOString();
-    save.apps();
-    renderAll();
-    toast(app.customer + ' moved to ' + app.stage + '.');
   }
 
   /* ---------------------------------------------------------------- products */
@@ -1651,6 +1526,50 @@
     list._bound = true;
   }
 
+  async function fetchGoogleReviewsUI() {
+    const panel = $('#google-reviews-panel');
+    const list = $('#google-reviews-list');
+    const meta = $('#google-reviews-meta');
+    const btn = $('#fetch-google-reviews-btn');
+    if (!panel || !list) return;
+    panel.style.display = 'block';
+    list.innerHTML = '<div class="empty-state"><p>Fetching Google reviews...</p></div>';
+    if (meta) meta.textContent = 'Fetching reviews from Google Maps...';
+    if (btn) { btn.disabled = true; btn.style.opacity = '.7'; }
+    try {
+      const api = window.ASBackend;
+      if (!api || !api.request) throw new Error('Backend API unavailable.');
+      const res = await api.request('api/admin/google-reviews');
+      const reviews = Array.isArray(res.reviews) ? res.reviews : [];
+      const place = res.place || {};
+      if (meta) meta.textContent = (place.name ? place.name + ' · ' : '') + (place.rating ? (place.rating + '★ (' + (place.total || reviews.length) + ')') : '') + ' · Select reviews to publish on the website.';
+      if (!reviews.length) {
+        list.innerHTML = '<div class="empty-state"><p>No reviews returned. Check your Google Place ID and API configuration.</p></div>';
+        return;
+      }
+      list.innerHTML = reviews.map(rv => {
+        const exists = testimonials.some(t => String(t.googleReviewId || '') === String(rv.id) || (String(t.name||'').toLowerCase() === String(rv.author||'').toLowerCase() && String(t.quote||'').trim() === String(rv.text||'').trim()));
+        const safeText = esc(rv.text || '');
+        const safeAuthor = esc(rv.author || 'Google user');
+        return '<div class="content-item" style="align-items:flex-start">' +
+          '<div class="ci-main"><b>' + safeAuthor + '</b>' +
+          '<p>' + safeText + '</p>' +
+          '<div class="ci-meta"><span>Google Maps</span><span>' + (Number(rv.rating)||0) + '★</span><span>' + esc(rv.relativeTime || '') + '</span>' + (exists ? '<span class="badge badge-active">Added</span>' : '') + '</div></div>' +
+          '<div class="ci-actions">' +
+            (exists ? '<button class="a-btn a-btn-light a-btn-sm" type="button" disabled>Published/Added</button>' : '<button class="a-btn a-btn-primary a-btn-sm" type="button" data-action="publish-google-review" data-grid="' + esc(rv.id) + '">Add to website</button>') +
+          '</div>' +
+        '</div>';
+      }).join('');
+      list._googleReviews = reviews;
+    } catch (err) {
+      console.error('Google reviews fetch failed', err);
+      if (meta) meta.textContent = 'Could not fetch Google reviews.';
+      list.innerHTML = '<div class="empty-state"><p>' + esc((err && err.message) ? err.message : 'Could not fetch Google reviews.') + '</p><p style="font-size:.72rem;color:#5b6b7e;margin-top:6px">Configure GOOGLE_PLACES_API_KEY and GOOGLE_PLACE_ID on the server.</p></div>';
+    } finally {
+      if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+    }
+  }
+
   function renderContent() {
     const tList = $('#testimonials-list');
     const pList = $('#posts-list');
@@ -1679,28 +1598,23 @@
       }
     }
 
-    if (pList) {
-      pList.innerHTML = posts.length ? posts.map(p =>
-        '<div class="content-item">' +
-          '<div class="ci-main"><b>' + esc(p.title) + '</b><p>' + esc(p.excerpt) + '</p>' +
-          '<div class="ci-meta"><span>' + esc(p.category) + '</span><span>' + esc(p.readTime) + ' read</span><span>' + fmtShort(p.date) + '</span><span class="badge badge-' + (p.published ? 'active' : 'inactive') + '">' + (p.published ? 'Published' : 'Draft') + '</span></div></div>' +
-          '<div class="ci-actions">' +
-            '<label class="switch" title="Publish this article on the website"><input type="checkbox" data-toggle="post" data-id="' + esc(p.id) + '" aria-label="Publish article: ' + esc(p.title) + '" ' + (p.published ? 'checked' : '') + '><span></span></label>' +
-            '<button class="a-btn-icon" data-action="edit-post" data-id="' + esc(p.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
-            '<button class="a-btn-icon danger" data-action="delete-post" data-id="' + esc(p.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
-          '</div></div>'
-      ).join('') : '<div class="empty-state"><h4>No articles yet</h4><p>Add guides and articles to help visitors make informed decisions.</p></div>';
+    const cProdList = $('#content-products-list');
+    if (cProdList) {
+      cProdList.innerHTML = products.length ? products.map(p => {
+        const slot = CONTENT_IMAGE_SLOTS.find(s => (p.name || '').toLowerCase().includes(s.key.replace(/-/g,' ')) || (s.label || '').toLowerCase() === (p.name || '').toLowerCase());
+        const img = slot ? (contentImages[slot.key] || slot.fallback) : '';
+        const thumb = img && img !== 'icon' ? '<span class="img-preview" style="width:56px;height:56px;flex:none;border-radius:10px;overflow:hidden;background:#f3f6fa;display:grid;place-items:center"><img src="' + esc(img) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover"></span>' : '<span class="img-preview" style="width:56px;height:56px;flex:none;border-radius:10px;background:#f3f6fa;display:grid;place-items:center"><svg class="icon" aria-hidden="true"><use href="#i-' + esc(p.icon || 'doc') + '"></use></svg></span>';
+        const uploadBtn = slot ? '<label class="a-btn a-btn-light a-btn-sm image-upload-btn" style="margin:0"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"></use></svg> Upload image<input type="file" accept="image/*" data-upload-image="' + esc(slot.key) + '" class="image-upload-input"></label>' : '';
+        return '<div class="content-item" style="align-items:center;gap:14px">' +
+          thumb +
+          '<div class="ci-main"><b>' + esc(p.name) + '</b><p>' + esc(p.description || 'No description') + '</p>' +
+          '<div class="ci-meta"><span>' + esc(p.category || 'Product') + '</span><span>' + (p.rate ? Number(p.rate).toFixed(2) + '% p.a.' : 'Rate N/A') + '</span><span class="badge badge-' + (p.visible ? 'active' : 'inactive') + '">' + (p.visible ? 'Visible' : 'Hidden') + '</span></div></div>' +
+          '<div class="ci-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' + uploadBtn + '<button class="a-btn-icon" data-action="edit-product" data-id="' + esc(p.id) + '" title="Edit product"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button></div>' +
+        '</div>';
+      }).join('') : '<div class="empty-state"><h4>No products yet</h4><p>Add products in the Loan products section.</p></div>';
     }
-
-    const postsSummary = $('#posts-summary');
-    if (postsSummary) {
-      if (!posts.length) {
-        postsSummary.textContent = 'No guides or articles added yet.';
-      } else {
-        const publishedCount = posts.filter(p => p.published).length;
-        postsSummary.textContent = publishedCount + ' of ' + posts.length + ' published · Drafts stay hidden from the website';
-      }
-    }
+    const cProdSummary = $('#content-products-summary');
+    if (cProdSummary) cProdSummary.textContent = products.length ? (products.filter(p => p.visible).length + ' of ' + products.length + ' visible on the website') : 'No products configured yet.';
 
     renderGalleryAdmin();
   }
@@ -1740,9 +1654,9 @@
   }
 
   function renderContentImages() {
-    const imagesHost = $('#content-images-list');
-    if (!imagesHost) return;
-    imagesHost.innerHTML = CONTENT_IMAGE_SLOTS.map(slot => {
+    const hosts = document.querySelectorAll('#content-images-list, #content-images-list-content');
+    if (!hosts.length) return;
+    const html = CONTENT_IMAGE_SLOTS.map(slot => {
       const selected = contentImages[slot.key] || slot.fallback;
       const isIcon = selected === 'icon';
       const isUpload = typeof selected === 'string' && selected.indexOf('data:image/') === 0;
@@ -1765,16 +1679,17 @@
           '</div>' +
         '</div></div>';
     }).join('');
+    hosts.forEach(h => { h.innerHTML = html; });
 
-    const imagesSummary = $('#content-images-summary');
-    if (imagesSummary) {
+    const summaries = document.querySelectorAll('#content-images-summary, #content-images-summary-content');
+    if (summaries.length) {
       const customCount = CONTENT_IMAGE_SLOTS.filter(slot => contentImages[slot.key] && contentImages[slot.key] !== slot.fallback).length;
       const uploadCount = CONTENT_IMAGE_SLOTS.filter(slot => typeof contentImages[slot.key] === 'string' && contentImages[slot.key].indexOf('data:image/') === 0).length;
       let text = customCount
         ? customCount + ' of ' + CONTENT_IMAGE_SLOTS.length + ' cards customised. Changes show on the homepage in this browser only.'
         : 'All cards use their default look. Upload a photo or choose icon only for any card.';
       if (uploadCount) text += ' Uploaded photos are stored only in this browser.';
-      imagesSummary.textContent = text;
+      summaries.forEach(el => { el.textContent = text; });
     }
   }
 
@@ -1803,10 +1718,11 @@
     });
   }
 
-  function postModal(id) {
-    const p = id ? posts.find(x => x.id === id) : null;
+  function postModal(id, preset) {
+    const p = id ? posts.find(x => x.id === id) : (preset && typeof preset === 'object' ? preset : null);
+    const isEdit = !!(id && p && p.id && posts.find(x => x.id === id));
     openModal({
-      title: p ? 'Edit article' : 'Add article',
+      title: isEdit ? 'Edit article' : 'Add article',
       sub: 'Guides and insights for prospective borrowers.',
       body:
         '<div class="form-row one"><div class="a-field"><label>Title <span class="req">*</span></label><input name="title" required value="' + esc(p ? p.title : '') + '"></div></div>' +
@@ -1819,7 +1735,7 @@
         const title = String(data.get('title') || '').trim();
         if (!title) { toast('Title is required.', 'error'); return false; }
         const payload = { title, category: String(data.get('category') || ''), readTime: String(data.get('readTime') || '5 min'), excerpt: String(data.get('excerpt') || ''), published: data.get('published') === 'true', date: p ? p.date : new Date().toISOString() };
-        if (p) { Object.assign(p, payload); toast('Article updated.'); }
+        if (isEdit) { Object.assign(posts.find(x => x.id === id), payload); toast('Article updated.'); }
         else { posts.unshift(Object.assign({ id: uid('BLG-', 2) }, payload)); toast('Article added.'); }
         save.posts();
         renderAll();
@@ -1894,71 +1810,29 @@
     });
   }
 
-  /* ---------------------------------------------------------------- documents */
-  function renderDocuments() {
-    const body = $('#documents-body');
-    if (!body) return;
-    if (!documents.length) {
-      body.innerHTML = '<tr><td colspan="6" class="table-empty"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg><br>No document records yet.<br><button class="a-btn a-btn-light a-btn-sm" style="margin-top:10px" id="add-document-inline">Add document</button></td></tr>';
-      const inline = $('#add-document-inline');
-      if (inline) inline.addEventListener('click', () => documentModal());
-      return;
-    }
-    const rows = documents.slice().sort((a,b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
-    body.innerHTML = rows.map(d =>
-      '<tr>' +
-      '<td><b>' + esc(d.title || 'Untitled') + '</b><div style="font-size:.66rem;color:#5b6b7e">' + esc(d.id || '') + '</div></td>' +
-      '<td>' + esc(d.type || d.docType || '—') + '</td>' +
-      '<td>' + esc(d.linkedTo || d.customer || d.applicationId || '—') + '</td>' +
-      '<td><span class="badge badge-' + String(d.status || 'pending').toLowerCase().replace(/[^a-z]/g,'') + '">' + esc(d.status || 'Pending') + '</span></td>' +
-      '<td title="' + fmtDate(d.updatedAt || d.createdAt) + '">' + fmtShort(d.updatedAt || d.createdAt) + '</td>' +
-      '<td><div class="row-actions">' +
-        '<button class="a-btn-icon" data-action="edit-document" data-id="' + esc(d.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
-        '<button class="a-btn-icon danger" data-action="delete-document" data-id="' + esc(d.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
-      '</div></td></tr>'
-    ).join('');
-  }
-
-  function documentModal(id) {
-    const d = id ? documents.find(x => x.id === id) : null;
-    const statusOpts = ['Pending', 'Requested', 'Received', 'Verified', 'Rejected'].map(s => '<option ' + ((d ? d.status : 'Pending') === s ? 'selected' : '') + '>' + s + '</option>').join('');
-    openModal({
-      title: d ? 'Edit document record' : 'Add document record',
-      sub: 'Track document metadata and status (file uploads can be integrated separately).',
-      body:
-        '<div class="form-row"><div class="a-field"><label>Title <span class="req">*</span></label><input name="title" required value="' + esc(d ? d.title : '') + '" placeholder="e.g. PAN card"></div>' +
-        '<div class="a-field"><label>Type</label><input name="type" value="' + esc(d ? (d.type || d.docType || '') : '') + '" placeholder="KYC / Income / Property"></div></div>' +
-        '<div class="form-row"><div class="a-field"><label>Customer/Application</label><input name="linkedTo" value="' + esc(d ? (d.linkedTo || d.customer || d.applicationId || '') : '') + '"></div>' +
-        '<div class="a-field"><label>Status</label><select name="status">' + statusOpts + '</select></div></div>' +
-        '<div class="form-row one"><div class="a-field"><label>Reference/Link (optional)</label><input name="url" value="' + esc(d ? (d.url || '') : '') + '" placeholder="https://... or reference"></div></div>' +
-        '<div class="form-row one"><div class="a-field"><label>Notes</label><textarea name="notes">' + esc(d ? (d.notes || '') : '') + '</textarea></div></div>',
-      submitLabel: d ? 'Save changes' : 'Add document',
-      onSubmit: (data) => {
-        const title = String(data.get('title') || '').trim();
-        if (!title) { toast('Document title is required.', 'error'); return false; }
-        const now = new Date().toISOString();
-        const payload = {
-          title,
-          type: String(data.get('type') || '').trim(),
-          linkedTo: String(data.get('linkedTo') || '').trim(),
-          status: String(data.get('status') || 'Pending'),
-          url: String(data.get('url') || '').trim(),
-          notes: String(data.get('notes') || '').trim(),
-          updatedAt: now
-        };
-        if (d) { Object.assign(d, payload); toast('Document updated.'); }
-        else { documents.unshift(Object.assign({ id: uid('DOC-', 4), createdAt: now }, payload)); toast('Document added.'); }
-        save.documents();
-        renderAll();
-      }
-    });
-  }
-
   /* ---------------------------------------------------------------- notifications */
   function renderNotifications() {
     const host = $('#notifications-list');
-    if (!host) return;
     const items = Array.isArray(notifications) ? notifications.slice().sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) : [];
+
+    // Bell dropdown (always rendered)
+    const menu = $('#notif-menu');
+    if (menu) {
+      const unread = items.filter(n => !n.read).length;
+      const head = '<div class="notif-head"><strong>Notifications</strong><span id="notif-menu-count">' + (unread ? (unread + ' unread') : 'No new alerts') + '</span></div>';
+      if (!items.length) {
+        menu.innerHTML = head + '<div class="notif-item"><span><b>No notifications</b><span>New alerts will appear here.</span></span></div>';
+      } else {
+        menu.innerHTML = head + items.slice(0, 8).map(n => {
+          const when = n.createdAt ? timeAgo(n.createdAt) : '';
+          return '<button type="button" class="notif-item" data-action="open-notification" data-id="' + esc(n.id) + '" style="width:100%;text-align:left;background:none;border:0;cursor:pointer;' + (!n.read ? 'background:rgba(201,162,39,.06);' : '') + '">' +
+            '<span><b>' + esc(n.title || 'Notification') + '</b><span>' + esc(n.message || '') + (when ? ' · ' + esc(when) : '') + '</span></span>' +
+          '</button>';
+        }).join('') + '<div style="padding:10px 12px;border-top:1px solid #f2eee4"><button type="button" class="a-btn a-btn-light a-btn-sm" data-action="go-notifications">View all notifications</button></div>';
+      }
+    }
+
+    if (!host) return;
     if (!items.length) {
       host.innerHTML = '<div class="empty-state" style="padding:24px"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg><h3>No notifications</h3><p>New website enquiries will appear here automatically.</p></div>';
       return;
@@ -1994,11 +1868,13 @@
     $('#report-conversion').textContent = conversion + '%';
     $('#report-ticket').textContent = compact(avg);
     $('#report-lenders').textContent = activePartners;
+    const rdc=$('#report-disbursed-chip'); if(rdc) rdc.textContent='Live';
+    const rcc=$('#report-conversion-chip'); if(rcc) rcc.textContent='Live';
 
     // funnel from actual counts
     const funnel = [
       ['Enquiries received', leads.length],
-      ['Contacted / qualified', leads.filter(l => !['New', 'Lost'].includes(l.status)).length],
+      ['Contacted / Accepted', leads.filter(l => ['Contacted', 'Accepted'].includes(l.status)).length],
       ['Documents submitted', apps.filter(a => a.stage !== 'Logged').length],
       ['Sanctioned', sanctioned.length],
       ['Disbursed', disb.length]
@@ -2040,7 +1916,7 @@
     Object.entries(toggles).forEach(([id, val]) => { const el = $('#' + id); if (el) el.checked = !!val; });
     renderAccount();
     loadSessions();
-    if (currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin')) { loadUsers(); loadAudit(); }
+    if (currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin')) { loadUsers(); }
   }
 
   /* ---------------------------------------------------------------- modal */
@@ -2134,24 +2010,11 @@
     toast('Leads exported as CSV.');
   }
 
-  function exportApps() {
-    downloadCSV('as-financial-applications.csv', [
-      ['Application', 'Customer', 'Phone', 'Product', 'Amount', 'Lender', 'Stage', 'Rate', 'Applied'],
-      ...apps.map(a => [a.id, a.customer, a.phone, a.product, a.amount, a.lender, a.stage, a.rate, fmtDate(a.appliedAt)])
-    ]);
-    toast('Applications exported as CSV.');
-  }
-
   function exportSummary() {
-    const sanctioned = apps.filter(a => ['Sanctioned', 'Disbursed'].includes(a.stage));
     downloadCSV('as-financial-performance.csv', [
       ['Metric', 'Value'],
       ['Total leads', leads.length],
-      ['Open leads', leads.filter(l => !['Sanctioned', 'Disbursed', 'Lost'].includes(l.status)).length],
-      ['Total applications', apps.length],
-      ['Sanctioned applications', sanctioned.length],
-      ['Sanctioned value', sanctioned.reduce((s, a) => s + Number(a.amount || 0), 0)],
-      ['Disbursed value', apps.filter(a => a.stage === 'Disbursed').reduce((s, a) => s + Number(a.amount || 0), 0)],
+      ['Open leads', leads.filter(l => !['Accepted', 'Declined', 'Lost'].includes(l.status)).length],
       ['Active partners', partners.filter(p => p.active).length],
       ['Report generated', new Date().toLocaleString('en-IN')]
     ]);
@@ -2207,6 +2070,14 @@
       const el = $('#' + id);
       if (el) el.addEventListener('click', logout);
     });
+
+    // settings tabs
+    function setSettingsTab(tab) {
+      $$('#settings-tabs [data-settings-tab]').forEach(btn => btn.classList.toggle('active', btn.dataset.settingsTab === tab));
+      $$('.settings-tab-panel').forEach(panel => { panel.style.display = panel.dataset.settingsPanel === tab ? '' : 'none'; });
+    }
+    $$('#settings-tabs [data-settings-tab]').forEach(btn => btn.addEventListener('click', () => setSettingsTab(btn.dataset.settingsTab || 'business')));
+    setSettingsTab('business');
 
     // forgot / reset password
     const forgotBtn = $('#forgot-password-btn');
@@ -2280,8 +2151,7 @@
     // user management
     const refreshUsersBtn = $('#refresh-users-btn');
     if (refreshUsersBtn) refreshUsersBtn.addEventListener('click', () => loadUsers());
-    const refreshAuditBtn = $('#refresh-audit-btn');
-    if (refreshAuditBtn) refreshAuditBtn.addEventListener('click', () => loadAudit());
+
     const refreshSessionsBtn = $('#refresh-sessions-btn');
     if (refreshSessionsBtn) refreshSessionsBtn.addEventListener('click', () => loadSessions());
     const revokeOthersBtn = $('#revoke-other-sessions-btn');
@@ -2316,7 +2186,7 @@
       const body = {
         name: ($('#nu-name') && $('#nu-name').value || '').trim(),
         email: ($('#nu-email') && $('#nu-email').value || '').trim().toLowerCase(),
-        role: ($('#nu-role') && $('#nu-role').value) || 'advisor',
+        role: ($('#nu-role') && $('#nu-role').value) || 'staff',
         password: ($('#nu-password') && $('#nu-password').value) || ''
       };
       showMsg(msg, 'Creating user…', 'info');
@@ -2363,46 +2233,49 @@
     $$('[data-add-lead]').forEach(b => b.addEventListener('click', () => leadModal()));
     const addCustomerBtn = $('#add-customer-btn');
     if (addCustomerBtn) addCustomerBtn.addEventListener('click', () => customerModal());
-    const addDocumentBtn = $('#add-document-btn');
-    if (addDocumentBtn) addDocumentBtn.addEventListener('click', () => documentModal());
 
     // lead filters
     $('#leads-search').addEventListener('input', debounce((e) => { filters.leadSearch = e.target.value; leadPage = 1; renderLeads(); }, 180));
     $('#leads-product-filter').addEventListener('change', (e) => { filters.leadProduct = e.target.value; leadPage = 1; renderLeads(); });
     $('#leads-status-filter').addEventListener('change', (e) => { filters.leadStatus = e.target.value; leadPage = 1; renderLeads(); });
-    $('#leads-source-filter').addEventListener('change', (e) => { filters.leadSource = e.target.value; leadPage = 1; renderLeads(); });
     $('#clear-lead-filters').addEventListener('click', () => {
-      filters.leadSearch = filters.leadProduct = filters.leadStatus = filters.leadSource = '';
+      filters.leadSearch = filters.leadProduct = filters.leadStatus = '';
       $('#leads-search').value = '';
       $('#leads-product-filter').value = '';
       $('#leads-status-filter').value = '';
-      $('#leads-source-filter').value = '';
       leadPage = 1; renderLeads();
     });
 
-    // apps
-    $('#add-app-btn').addEventListener('click', () => appModal());
-    $('#apps-search').addEventListener('input', debounce((e) => { filters.appSearch = e.target.value; appPage = 1; renderApplications(); }, 180));
-    $('#apps-lender-filter').addEventListener('change', (e) => { filters.appLender = e.target.value; appPage = 1; renderApplications(); });
-    $('#clear-app-filters').addEventListener('click', () => {
-      filters.appSearch = filters.appLender = ''; filters.appStage = 'all';
-      $('#apps-search').value = ''; $('#apps-lender-filter').value = '';
-      $$('.stage-tab').forEach(t => t.classList.toggle('active', t.dataset.stage === 'all'));
-      appPage = 1; renderApplications();
-    });
-    $$('#app-stage-tabs .stage-tab').forEach(tab => tab.addEventListener('click', () => {
-      filters.appStage = tab.dataset.stage;
-      $$('.stage-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      appPage = 1; renderApplications();
-    }));
+    // applications section removed
 
     // products / partners / content
     $('#add-product-btn').addEventListener('click', () => productModal());
     $('#add-partner-btn').addEventListener('click', () => partnerModal());
     $('#partner-filter').addEventListener('change', (e) => { filters.partnerType = e.target.value; renderPartners(); });
     $('#add-testimonial-btn').addEventListener('click', () => testimonialModal());
-    $('#add-post-btn').addEventListener('click', () => postModal());
+    const fetchGoogleBtn = $('#fetch-google-reviews-btn');
+    if (fetchGoogleBtn) fetchGoogleBtn.addEventListener('click', fetchGoogleReviewsUI);
+    const closeGoogleBtn = $('#close-google-reviews-btn');
+    if (closeGoogleBtn) closeGoogleBtn.addEventListener('click', () => { const p = $('#google-reviews-panel'); if (p) p.style.display = 'none'; });
+    const addPostBtn = $('#add-post-btn');
+    if (addPostBtn) addPostBtn.addEventListener('click', () => postModal());
+    const importPostBtn = $('#import-post-btn');
+    if (importPostBtn) importPostBtn.addEventListener('click', async () => {
+      const url = window.prompt('Paste article URL to import:');
+      if (!url) return;
+      const api = window.ASBackend;
+      if (!api) { toast('Backend unavailable.', 'error'); return; }
+      importPostBtn.disabled = true;
+      try {
+        const data = await api.request('api/admin/import-article?url=' + encodeURIComponent(url.trim()));
+        const a = (data && data.article) || {};
+        postModal(null, { title: a.title || '', excerpt: a.excerpt || '', category: 'Guide', readTime: '5 min', published: false, date: new Date().toISOString() });
+      } catch (e) {
+        toast((e && e.message) ? e.message : 'Could not import article.', 'error');
+      } finally {
+        importPostBtn.disabled = false;
+      }
+    });
     const addGalleryBtn = $('#add-gallery-btn');
     if (addGalleryBtn) addGalleryBtn.addEventListener('click', () => {
       const input = document.createElement('input');
@@ -2420,13 +2293,20 @@
       };
       input.click();
     });
-    $('#reset-content-images-btn').addEventListener('click', () => {
-      contentImages = {};
-      save.contentImages();
-      renderContentImages();
-      toast('Homepage images reset to defaults.');
+    ['#reset-content-images-btn', '#reset-content-images-btn-content'].forEach(sel => {
+      const btn = $(sel);
+      if (btn) btn.addEventListener('click', () => {
+        contentImages = {};
+        save.contentImages();
+        renderContentImages();
+        renderContent();
+        toast('Homepage images reset to defaults.');
+      });
     });
-    $('#add-task-btn').addEventListener('click', taskModal);
+    const addTaskBtn = $('#add-task-btn');
+    if (addTaskBtn) addTaskBtn.addEventListener('click', taskModal);
+    const refreshAnalyticsBtn = $('#refresh-analytics-btn');
+    if (refreshAnalyticsBtn) refreshAnalyticsBtn.addEventListener('click', () => { renderOverview(); toast('Analytics refreshed.'); });
 
     const markAllNotifsBtn = $('#mark-all-notifs-read');
     if (markAllNotifsBtn) markAllNotifsBtn.addEventListener('click', () => {
@@ -2448,8 +2328,8 @@
 
     // exports
     $('#export-leads-btn').addEventListener('click', exportLeads);
-    $('#export-apps-btn').addEventListener('click', exportApps);
-    $('#download-report-btn').addEventListener('click', exportSummary);
+    const downloadReportBtn = $('#download-report-btn');
+    if (downloadReportBtn) downloadReportBtn.addEventListener('click', exportSummary);
     $('#print-report-btn').addEventListener('click', exportSummary);
 
     // settings
@@ -2459,21 +2339,32 @@
       ['businessName', 'tagline', 'phone', 'phoneRaw', 'email', 'address', 'hours', 'whatsapp'].forEach(k => {
         if (data.get(k) != null) settings[k] = String(data.get(k)).trim();
       });
-      settings.notifications = {
-        leads: $('#notif-leads').checked, apps: $('#notif-apps').checked,
-        weekly: $('#notif-weekly').checked, whatsapp: $('#notif-whatsapp').checked
-      };
+      const notifIds = ['notif-leads','notif-apps','notif-weekly','notif-whatsapp'];
+      if (notifIds.some(id => $('#' + id))) {
+        settings.notifications = {
+          leads: !!($('#notif-leads') && $('#notif-leads').checked),
+          apps: !!($('#notif-apps') && $('#notif-apps').checked),
+          weekly: !!($('#notif-weekly') && $('#notif-weekly').checked),
+          whatsapp: !!($('#notif-whatsapp') && $('#notif-whatsapp').checked)
+        };
+      }
       save.settings();
       toast('Settings saved. The public website will reflect these details.');
     });
     $('#settings-reset').addEventListener('click', renderSettings);
     ['notif-leads', 'notif-apps', 'notif-weekly', 'notif-whatsapp'].forEach(id => {
-      $('#' + id).addEventListener('change', () => {
-        settings.notifications = {
-          leads: $('#notif-leads').checked, apps: $('#notif-apps').checked,
-          weekly: $('#notif-weekly').checked, whatsapp: $('#notif-whatsapp').checked
-        };
-        save.settings();
+      const el = $('#' + id);
+      if (el) el.addEventListener('change', () => {
+        const notifIds = ['notif-leads','notif-apps','notif-weekly','notif-whatsapp'];
+        if (notifIds.some(nid => $('#' + nid))) {
+          settings.notifications = {
+            leads: !!($('#notif-leads') && $('#notif-leads').checked),
+            apps: !!($('#notif-apps') && $('#notif-apps').checked),
+            weekly: !!($('#notif-weekly') && $('#notif-weekly').checked),
+            whatsapp: !!($('#notif-whatsapp') && $('#notif-whatsapp').checked)
+          };
+          save.settings();
+        }
       });
     });
 
@@ -2539,6 +2430,7 @@
             return;
           }
           renderContentImages();
+          renderContent();
           toast('Uploaded photo saved for ' + slot.label + '.');
         }).catch(() => {
           toast('Could not read that image. Please choose a different file.', 'error');
@@ -2586,6 +2478,7 @@
         }
         try { save.contentImages(); } catch (err) { toast('Could not save image selection.', 'error'); return; }
         renderContentImages();
+        renderContent();
         toast(imgBtn.dataset.imageAction === 'icon' ? 'Card set to icon only.' : 'Card restored to default.');
         return;
       }
@@ -2622,8 +2515,8 @@
         });
       }
       if (action === 'clear-filters') {
-        filters.leadSearch = filters.leadProduct = filters.leadStatus = filters.leadSource = '';
-        $('#leads-search').value = ''; $('#leads-product-filter').value = ''; $('#leads-status-filter').value = ''; $('#leads-source-filter').value = '';
+        filters.leadSearch = filters.leadProduct = filters.leadStatus = '';
+        $('#leads-search').value = ''; $('#leads-product-filter').value = ''; $('#leads-status-filter').value = '';
         leadPage = 1; renderLeads();
       }
       if (action === 'edit-customer') customerModal(id);
@@ -2636,16 +2529,6 @@
           toast('Customer deleted.');
         });
       }
-      if (action === 'edit-document') documentModal(id);
-      if (action === 'delete-document') {
-        const d = documents.find(x => x.id === id);
-        if (d) confirmDialog('Delete this document record?', (d.title || 'This document') + ' will be removed.', () => {
-          documents = documents.filter(x => x.id !== id);
-          save.documents();
-          renderAll();
-          toast('Document deleted.');
-        });
-      }
       if (action === 'toggle-notification') {
         const n = notifications.find(x => x.id === id);
         if (n) { n.read = !n.read; save.notifications(); renderAll(); }
@@ -2655,14 +2538,20 @@
         save.notifications();
         renderAll();
       }
-      if (action === 'advance-app') advanceApp(id);
-      if (action === 'edit-app') appModal(id);
-      if (action === 'delete-app') {
-        const a = apps.find(x => x.id === id);
-        if (a) confirmDialog('Delete this application?', 'The file for ' + a.customer + ' will be permanently removed.', () => {
-          apps = apps.filter(x => x.id !== id); save.apps(); renderAll(); toast('Application deleted.');
-        });
+      if (action === 'open-notification') {
+        const n = notifications.find(x => x.id === id);
+        if (n && !n.read) { n.read = true; n.readAt = nowISO(); save.notifications(); }
+        const notifMenu = $('#notif-menu');
+        if (notifMenu) notifMenu.classList.remove('open');
+        showView('notifications');
+        renderAll();
       }
+      if (action === 'go-notifications') {
+        const notifMenu = $('#notif-menu');
+        if (notifMenu) notifMenu.classList.remove('open');
+        showView('notifications');
+      }
+      // application actions removed
       if (action === 'edit-product') productModal(id);
       if (action === 'delete-product') {
         const p = products.find(x => x.id === id);
@@ -2676,6 +2565,31 @@
         if (p) confirmDialog('Remove this partner?', p.name + ' will be removed from your lender panel.', () => {
           partners = partners.filter(x => x.id !== id); save.partners(); renderAll(); toast('Partner removed.');
         });
+      }
+      if (action === 'publish-google-review') {
+        const grid = btn.dataset.grid || id;
+        const list = $('#google-reviews-list');
+        const reviews = list && Array.isArray(list._googleReviews) ? list._googleReviews : [];
+        const rv = reviews.find(r => String(r.id) === String(grid));
+        if (!rv) { toast('Review not found.', 'error'); return; }
+        const exists = testimonials.some(t => String(t.googleReviewId || '') === String(rv.id));
+        if (exists) { toast('This review is already added.', 'error'); return; }
+        testimonials.unshift({
+          id: uid('TST-', 3),
+          name: rv.author || 'Google user',
+          quote: rv.text || '',
+          product: 'Google Review',
+          location: rv.placeName || 'Google Maps',
+          date: rv.time ? rv.time.slice(0,10) : new Date().toISOString().slice(0,10),
+          published: true,
+          rating: Number(rv.rating) || 5,
+          googleReviewId: rv.id,
+          source: 'google_maps'
+        });
+        save.testimonials();
+        renderAll();
+        fetchGoogleReviewsUI();
+        toast('Google review added to website testimonials.');
       }
       if (action === 'edit-testimonial') testimonialModal(id);
       if (action === 'delete-testimonial') {
