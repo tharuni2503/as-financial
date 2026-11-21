@@ -8,7 +8,8 @@
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
     "migrate:pg": "node server/migrate-json-to-pg.js",
-    "migrate:pg:dry": "node server/migrate-json-to-pg.js --dry-run"
+    "migrate:pg:dry": "node server/migrate-json-to-pg.js --dry-run",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=18"
