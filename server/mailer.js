@@ -1,6 +1,7 @@
 'use strict';
 
-const APP_URL = (process.env.APP_URL || process.env.PUBLIC_URL || '').replace(/\/+$/, '');
+const DEPLOYMENT_HOST = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || '';
+const APP_URL = (process.env.APP_URL || process.env.PUBLIC_URL || (DEPLOYMENT_HOST ? 'https://' + DEPLOYMENT_HOST : '')).replace(/\/+$/, '');
 const SMTP_HOST = process.env.SMTP_HOST || '';
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_USER = process.env.SMTP_USER || process.env.SMTP_USERNAME || '';
@@ -38,44 +39,86 @@ function getTransport() {
   return transport;
 }
 
-function absoluteResetUrl(resetPathOrUrl, req) {
-  if (!resetPathOrUrl) return '';
-  if (/^https?:\/\//i.test(resetPathOrUrl)) return resetPathOrUrl;
-  if (APP_URL) return APP_URL + (resetPathOrUrl.startsWith('/') ? resetPathOrUrl : '/' + resetPathOrUrl);
-  if (req && req.headers) {
-    const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-    const host = req.headers['x-forwarded-host'] || req.headers.host;
-    if (host) return String(proto).split(',')[0].trim() + '://' + host + (resetPathOrUrl.startsWith('/') ? resetPathOrUrl : '/' + resetPathOrUrl);
-  }
-  return resetPathOrUrl;
+function escapeHtml(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[char]);
 }
 
-async function sendPasswordReset({ to, name, resetUrl, expiresAt }) {
-  const tx = getTransport();
-  const safeName = name || 'there';
+function safeHttpUrl(value) {
+  try {
+    const parsed = new URL(String(value || ''));
+    if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) return '';
+    return parsed.toString();
+  } catch (_) {
+    return '';
+  }
+}
+
+function absoluteResetUrl(resetPathOrUrl, req) {
+  if (!resetPathOrUrl) return '';
+  const direct = safeHttpUrl(resetPathOrUrl);
+  if (direct) return direct;
+
+  if (APP_URL) {
+    const base = safeHttpUrl(APP_URL);
+    if (!base) return '';
+    try { return new URL(String(resetPathOrUrl), base).toString(); } catch (_) { return ''; }
+  }
+
+  // In production, never trust a request Host header to build a credential URL.
+  // Vercel's VERCEL_URL / VERCEL_PROJECT_PRODUCTION_URL or APP_URL should be used.
+  if (process.env.NODE_ENV === 'production') return '';
+
+  if (req && req.headers) {
+    const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0].trim().toLowerCase();
+    const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+    if (!['http', 'https'].includes(proto) || !host || /[\s\\/@]/.test(host)) return '';
+    const origin = safeHttpUrl(proto + '://' + host);
+    if (!origin) return '';
+    try { return new URL(String(resetPathOrUrl), origin).toString(); } catch (_) { return ''; }
+  }
+  return '';
+}
+
+function buildResetEmail({ name, resetUrl, expiresAt }) {
+  const href = safeHttpUrl(resetUrl);
+  if (!href) throw new TypeError('A valid absolute HTTP(S) password reset URL is required.');
+  const displayName = String(name || 'there');
   const subject = 'Reset your AS Financial admin password';
   const text = [
-    `Hi ${safeName},`,
+    \`Hi \${displayName},\`,
     '',
     'A password reset was requested for your account.',
-    `Reset link: ${resetUrl}`,
-    expiresAt ? `This link expires at: ${expiresAt}` : 'This link expires soon.',
+    \`Reset link: \${href}\`,
+    expiresAt ? \`This link expires at: \${expiresAt}\` : 'This link expires soon.',
     '',
     'If you did not request this, you can ignore this email.'
   ].join('\n');
-  const html = `<p>Hi ${safeName},</p>
-<p>A password reset was requested for your account.</p>
-<p><a href="${resetUrl}">Reset your password</a></p>
-${expiresAt ? `<p>This link expires at: ${expiresAt}</p>` : '<p>This link expires soon.</p>'}
-<p>If you did not request this, you can ignore this email.</p>`;
+  const html = \`<p>Hi \${escapeHtml(displayName)},</p>\n\` +
+    '<p>A password reset was requested for your account.</p>\n' +
+    \`<p><a href="\${escapeHtml(href)}">Reset your password</a></p>\n\` +
+    (expiresAt ? \`<p>This link expires at: \${escapeHtml(expiresAt)}</p>\n\` : '<p>This link expires soon.</p>\n') +
+    '<p>If you did not request this, you can ignore this email.</p>';
+  return { subject, text, html };
+}
 
+async function sendPasswordReset({ to, name, resetUrl, expiresAt }) {
+  let message;
+  try {
+    message = buildResetEmail({ name, resetUrl, expiresAt });
+  } catch (error) {
+    return { sent: false, fallback: true, reason: 'invalid_reset_url' };
+  }
+
+  const tx = getTransport();
   if (!tx) {
-    console.log('[mail] (fallback) password reset for', to, '->', resetUrl);
+    console.log('[mail] password reset email not sent for', to, '(SMTP unavailable)');
     return { sent: false, fallback: true, reason: isConfigured() ? 'mailer_unavailable' : 'not_configured' };
   }
 
   try {
-    const info = await tx.sendMail({ from: MAIL_FROM, to, subject, text, html });
+    const info = await tx.sendMail({ from: MAIL_FROM, to, ...message });
     console.log('[mail] password reset sent to', to, info && info.messageId ? ('id=' + info.messageId) : '');
     return { sent: true, messageId: info && info.messageId };
   } catch (error) {
@@ -88,5 +131,8 @@ module.exports = {
   isConfigured,
   getTransport,
   absoluteResetUrl,
+  escapeHtml,
+  safeHttpUrl,
+  buildResetEmail,
   sendPasswordReset
 };
