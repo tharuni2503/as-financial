@@ -50,13 +50,15 @@ const PORT = Number(process.env.PORT || 3000);
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@asfinancial.in').toLowerCase();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'AS@2026';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+let BOOT_FATAL = null;
 
 if (!process.env.ADMIN_PASSWORD) {
   if (IS_PRODUCTION) {
-    console.error('[auth] ADMIN_PASSWORD must be set when NODE_ENV=production. Refusing to start with the default demo password.');
-    process.exit(1);
+    BOOT_FATAL = '[auth] ADMIN_PASSWORD must be set when NODE_ENV=production. Refusing to start with the default demo password.';
+    console.error(BOOT_FATAL);
+  } else {
+    console.warn('[auth] Using the default demo admin password. Set ADMIN_PASSWORD before going live.');
   }
-  console.warn('[auth] Using the default demo admin password. Set ADMIN_PASSWORD before going live.');
 }
 
 async function ensureBootstrapUser() {
@@ -1479,6 +1481,7 @@ let bootPromise = null;
 async function boot(options) {
   if (bootPromise) return bootPromise;
   bootPromise = (async () => {
+    if (BOOT_FATAL) throw new Error(BOOT_FATAL);
     await store.load();
 
     if (typeof store.listUsers === 'function') {
