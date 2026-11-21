@@ -339,9 +339,17 @@ function clearAttempts(ip) {
   scheduleAttemptsPersist(true);
 }
 
+function hashResetToken(token) {
+  return crypto.createHash('sha256').update(String(token || '')).digest('hex');
+}
+
 function makeResetToken() {
   const token = crypto.randomBytes(24).toString('base64url');
-  return { token, expiresAt: new Date(Date.now() + RESET_TTL_MS).toISOString() };
+  return {
+    token,
+    tokenHash: hashResetToken(token),
+    expiresAt: new Date(Date.now() + RESET_TTL_MS).toISOString()
+  };
 }
 
 function randomId(prefix) {
@@ -401,6 +409,7 @@ module.exports = {
   tooManyAttempts,
   noteFailedAttempt,
   clearAttempts,
+  hashResetToken,
   makeResetToken,
   randomId,
   publicUser

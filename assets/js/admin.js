@@ -1,6 +1,5 @@
 /* ==========================================================================
    AS Financial — admin dashboard logic
-   Data is persisted in localStorage for demo purposes.
    ========================================================================== */
 (function () {
   'use strict';
@@ -85,147 +84,7 @@
     remove(key) { try { localStorage.removeItem(key); } catch (e) {} }
   };
 
-  /* ---------------------------------------------------------------- seeds */
-  const HISTORY_NAMES = [
-    'Arjun Mehta', 'Pooja Iyer', 'Sai Krishna', 'Farhan Ali', 'Deepa Nair', 'Manoj Verma', 'Ritu Agarwal', 'Kiran Kumar',
-    'Shalini Rao', 'Imran Sheikh', 'Divya Menon', 'Rahul Jain', 'Anitha Reddy', 'Vamshi Goud', 'Rohit Sharma', 'Meera Joshi',
-    'Naresh Naidu', 'Sana Fatima', 'Prakash Rao', 'Swathi Kulkarni', 'Yashwant Rao', 'Bhavana Sree', 'Ajay Chauhan', 'Rehana Begum',
-    'Sandeep Yadav', 'Keerthi Rao', 'Vivek Anand', 'Nandini Rao', 'Harish Babu', 'Sarita Devi', 'Gopal Krishna', 'Shruti Patel'
-  ];
-  const HISTORY_PRODUCTS = ['Home Loan', 'Personal Loan', 'Business Loan', 'Mortgage / LAP', 'Education Loan', 'Car Loan', 'Plot / Land Loan'];
-  const HISTORY_STATUS = ['Disbursed', 'Lost', 'Sanctioned', 'Contacted', 'Documents', 'Contacted', 'Disbursed', 'Lost'];
-  const HISTORY_SOURCES = ['Website form', 'Referral', 'WhatsApp', 'Walk-in', 'Phone call', 'Homepage popup'];
-  const HISTORY_CITIES = ['Medipalli', 'Uppal', 'Dilsukhnagar', 'Secunderabad', 'Ghatkesar', 'Nacharam', 'Malakpet', 'Ramanthapur'];
-
-  function seedLeads() {
-    const recent = [
-      { id: 'ASL-1001', name: 'Ramesh Kumar', phone: '9848012345', email: 'ramesh.k@gmail.com', product: 'Home Loan', amount: 4800000, source: 'Website form', status: 'New', priority: 'High', city: 'Medipalli', employment: 'Salaried', message: 'Looking to purchase a 2BHK flat near Medipalli. Need help with eligibility.', owner: 'Unassigned', createdAt: daysAgo(0), notes: [] },
-      { id: 'ASL-1002', name: 'Dr. Sneha Priya', phone: '9866123456', email: 'sneha@clinic.in', product: 'Business Loan', amount: 3500000, source: 'Referral', status: 'Qualified', priority: 'High', city: 'Uppal', employment: 'Self-employed', message: 'Setting up a new clinic, needs equipment finance and working capital.', owner: 'Admin', createdAt: daysAgo(1), notes: [{ text: 'Spoke on phone. Sharing 2 years ITR and GST returns.', at: daysAgo(0) }] },
-      { id: 'ASL-1003', name: 'Anand Varma', phone: '9701234567', email: 'anand.v@outlook.com', product: 'Balance Transfer', amount: 6200000, source: 'Phone call', status: 'Documents', priority: 'Medium', city: 'Dilsukhnagar', employment: 'Salaried', message: 'Current EMI is high. Wants to transfer home loan and reduce tenure.', owner: 'Admin', createdAt: daysAgo(2), notes: [] },
-      { id: 'ASL-1004', name: 'Priya Reddy', phone: '9959012345', email: 'priya.reddy@gmail.com', product: 'Personal Loan', amount: 800000, source: 'Homepage popup', status: 'Contacted', priority: 'Medium', city: 'Ghatkesar', employment: 'Salaried', message: 'Wedding expenses in February.', owner: 'Unassigned', createdAt: daysAgo(3), notes: [] },
-      { id: 'ASL-1005', name: 'Mohammed Irfan', phone: '9000123456', email: 'irfan@yahoo.com', product: 'Home Loan', amount: 7500000, source: 'WhatsApp', status: 'Qualified', priority: 'High', city: 'Secunderabad', employment: 'Business owner', message: 'Buying an independent house, needs 80% funding.', owner: 'Admin', createdAt: daysAgo(4), notes: [] },
-      { id: 'ASL-1006', name: 'Lakshmi Narayana', phone: '9440123456', email: 'lakshmi.n@gmail.com', product: 'Education Loan', amount: 2500000, source: 'Website form', status: 'New', priority: 'Medium', city: 'Medipalli', employment: 'Salaried', message: 'Daughter admitted to a university in Canada for a master’s programme.', owner: 'Unassigned', createdAt: daysAgo(5), notes: [] },
-      { id: 'ASL-1007', name: 'Suresh Babu', phone: '9849012346', email: 'suresh.babu@gmail.com', product: 'Mortgage / LAP', amount: 9000000, source: 'Walk-in', status: 'Sanctioned', priority: 'High', city: 'Nacharam', employment: 'Self-employed', message: 'Loan against commercial property for business expansion.', owner: 'Admin', createdAt: daysAgo(6), notes: [{ text: 'Sanction letter received from HDB Financial. Awaiting disbursal date.', at: daysAgo(1) }] },
-      { id: 'ASL-1008', name: 'Kavita Sharma', phone: '9876543210', email: 'kavita.sharma@gmail.com', product: 'Home Loan', amount: 5200000, source: 'Website form', status: 'Contacted', priority: 'Low', city: 'Hyderabad', employment: 'Salaried', message: 'First-time buyer, comparing rates.', owner: 'Unassigned', createdAt: daysAgo(7), notes: [] },
-      { id: 'ASL-1009', name: 'Naveen Reddy', phone: '9701122334', email: 'naveen.reddy@gmail.com', product: 'Plot / Land Loan', amount: 4000000, source: 'Referral', status: 'Lost', priority: 'Medium', city: 'Ghatkesar', employment: 'Business owner', message: 'Plot purchase near Ghatkesar.', owner: 'Admin', createdAt: daysAgo(9), notes: [{ text: 'Property documents incomplete. Client will revisit next quarter.', at: daysAgo(5) }] },
-      { id: 'ASL-1010', name: 'Ayesha Begum', phone: '9966332211', email: 'ayesha.b@gmail.com', product: 'Personal Loan', amount: 1200000, source: 'Homepage popup', status: 'New', priority: 'High', city: 'Malakpet', employment: 'Salaried', message: 'Medical expenses, needs funds urgently.', owner: 'Unassigned', createdAt: daysAgo(10), notes: [] },
-      { id: 'ASL-1011', name: 'Vikram Singh', phone: '9848998877', email: 'vikram.s@gmail.com', product: 'Car Loan', amount: 1500000, source: 'WhatsApp', status: 'Contacted', priority: 'Low', city: 'Uppal', employment: 'Salaried', message: 'New SUV purchase, exchanging an old car.', owner: 'Unassigned', createdAt: daysAgo(12), notes: [] },
-      { id: 'ASL-1012', name: 'Srinivas Rao', phone: '9050607080', email: 'srini.rao@gmail.com', product: 'Business Loan', amount: 5000000, source: 'Phone call', status: 'Disbursed', priority: 'High', city: 'Medipalli', employment: 'Business owner', message: 'Working capital for a hardware distribution business.', owner: 'Admin', createdAt: daysAgo(15), notes: [{ text: 'Disbursed by Bajaj Finserv. Client onboarded for annual rate review.', at: daysAgo(2) }] },
-      { id: 'ASL-1013', name: 'Neha Gupta', phone: '9988776655', email: 'neha.gupta@gmail.com', product: 'NRI Home Loan', amount: 11000000, source: 'Referral', status: 'Qualified', priority: 'High', city: 'Hyderabad', employment: 'NRI', message: 'Buying an apartment in Hyderabad while working in Dubai.', owner: 'Admin', createdAt: daysAgo(18), notes: [] },
-      { id: 'ASL-1014', name: 'Rajesh Yadav', phone: '9123456780', email: 'rajesh.y@gmail.com', product: 'Gold Loan', amount: 700000, source: 'Walk-in', status: 'Lost', priority: 'Low', city: 'Ramanthapur', employment: 'Self-employed', message: 'Short-term funds against gold jewellery.', owner: 'Unassigned', createdAt: daysAgo(22), notes: [] }
-    ];
-
-    // Historical enquiries spread across the last 7 months so trends are meaningful.
-    const history = HISTORY_NAMES.map((name, i) => {
-      const monthsBack = 1 + Math.floor(i / 5);
-      const d = new Date();
-      d.setMonth(d.getMonth() - monthsBack, 3 + (i % 5) * 5);
-      d.setHours(10 + (i % 8), (i * 7) % 60, 0, 0);
-      const slug = name.toLowerCase().replace(/[^a-z]+/g, '.');
-      return {
-        id: 'ASL-' + (2001 + i),
-        name,
-        phone: '98' + String(76000000 + i * 12345),
-        email: slug + '@gmail.com',
-        product: HISTORY_PRODUCTS[i % HISTORY_PRODUCTS.length],
-        amount: 800000 + (i % 7) * 950000,
-        source: HISTORY_SOURCES[i % HISTORY_SOURCES.length],
-        status: HISTORY_STATUS[i % HISTORY_STATUS.length],
-        priority: ['High', 'Medium', 'Low'][i % 3],
-        city: HISTORY_CITIES[i % HISTORY_CITIES.length],
-        employment: ['Salaried', 'Self-employed', 'Business owner'][i % 3],
-        message: 'Enquiry from ' + HISTORY_CITIES[i % HISTORY_CITIES.length] + ' for a ' + HISTORY_PRODUCTS[i % HISTORY_PRODUCTS.length] + '.',
-        owner: i % 4 === 0 ? 'Unassigned' : 'Admin',
-        createdAt: d.toISOString(),
-        notes: []
-      };
-    });
-
-    return recent.concat(history);
-  }
-
-  function seedApplications() {
-    return [
-      { id: 'ASF-1042', customer: 'Ramesh Kumar', phone: '9848012345', product: 'Home Loan', amount: 4800000, lender: 'HDFC Bank', stage: 'Underwriting', rate: 8.45, appliedAt: daysAgo(3), sanctionedAt: '', owner: 'Admin', notes: 'Credit team requested latest 3-month salary slips.' },
-      { id: 'ASF-1041', customer: 'Dr. Sneha Priya', phone: '9866123456', product: 'Business Loan', amount: 3500000, lender: 'Bajaj Finserv', stage: 'Sanctioned', rate: 13.25, appliedAt: daysAgo(8), sanctionedAt: daysAgo(2), owner: 'Admin', notes: 'Sanction letter received. Disbursal scheduled after property visit.' },
-      { id: 'ASF-1040', customer: 'Anand Varma', phone: '9701234567', product: 'Balance Transfer', amount: 6200000, lender: 'ICICI Bank', stage: 'Documents', rate: 8.55, appliedAt: daysAgo(5), sanctionedAt: '', owner: 'Admin', notes: 'Waiting for existing loan statement and foreclosure letter.' },
-      { id: 'ASF-1039', customer: 'Priya Reddy', phone: '9959012345', product: 'Personal Loan', amount: 800000, lender: 'Tata Capital', stage: 'Disbursed', rate: 11.20, appliedAt: daysAgo(12), sanctionedAt: daysAgo(6), owner: 'Admin', notes: 'Disbursed directly to client account.' },
-      { id: 'ASF-1038', customer: 'Mohammed Irfan', phone: '9000123456', product: 'Home Loan', amount: 7500000, lender: 'SBI', stage: 'Sanctioned', rate: 8.50, appliedAt: daysAgo(14), sanctionedAt: daysAgo(4), owner: 'Admin', notes: 'Sanction letter issued. Legal verification complete.' },
-      { id: 'ASF-1037', customer: 'Lakshmi Narayana', phone: '9440123456', product: 'Education Loan', amount: 2500000, lender: 'Canara Bank', stage: 'Logged', rate: 9.10, appliedAt: daysAgo(2), sanctionedAt: '', owner: 'Unassigned', notes: 'Awaiting university offer letter.' },
-      { id: 'ASF-1036', customer: 'Suresh Babu', phone: '9849012346', product: 'Mortgage / LAP', amount: 9000000, lender: 'HDB Financial', stage: 'Underwriting', rate: 9.65, appliedAt: daysAgo(18), sanctionedAt: '', owner: 'Admin', notes: 'Property valuation scheduled this week.' },
-      { id: 'ASF-1035', customer: 'Kavita Sharma', phone: '9876543210', product: 'Home Loan', amount: 5200000, lender: 'Axis Bank', stage: 'Documents', rate: 8.60, appliedAt: daysAgo(20), sanctionedAt: '', owner: 'Admin', notes: 'Collecting Form 16 and 6-month bank statement.' },
-      { id: 'ASF-1034', customer: 'Naveen Reddy', phone: '9701122334', product: 'Plot / Land Loan', amount: 4000000, lender: 'PNB Housing', stage: 'Rejected', rate: 9.90, appliedAt: daysAgo(30), sanctionedAt: '', owner: 'Admin', notes: 'Rejected due to unclear property title.' },
-      { id: 'ASF-1033', customer: 'Srinivas Rao', phone: '9050607080', product: 'Business Loan', amount: 5000000, lender: 'Bajaj Finserv', stage: 'Disbursed', rate: 12.75, appliedAt: daysAgo(45), sanctionedAt: daysAgo(30), owner: 'Admin', notes: 'Disbursed. Annual review in 11 months.' },
-      { id: 'ASF-1032', customer: 'Ayesha Begum', phone: '9966332211', product: 'Personal Loan', amount: 1200000, lender: 'IIFL Finance', stage: 'Sanctioned', rate: 11.75, appliedAt: daysAgo(52), sanctionedAt: daysAgo(38), owner: 'Admin', notes: 'Awaiting borrower signature on agreement.' },
-      { id: 'ASF-1031', customer: 'Vikram Singh', phone: '9848998877', product: 'Car Loan', amount: 1500000, lender: 'HDFC Bank', stage: 'Disbursed', rate: 8.90, appliedAt: daysAgo(70), sanctionedAt: daysAgo(60), owner: 'Admin', notes: 'Vehicle delivered. Loan active.' },
-      { id: 'ASF-1030', customer: 'Neha Gupta', phone: '9988776655', product: 'NRI Home Loan', amount: 11000000, lender: 'ICICI Bank', stage: 'Sanctioned', rate: 8.65, appliedAt: daysAgo(95), sanctionedAt: daysAgo(75), owner: 'Admin', notes: 'POA verification pending from Dubai.' },
-      { id: 'ASF-1029', customer: 'Rajesh Yadav', phone: '9123456780', product: 'Gold Loan', amount: 700000, lender: 'Muthoot Finance', stage: 'Disbursed', rate: 9.50, appliedAt: daysAgo(120), sanctionedAt: daysAgo(118), owner: 'Admin', notes: 'Short-tenure gold loan, closed early.' }
-    ];
-  }
-
-  function seedProducts() {
-    return [
-      { id: 'PRD-01', name: 'Home Loan', icon: 'home', category: 'Property', rate: 8.35, maxAmount: 100000000, tenure: '30 years', visible: true, description: 'Purchase, construction, renovation and top-up loans for residential property.' },
-      { id: 'PRD-02', name: 'Personal Loan', icon: 'user', category: 'Retail', rate: 10.50, maxAmount: 5000000, tenure: '7 years', visible: true, description: 'Collateral-free funding for weddings, travel, medical needs and more.' },
-      { id: 'PRD-03', name: 'Business Loan', icon: 'briefcase', category: 'Business', rate: 12.00, maxAmount: 20000000, tenure: '7 years', visible: true, description: 'Working capital and expansion finance for MSMEs and proprietors.' },
-      { id: 'PRD-04', name: 'Mortgage / LAP', icon: 'key', category: 'Property', rate: 9.25, maxAmount: 100000000, tenure: '15 years', visible: true, description: 'Loan against residential or commercial property.' },
-      { id: 'PRD-05', name: 'Education Loan', icon: 'graduation', category: 'Retail', rate: 8.75, maxAmount: 15000000, tenure: '15 years', visible: true, description: 'Higher studies in India and abroad with moratorium support.' },
-      { id: 'PRD-06', name: 'Plot / Land Loan', icon: 'plot', category: 'Property', rate: 9.50, maxAmount: 50000000, tenure: '15 years', visible: true, description: 'Purchase of residential or commercial plots.' },
-      { id: 'PRD-07', name: 'Car Loan', icon: 'car', category: 'Retail', rate: 8.75, maxAmount: 5000000, tenure: '7 years', visible: true, description: 'New and used car and two-wheeler finance.' },
-      { id: 'PRD-08', name: 'Doctor Loan', icon: 'stethoscope', category: 'Business', rate: 10.25, maxAmount: 10000000, tenure: '10 years', visible: true, description: 'Clinic setup, equipment and practice expansion loans.' },
-      { id: 'PRD-09', name: 'Balance Transfer', icon: 'transfer', category: 'Retail', rate: 8.40, maxAmount: 50000000, tenure: '25 years', visible: true, description: 'Transfer an existing loan for a lower EMI or take a top-up.' },
-      { id: 'PRD-10', name: 'Insurance', icon: 'shield', category: 'Protection', rate: 0, maxAmount: 0, tenure: '—', visible: true, description: 'Life, health and general insurance solutions.' }
-    ];
-  }
-
-  function seedPartners() {
-    return [
-      { id: 'BNK-01', name: 'State Bank of India', type: 'Public sector', rate: 8.50, active: true, applications: 24, sanctioned: 19, approval: 79 },
-      { id: 'BNK-02', name: 'HDFC Bank', type: 'Private bank', rate: 8.35, active: true, applications: 31, sanctioned: 24, approval: 77 },
-      { id: 'BNK-03', name: 'ICICI Bank', type: 'Private bank', rate: 8.45, active: true, applications: 27, sanctioned: 21, approval: 78 },
-      { id: 'BNK-04', name: 'Axis Bank', type: 'Private bank', rate: 8.60, active: true, applications: 18, sanctioned: 13, approval: 72 },
-      { id: 'BNK-05', name: 'Kotak Mahindra Bank', type: 'Private bank', rate: 8.55, active: true, applications: 14, sanctioned: 11, approval: 79 },
-      { id: 'BNK-06', name: 'Bank of Baroda', type: 'Public sector', rate: 8.55, active: true, applications: 12, sanctioned: 9, approval: 75 },
-      { id: 'BNK-07', name: 'Canara Bank', type: 'Public sector', rate: 8.50, active: true, applications: 11, sanctioned: 8, approval: 73 },
-      { id: 'BNK-08', name: 'Union Bank of India', type: 'Public sector', rate: 8.55, active: true, applications: 9, sanctioned: 6, approval: 67 },
-      { id: 'BNK-09', name: 'Punjab National Bank', type: 'Public sector', rate: 8.60, active: true, applications: 8, sanctioned: 6, approval: 75 },
-      { id: 'BNK-10', name: 'Indian Bank', type: 'Public sector', rate: 8.65, active: false, applications: 5, sanctioned: 3, approval: 60 },
-      { id: 'BNK-11', name: 'IDFC FIRST Bank', type: 'Private bank', rate: 8.70, active: true, applications: 12, sanctioned: 9, approval: 75 },
-      { id: 'BNK-12', name: 'Yes Bank', type: 'Private bank', rate: 8.90, active: false, applications: 6, sanctioned: 4, approval: 67 },
-      { id: 'BNK-13', name: 'Federal Bank', type: 'Private bank', rate: 8.75, active: true, applications: 7, sanctioned: 5, approval: 71 },
-      { id: 'BNK-14', name: 'IndusInd Bank', type: 'Private bank', rate: 8.80, active: true, applications: 8, sanctioned: 6, approval: 75 },
-      { id: 'BNK-15', name: 'Bajaj Housing Finance', type: 'NBFC / HFC', rate: 8.40, active: true, applications: 22, sanctioned: 18, approval: 82 },
-      { id: 'BNK-16', name: 'Tata Capital', type: 'NBFC / HFC', rate: 8.90, active: true, applications: 15, sanctioned: 11, approval: 73 },
-      { id: 'BNK-17', name: 'L&T Finance', type: 'NBFC / HFC', rate: 9.10, active: true, applications: 10, sanctioned: 7, approval: 70 },
-      { id: 'BNK-18', name: 'LIC Housing Finance', type: 'NBFC / HFC', rate: 8.45, active: true, applications: 16, sanctioned: 13, approval: 81 },
-      { id: 'BNK-19', name: 'HDB Financial Services', type: 'NBFC / HFC', rate: 9.65, active: true, applications: 12, sanctioned: 9, approval: 75 },
-      { id: 'BNK-20', name: 'Muthoot Finance', type: 'NBFC / HFC', rate: 9.50, active: true, applications: 6, sanctioned: 5, approval: 83 }
-    ];
-  }
-
-  function seedTestimonials() {
-    return [
-      { id: 'TST-01', name: 'Donthuri Aravind Goud', location: 'Google review', product: 'Personal loan', quote: 'I had a very good experience with their service. They provided excellent support and helped me process my personal loan very quickly. The process was smooth, simple, and hassle-free. The staff were very helpful and responsive throughout the process. Highly recommended for their fast and professional service.', published: true, date: daysAgo(30) },
-      { id: 'TST-02', name: 'Asarla Kumar', location: 'Google review', product: 'Home loan', quote: 'Very happy with the home loan service. The team explained everything clearly, handled the documentation properly and completed the process much faster than I expected. Good communication and professional support from start to finish — thank you for the excellent service.', published: true, date: daysAgo(34) },
-      { id: 'TST-03', name: 'Sudhakar Sindhu', location: 'Google review', product: 'Financial services', quote: 'Excellent Financial Services & Solutions! I had a very positive experience with their services. The team is professional, supportive, and provides clear and honest guidance throughout the process.', published: true, date: daysAgo(38) },
-      { id: 'TST-04', name: 'Rakhi Rakesh', location: 'Google review', product: 'Loan assistance', quote: 'Excellent DSA office with professional staff and quick service. Good support throughout the loan process. Highly recommended.', published: false, date: daysAgo(46) },
-      { id: 'TST-05', name: 'Tharuni Lodi', location: 'Google review', product: 'Loan assistance', quote: 'Excellent service! Friendly team, clear guidance, and professional support. Highly recommended!', published: false, date: daysAgo(54) },
-      { id: 'TST-06', name: 'D. Pranitha', location: 'Google review', product: 'Home loan', quote: 'I had a very good experience with AS Finance. The staff were friendly and helpful, and the home loan process was smooth and easy.', published: false, date: daysAgo(63) },
-      { id: 'TST-07', name: 'Radhika Mahesh', location: 'Google review', product: 'Financial services', quote: 'Well experienced team with excellent customer support. Highly recommended.', published: false, date: daysAgo(78) },
-      { id: 'TST-08', name: 'Sukanya Lodi', location: 'Google review', product: 'Financial guidance', quote: 'Very helpful team with professional service and good customer support. A great place for financial guidance!', published: false, date: daysAgo(95) },
-      { id: 'TST-09', name: 'Santhosh Kumar', location: 'Google review', product: 'Loan assistance', quote: 'Best service.', published: false, date: daysAgo(120) }
-    ];
-  }
-
-  function seedPosts() {
-    return [
-      { id: 'BLG-01', title: 'Documents you actually need for a home loan', category: 'Home loans', excerpt: 'KYC, salary slips, bank statements, ITR — a lender-by-lender checklist for salaried and self-employed buyers.', readTime: '6 min', published: true, date: daysAgo(6) },
-      { id: 'BLG-02', title: '5 practical ways to improve your CIBIL score before applying', category: 'Credit health', excerpt: 'Small changes in utilisation and repayment history can move your score — and your interest rate.', readTime: '4 min', published: true, date: daysAgo(14) },
-      { id: 'BLG-03', title: 'When a home loan balance transfer actually saves you money', category: 'Balance transfer', excerpt: 'Run the numbers on fees, remaining tenure and reset dates before switching lenders.', readTime: '5 min', published: true, date: daysAgo(32) },
-      { id: 'BLG-04', title: 'Plot loan or composite loan: which one should you choose?', category: 'Property', excerpt: 'A simple comparison for buyers planning to build within the next two years.', readTime: '5 min', published: false, date: daysAgo(48) }
-    ];
-  }
-
+  /* ---------------------------------------------------------------- data init (no sample data) */
   const CONTENT_IMAGE_SLOTS = [
     { key: 'home-loan', label: 'Home Loans', fallback: 'assets/img/poster/home-loan.jpg' },
     { key: 'mortgage', label: 'Mortgage Loans', fallback: 'assets/img/poster/mortgage.jpg' },
@@ -270,46 +129,22 @@
     ] }
   ];
 
-  function seedGallery() {
-    return [
-      { id: 'GAL-01', src: 'assets/img/gallery/banner.jpg', caption: 'Signboard & services banner', alt: 'AS Financial Services and Solutions signboard banner' },
-      { id: 'GAL-02', src: 'assets/img/gallery/storefront.jpg', caption: 'Our office in Medipalli', alt: 'Our office in Medipalli, Hyderabad' },
-      { id: 'GAL-03', src: 'assets/img/gallery/instant.jpg', caption: 'Instant loan support', alt: 'Instant loan support poster' },
-      { id: 'GAL-04', src: 'assets/img/gallery/dreams.jpg', caption: 'Your dreams, our financial support', alt: 'Your dreams, our financial support poster' },
-      { id: 'GAL-05', src: 'assets/img/gallery/partner.jpg', caption: 'Loan types we arrange', alt: 'Your trusted financial partner: loan types' },
-      { id: 'GAL-06', src: 'assets/img/gallery/services.jpg', caption: 'Services & specialised profiles', alt: 'All loan services and specialised profiles' },
-      { id: 'GAL-07', src: 'assets/img/gallery/banks.jpg', caption: 'Bank & NBFC partners', alt: 'Our bank and NBFC partners' }
-    ];
-  }
-
-  function seedTasks() {
-    return [
-      { id: 'TSK-01', text: 'Call Ramesh Kumar with HDFC Bank rate confirmation', due: 'Today, 11:00 AM', done: false },
-      { id: 'TSK-02', text: 'Collect pending bank statements from Kavita Sharma', due: 'Today, 2:30 PM', done: false },
-      { id: 'TSK-03', text: 'Follow up with ICICI on Anand Varma foreclosure letter', due: 'Today, 4:00 PM', done: false },
-      { id: 'TSK-04', text: 'Send sanction letter to Mohammed Irfan', due: 'Tomorrow', done: true },
-      { id: 'TSK-05', text: 'Weekly pipeline review with the team', due: 'Saturday', done: false }
-    ];
-  }
-
-  function seedAll(force) {
-    window.__asSeeding = true;
-    if (force || localStorage.getItem('as_leads') === null) store.set('as_leads', seedLeads());
-    if (force || localStorage.getItem('as_applications') === null) store.set('as_applications', seedApplications());
-    if (force || localStorage.getItem('as_products') === null) store.set('as_products', seedProducts());
-    if (force || localStorage.getItem('as_partners') === null) store.set('as_partners', seedPartners());
-    const existingTestimonials = store.get('as_testimonials', null);
-    const legacyThree = Array.isArray(existingTestimonials) && existingTestimonials.length === 3 && existingTestimonials.some(t => t.id === 'TST-01' && t.name === 'D. Pranitha');
-    if (force || existingTestimonials === null || legacyThree) store.set('as_testimonials', seedTestimonials());
-    if (force || localStorage.getItem('as_posts') === null) store.set('as_posts', seedPosts());
-    if (force || localStorage.getItem('as_content_images') === null) store.set('as_content_images', {});
-    if (force || localStorage.getItem('as_gallery') === null) store.set('as_gallery', seedGallery());
-    if (force || localStorage.getItem('as_tasks') === null) store.set('as_tasks', seedTasks());
-    if (force || localStorage.getItem('as_customers') === null) store.set('as_customers', []);
-    if (force || localStorage.getItem('as_documents') === null) store.set('as_documents', []);
-    if (force || localStorage.getItem('as_notifications') === null) store.set('as_notifications', []);
-    if (force || localStorage.getItem('as_settings') === null) store.set('as_settings', DEFAULT_SETTINGS);
-    window.__asSeeding = false;
+  function clearSampleDataOnce() {
+    const flag = 'as_admin_samples_cleared_v2';
+    try {
+      if (localStorage.getItem(flag) !== '1') {
+        ['as_leads', 'as_applications', 'as_products', 'as_partners', 'as_testimonials', 'as_posts', 'as_tasks', 'as_gallery', 'as_content_images', 'as_customers', 'as_documents', 'as_notifications'].forEach((key) => {
+          store.remove(key);
+        });
+        localStorage.setItem(flag, '1');
+      }
+      // one-time: remove all leads (requested)
+      const leadsClearedFlag = 'as_admin_leads_cleared_v1';
+      if (localStorage.getItem(leadsClearedFlag) !== '1') {
+        store.set('as_leads', []);
+        localStorage.setItem(leadsClearedFlag, '1');
+      }
+    } catch (e) {}
   }
 
   /* ---------------------------------------------------------------- state */
@@ -708,7 +543,23 @@
     const ac = $('#audit-log-card'); if (ac) ac.style.display = isAdmin ? '' : 'none';
   }
 
+  function isAllowedAdminRole(user) {
+    return !!(user && (user.role === 'admin' || user.role === 'super_admin'));
+  }
+
+  function denyAccess(message) {
+    const api = window.ASBackend;
+    if (api && api.logout) { api.logout().catch(() => {}); }
+    currentUser = null;
+    try { sessionStorage.removeItem('as_admin_ui'); localStorage.removeItem('as_admin_ui'); } catch (e) {}
+    showLogin(message || 'Administrator access only.');
+  }
+
   function enterApp(user, remember) {
+    if (!isAllowedAdminRole(user)) {
+      denyAccess('Administrator access only.');
+      return;
+    }
     currentUser = user || null;
     const email = (user && user.email) || 'admin';
     const rawName = (user && user.name) || (email.indexOf('@') > 0 ? email.split('@')[0] : 'Admin');
@@ -722,6 +573,10 @@
     $('#topbar-avatar').textContent = initials(display);
     $('#greeting-name').textContent = display;
     const d = new Date();
+    const hour = d.getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    const greetingEl = $('#greeting-text');
+    if (greetingEl) greetingEl.textContent = greeting;
     $('#topbar-date').textContent = d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     $('#last-signin').textContent = 'Today, ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
     renderAccount();
@@ -1361,61 +1216,185 @@
   }
 
   /* ---------------------------------------------------------------- partners */
+  function enrichPartnersFromWebsiteLenders() {
+    if (!Array.isArray(contentLendersCache) || !contentLendersCache.length) return false;
+    const norm = (s) => String(s || '').toLowerCase().replace(/&amp;/g, '&').replace(/[^a-z0-9&]+/g, ' ').trim().replace(/\s+/g, ' ');
+    const byName = {};
+    contentLendersCache.forEach(l => {
+      const n = norm(l && (l.name || l.n));
+      if (n && !byName[n]) byName[n] = l;
+    });
+    let changed = false;
+    partners = (partners || []).map(p => {
+      if (!p || typeof p !== 'object') return p;
+      const key = norm(p.name);
+      const src = byName[key];
+      if (!src) return p;
+      const next = Object.assign({}, p);
+      if (!next.interestRate && (src.rate || src.r)) { next.interestRate = String(src.rate || src.r); changed = true; }
+      if (!next.tenure && (src.tenure || src.t)) { next.tenure = String(src.tenure || src.t); changed = true; }
+      if (!next.amount && (src.amount || src.amt)) { next.amount = String(src.amount || src.amt); changed = true; }
+      if (!next.fee && src.fee) { next.fee = String(src.fee); changed = true; }
+      if ((!Array.isArray(next.benefits) || !next.benefits.length) && (Array.isArray(src.benefits) ? src.benefits.length : Array.isArray(src.b) ? src.b.length : 0)) {
+        next.benefits = Array.isArray(src.benefits) ? src.benefits.slice() : (Array.isArray(src.b) ? src.b.slice() : []);
+        changed = true;
+      }
+      if ((!Array.isArray(next.products) || !next.products.length) && (Array.isArray(src.products) ? src.products.length : Array.isArray(src.p) ? src.p.length : 0)) {
+        next.products = Array.isArray(src.products) ? src.products.slice() : (Array.isArray(src.p) ? src.p.slice() : []);
+        changed = true;
+      }
+      if (!next.logo && (src.logo || src.image)) { next.logo = src.logo || src.image; changed = true; }
+      return next;
+    });
+    if (changed) save.partners();
+    return changed;
+  }
+
+  function ensurePartnerLogos() {
+    let changed = false;
+    partners = (partners || []).map(p => {
+      if (!p || typeof p !== 'object') return p;
+      if (p.logo) return p;
+      const logo = autoLogoForLenderName(p.name || '');
+      if (logo) { changed = true; return Object.assign({}, p, { logo }); }
+      return p;
+    });
+    if (changed) save.partners();
+  }
+
   function renderPartners() {
+    ensurePartnerLogos();
+    enrichPartnersFromWebsiteLenders();
+    if (!Array.isArray(contentLendersCache) && !contentLendersLoading) {
+      // best-effort load to enrich partners with website lender details
+      loadContentLenders().then(() => { if (enrichPartnersFromWebsiteLenders()) renderPartners(); }).catch(() => {});
+    }
     const list = partners.filter(p => !filters.partnerType || p.type === filters.partnerType);
     const host = $('#partners-grid');
     if (!list.length) {
       host.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><h3>No partners found</h3><p>Add a bank or NBFC to your panel.</p></div>';
       return;
     }
-    host.innerHTML = list.map(p =>
-      '<div class="partner-tile-admin">' +
+    host.innerHTML = list.map(p => {
+      const logo = p.logo || '';
+      const logoHtml = logo
+        ? '<span class="partner-logo" style="width:46px;height:46px;border-radius:12px;overflow:hidden;border:1px solid #e6edf6;background:#fff;display:grid;place-items:center;flex:none;padding:4px"><img src="' + esc(logo) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain"></span>'
+        : '<span class="partner-logo" style="width:46px;height:46px;border-radius:12px;overflow:hidden;border:1px dashed #d7e0ec;background:#f3f6fb;display:grid;place-items:center;flex:none"></span>';
+      const rateNum = Number(p.rate);
+      const hasRate = Number.isFinite(rateNum) && rateNum > 0;
+      const interest = String(p.interestRate || '').trim() || (hasRate ? rateNum.toFixed(2) + '% p.a. onwards' : '—');
+      const tenure = p.tenure || '—';
+      const amount = p.amount || '—';
+      const fee = p.fee || '—';
+      const benefits = Array.isArray(p.benefits) ? p.benefits.filter(Boolean) : String(p.benefits || '').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+      const products = Array.isArray(p.products) ? p.products.filter(Boolean) : String(p.products || '').split(',').map(s=>s.trim()).filter(Boolean);
+      const benHtml = benefits.length ? '<ul style="margin:8px 0 0;padding-left:16px;font-size:.72rem;color:var(--muted);line-height:1.5">' + benefits.slice(0,3).map(b => '<li>' + esc(b) + '</li>').join('') + '</ul>' : '';
+      const prodHtml = products.length ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' + products.slice(0,6).map(pr => '<span style="font-size:.64rem;padding:3px 8px;border-radius:999px;background:#f3f6fb;border:1px solid #e6edf6;color:var(--navy)">' + esc(pr) + '</span>').join('') + '</div>' : '';
+      const detail = p.interestDetails ? '<div style="font-size:.68rem;color:var(--muted);margin-top:6px;line-height:1.45">' + esc(p.interestDetails) + '</div>' : '';
+      const crm = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:.66rem;color:var(--muted)">' +
+        (p.applications ? '<span>' + esc(p.applications) + ' apps</span>' : '') +
+        (p.sanctioned ? '<span>' + esc(p.sanctioned) + ' sanctioned</span>' : '') +
+        (p.approval ? '<span>' + esc(p.approval) + '% approval</span>' : '') +
+      '</div>';
+      return '<div class="partner-tile-admin" style="gap:6px">' +
         '<div class="tile-actions">' +
           '<button class="a-btn-icon" data-action="edit-partner" data-id="' + esc(p.id) + '" title="Edit"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
           '<button class="a-btn-icon danger" data-action="delete-partner" data-id="' + esc(p.id) + '" title="Delete"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
         '</div>' +
-        '<b>' + esc(p.name) + '</b>' +
-        '<span>' + esc(p.type) + '</span>' +
+        '<div style="display:flex;gap:10px;align-items:center;padding-right:44px">' + logoHtml +
+          '<div style="min-width:0"><b style="display:block;font-size:.9rem">' + esc(p.name) + '</b><span>' + esc(p.type || '') + '</span></div>' +
+        '</div>' +
+        '<div class="partner-facts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">' +
+          '<div><small style="display:block;color:var(--muted);font-size:.62rem">Interest rate</small><b style="font-size:.74rem;color:var(--navy)">' + esc(interest) + '</b></div>' +
+          '<div><small style="display:block;color:var(--muted);font-size:.62rem">Tenure</small><b style="font-size:.74rem;color:var(--navy)">' + esc(tenure) + '</b></div>' +
+          '<div><small style="display:block;color:var(--muted);font-size:.62rem">Loan amount</small><b style="font-size:.72rem;color:var(--navy)">' + esc(amount) + '</b></div>' +
+          '<div><small style="display:block;color:var(--muted);font-size:.62rem">Processing/charges</small><b style="font-size:.72rem;color:var(--navy)">' + esc(fee) + '</b></div>' +
+        '</div>' +
+        detail + benHtml + prodHtml + crm +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">' +
           '<span class="badge badge-' + (p.active ? 'active' : 'inactive') + '">' + (p.active ? 'Active' : 'Paused') + '</span>' +
-          '<span style="font-size:.7rem;color:var(--muted)">' + (p.rate ? p.rate.toFixed(2) + '%' : '—') + '</span>' +
         '</div>' +
-      '</div>'
-    ).join('');
+      '</div>';
+    }).join('');
   }
 
   function partnerModal(id) {
     const p = id ? partners.find(x => x.id === id) : null;
+    const logoVal = esc(p && p.logo ? p.logo : '');
+    const previewInner = (p && p.logo)
+      ? '<img src="' + logoVal + '" alt="" style="width:100%;height:100%;object-fit:contain">'
+      : '<span style="display:block;width:100%;height:100%;background:#f3f6fb"></span>';
+    const benefitsText = Array.isArray(p && p.benefits) ? p.benefits.join('\n') : String((p && p.benefits) || '');
+    const productsText = Array.isArray(p && p.products) ? p.products.join(', ') : String((p && p.products) || '');
     openModal({
       title: p ? 'Edit partner' : 'Add lending partner',
-      sub: 'Lenders shown on the website and in application dropdowns.',
+      sub: 'Manage lender details shown in admin (aligned with website lender info). Logo is auto-assigned.',
       body:
         '<div class="form-row"><div class="a-field"><label>Partner name <span class="req">*</span></label><input name="name" required value="' + esc(p ? p.name : '') + '" placeholder="e.g. HDFC Bank"></div>' +
         '<div class="a-field"><label>Type</label><select name="type">' + ['Public sector', 'Private bank', 'NBFC / HFC'].map(t => '<option ' + (p && p.type === t ? 'selected' : '') + '>' + t + '</option>').join('') + '</select></div></div>' +
-        '<div class="form-row"><div class="a-field"><label>Starting rate (%)</label><input name="rate" type="number" step="0.05" min="0" value="' + esc(p ? p.rate : '') + '"></div>' +
+        '<div class="a-field"><label>Logo</label>' +
+          '<div style="display:flex;gap:12px;align-items:center">' +
+            '<div id="partner-logo-preview" style="width:64px;height:64px;border-radius:12px;border:1px solid #e6edf6;background:#fff;display:grid;place-items:center;overflow:hidden;flex:none">' + previewInner + '</div>' +
+            '<small style="color:var(--muted);font-size:.72rem;line-height:1.5">Logo is assigned automatically (no manual upload).</small>' +
+          '</div>' +
+          '<input type="hidden" name="logo" id="partner-logo-value" value="' + logoVal + '">' +
+        '</div>' +
+        '<div class="form-row"><div class="a-field"><label>Starting rate (%)</label><input name="rate" type="number" step="0.05" min="0" value="' + esc(p && Number(p.rate) > 0 ? p.rate : '') + '" placeholder="e.g. 8.50"></div>' +
+        '<div class="a-field"><label>Interest rate / range (display)</label><input name="interestRate" value="' + esc(p ? (p.interestRate || '') : '') + '" placeholder="e.g. 8.50% p.a. onwards"></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Tenure</label><input name="tenure" value="' + esc(p ? (p.tenure || '') : '') + '" placeholder="e.g. Up to 30 years"></div>' +
+        '<div class="a-field"><label>Loan amount</label><input name="amount" value="' + esc(p ? (p.amount || '') : '') + '" placeholder="e.g. ₹5 L – ₹10 Cr+"></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Processing / charges</label><input name="fee" value="' + esc(p ? (p.fee || '') : '') + '" placeholder="e.g. As per lender schedule"></div>' +
         '<div class="a-field"><label>Status</label><select name="active"><option value="true" ' + (!p || p.active ? 'selected' : '') + '>Active</option><option value="false" ' + (p && !p.active ? 'selected' : '') + '>Paused</option></select></div></div>' +
+        '<div class="a-field"><label>Interest details / notes</label><textarea name="interestDetails" rows="2" placeholder="e.g. Rate varies by profile, product, tenure, CIBIL, and lender policy.">' + esc(p ? (p.interestDetails || '') : '') + '</textarea></div>' +
+        '<div class="a-field"><label>Benefits (one per line)</label><textarea name="benefits" rows="3" placeholder="Key benefit 1&#10;Key benefit 2">' + esc(benefitsText) + '</textarea></div>' +
+        '<div class="a-field"><label>Products (comma separated)</label><input name="products" value="' + esc(productsText) + '" placeholder="e.g. home, lap, personal, business"></div>' +
         '<div class="form-row three"><div class="a-field"><label>Applications</label><input name="applications" type="number" min="0" value="' + esc(p ? p.applications : 0) + '"></div>' +
         '<div class="a-field"><label>Sanctioned</label><input name="sanctioned" type="number" min="0" value="' + esc(p ? p.sanctioned : 0) + '"></div>' +
         '<div class="a-field"><label>Approval rate (%)</label><input name="approval" type="number" min="0" max="100" value="' + esc(p ? p.approval : 0) + '"></div></div>',
       submitLabel: p ? 'Save changes' : 'Add partner',
-      onSubmit: (data) => {
+      onSubmit: async (data) => {
         const name = String(data.get('name') || '').trim();
         if (!name) { toast('Partner name is required.', 'error'); return false; }
+        const products = String(data.get('products') || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 12);
+        const benefits = String(data.get('benefits') || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean).slice(0, 8);
         const payload = {
           name,
           type: data.get('type'),
+          logo: String(data.get('logo') || ''),
           rate: Number(data.get('rate')) || 0,
+          interestRate: String(data.get('interestRate') || '').trim(),
+          interestDetails: String(data.get('interestDetails') || '').trim(),
+          tenure: String(data.get('tenure') || '').trim(),
+          amount: String(data.get('amount') || '').trim(),
+          fee: String(data.get('fee') || '').trim(),
+          benefits,
+          products,
           active: data.get('active') === 'true',
           applications: Number(data.get('applications')) || 0,
           sanctioned: Number(data.get('sanctioned')) || 0,
           approval: Number(data.get('approval')) || 0
         };
-        if (p) { Object.assign(p, payload); toast('Partner updated.'); }
-        else { partners.push(Object.assign({ id: uid('BNK-', 2) }, payload)); toast('Partner added.'); }
+        if (!payload.logo) {
+          payload.logo = await resolveLogoForBank(name);
+        }
+        if (p) { Object.assign(p, payload); toast(payload.logo ? 'Partner updated (logo auto-assigned).' : 'Partner updated.'); }
+        else { partners.push(Object.assign({ id: uid('BNK-', 2) }, payload)); toast(payload.logo ? 'Partner added (logo auto-assigned).' : 'Partner added.'); }
         save.partners();
         renderAll();
+        // Best-effort: keep public website lender directory in sync when a partner logo is set/changed.
+        if (payload.logo) {
+          try { await syncPartnerLogoToWebsiteLenders(payload.name, payload.logo); } catch (e) {}
+        }
       }
     });
+
+    const logoHidden = $('#partner-logo-value');
+    const logoPreview = $('#partner-logo-preview');
+    if (logoPreview && logoHidden && logoHidden.value) {
+      logoPreview.innerHTML = '<img src="' + esc(logoHidden.value) + '" alt="" style="width:100%;height:100%;object-fit:contain">';
+    } else if (logoPreview) {
+      logoPreview.innerHTML = '<span style="display:block;width:100%;height:100%;background:#f3f6fb"></span>';
+    }
   }
 
   /* ---------------------------------------------------------------- content */
@@ -1454,35 +1433,274 @@
     });
   }
 
+  let contentLendersCache = null;
+  let contentLendersLoading = false;
+
+  const KNOWN_LENDER_LOGOS = {
+    'sbi':'assets/img/lenders/sbi.svg','state bank of india':'assets/img/lenders/sbi.svg','hdfc bank':'assets/img/lenders/hdfc-bank.svg',
+    'icici bank':'assets/img/lenders/icici-bank.svg','axis bank':'assets/img/lenders/axis-bank.svg','kotak mahindra bank':'assets/img/lenders/kotak-mahindra-bank.svg',
+    'bank of baroda':'assets/img/lenders/bank-of-baroda.svg','canara bank':'assets/img/lenders/canara-bank.svg','union bank of india':'assets/img/lenders/union-bank-of-india.svg',
+    'punjab national bank':'assets/img/lenders/punjab-national-bank.svg','indian bank':'assets/img/lenders/indian-bank.svg','idfc first bank':'assets/img/lenders/idfc-first-bank.svg',
+    'yes bank':'assets/img/lenders/yes-bank.svg','federal bank':'assets/img/lenders/federal-bank.svg','indusind bank':'assets/img/lenders/indusind-bank.svg',
+    'bandhan bank':'assets/img/lenders/bandhan-bank.svg','uco bank':'assets/img/lenders/uco-bank.svg','central bank of india':'assets/img/lenders/central-bank-of-india.svg',
+    'indian overseas bank':'assets/img/lenders/indian-overseas-bank.svg','bank of india':'assets/img/lenders/bank-of-india.svg','idbi bank':'assets/img/lenders/idbi-bank.svg',
+    'bajaj finserv':'assets/img/lenders/bajaj-finserv.svg','bajaj housing finance':'assets/img/lenders/bajaj-finserv.svg','bajaj finance':'assets/img/lenders/bajaj-finserv.svg',
+    'tata capital':'assets/img/lenders/tata-capital.svg','hdb financial services':'assets/img/lenders/hdb-financial-services.svg',
+    'l&t finance':'assets/img/lenders/lt-finance.svg','lic housing finance':'assets/img/lenders/lic-housing-finance.png','muthoot finance':'assets/img/lenders/muthoot-finance.png',
+    'shriram finance':'assets/img/lenders/shriram-finance.png','cholamandalam':'assets/img/lenders/cholamandalam.svg','edelweiss':'assets/img/lenders/edelweiss.png',
+    'iifl finance':'assets/img/lenders/iifl-finance.png','sundaram finance':'assets/img/lenders/sundaram-finance.png','mahindra finance':'assets/img/lenders/mahindra-finance.png',
+    'hero fincorp':'assets/img/lenders/hero-fincorp.png','shriram city':'assets/img/lenders/shriram-city.png','creditaccess grameen':'assets/img/lenders/creditaccess-grameen.png',
+    'tata motors finance':'assets/img/lenders/tata-motors-finance.svg','reliance home finance':'assets/img/lenders/reliance-home-finance.png'
+  };
+
+  function autoLogoForLenderName(name) {
+    const n = String(name || '').toLowerCase().replace(/&amp;/g, '&').replace(/[^a-z0-9&]+/g, ' ').trim().replace(/\s+/g, ' ');
+    if (!n) return '';
+    if (KNOWN_LENDER_LOGOS[n]) return KNOWN_LENDER_LOGOS[n];
+    // try partial/contains matches for common cases
+    const keys = Object.keys(KNOWN_LENDER_LOGOS);
+    for (let i = 0; i < keys.length; i++) {
+      if (n === keys[i] || n.indexOf(keys[i]) > -1 || keys[i].indexOf(n) > -1) return KNOWN_LENDER_LOGOS[keys[i]];
+    }
+    return '';
+  }
+
+  function lenderDirKey(l, idx) {
+    return String((l && (l.id || l.name || l.n)) || ('idx-' + idx));
+  }
+
+  async function loadContentLenders(force) {
+    if (contentLendersLoading) return Array.isArray(contentLendersCache) ? contentLendersCache : null;
+    const host = $('#lenders-content-list');
+    const summary = $('#lenders-content-summary');
+    contentLendersLoading = true;
+    if (summary) summary.textContent = 'Loading lenders from server…';
+    try {
+      const api = window.ASBackend;
+      if (!api || !api.request) throw new Error('Backend API not available.');
+      const data = await api.content ? api.content('admin') : api.request('api/content?scope=admin');
+      contentLendersCache = Array.isArray(data && data.lenders) ? data.lenders.slice() : [];
+      if (host || summary) renderLendersContentAdmin();
+      return contentLendersCache;
+    } catch (err) {
+      contentLendersCache = Array.isArray(contentLendersCache) ? contentLendersCache : [];
+      if (host) host.innerHTML = '<div class="empty-state"><p>Could not load lenders. ' + esc(err && err.message ? err.message : 'Sign in to the backend and try again.') + '</p></div>';
+      if (summary) summary.textContent = 'Lenders not loaded. Backend sign-in may be required.';
+      return contentLendersCache;
+    } finally {
+      contentLendersLoading = false;
+    }
+  }
+
+  function renderLendersContentAdmin() {
+    const host = $('#lenders-content-list');
+    const summary = $('#lenders-content-summary');
+    if (!host || !summary) return;
+    const lenders = Array.isArray(contentLendersCache) ? contentLendersCache : [];
+    if (!lenders.length) {
+      host.innerHTML = '<div class="empty-state"><p>No lender directory entries found in website content.</p></div>';
+      summary.textContent = '0 lenders in website content.';
+      return;
+    }
+    host.innerHTML = lenders.map((l, idx) => {
+      const key = lenderDirKey(l, idx);
+      const name = l.name || l.n || 'Lender';
+      const cat = String(l.category || l.c || 'nbfc').toLowerCase();
+      const catLabel = cat === 'psu' ? 'Public sector bank' : (cat === 'private' ? 'Private bank' : 'NBFC / HFC');
+      const logo = l.logo || l.image || l.logoUrl || l.img || '';
+      const mono = (l.monogram || l.i || String(name).slice(0, 2)).toUpperCase();
+      const color = l.color || l.k || '#163968';
+      const preview = logo
+        ? '<img src="' + esc(logo) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain">'
+        : '<span style="display:block;width:100%;height:100%;background:#f3f6fb"></span>';
+      const meta = [catLabel, (l.rate || l.r || ''), (l.tenure || l.t || '')].filter(Boolean).join(' · ');
+      return '<div class="content-item lender-content-item" data-lender-key="' + esc(key) + '">' +
+        '<span class="img-preview" style="width:56px;height:56px;border-radius:12px;overflow:hidden;border:1px solid #e6edf6;background:#fff;flex:none;display:grid;place-items:center">' + preview + '</span>' +
+        '<div class="ci-main">' +
+          '<b>' + esc(name) + '</b>' +
+          '<p>' + esc(meta || 'Lender directory entry') + '</p>' +
+          '<div class="ci-meta"><span class="badge badge-' + ((l.active !== false && l.published !== false) ? 'active' : 'inactive') + '">' + ((l.active !== false && l.published !== false) ? 'Visible' : 'Hidden') + '</span>' + (logo ? '<span>Logo auto-assigned</span>' : '<span>No logo</span>') + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    const withLogo = lenders.filter(l => l && (l.logo || l.image || l.logoUrl || l.img)).length;
+    summary.textContent = lenders.length + ' lenders in website content. ' + withLogo + ' with logo. Logos are auto-assigned when banks are added and shown on the public homepage lender cards.';
+  }
+
+  async function saveContentLenders(next, successMsg) {
+    const api = window.ASBackend;
+    if (!api) { toast('Backend API not available.', 'error'); return false; }
+    try {
+      await api.publish ? api.publish('lenders', next) : api.request('api/content/lenders', { method: 'PUT', body: next });
+      contentLendersCache = Array.isArray(next) ? next.slice() : [];
+      renderLendersContentAdmin();
+      toast(successMsg || 'Lender directory saved to website content.', 'success');
+      return true;
+    } catch (err) {
+      toast('Could not save lenders: ' + (err && err.message ? err.message : 'request failed'), 'error');
+      return false;
+    }
+  }
+
+  async function resolveLogoForBank(name) {
+    const n = String(name || '').trim();
+    if (!n) return '';
+    // Prefer local known assets for speed and reliability
+    const local = autoLogoForLenderName(n);
+    if (local) return local;
+    const api = window.ASBackend;
+    if (api && api.request) {
+      try {
+        const res = await api.request('api/admin/resolve-logo', { method: 'POST', body: { name: n } });
+        if (res && res.logo) return String(res.logo);
+      } catch (e) { /* fall through */ }
+    }
+    return '';
+  }
+
+  function addLenderContentModal() {
+    const lenders = Array.isArray(contentLendersCache) ? contentLendersCache : [];
+    const order = lenders.reduce((m, l) => Math.max(m, Number(l && l.order) || 0), 0) + 1;
+    openModal({
+      title: 'Add lender to website directory',
+      sub: 'Add a bank/lender to the homepage partners section. Its logo is automatically assigned from available sources when the lender is added.',
+      body:
+        '<div class="form-row"><div class="a-field"><label>Bank / lender name <span class="req">*</span></label><input name="name" required placeholder="e.g. State Bank of India"></div>' +
+        '<div class="a-field"><label>Category</label><select name="category"><option value="psu">Public sector bank</option><option value="private">Private bank</option><option value="nbfc" selected>NBFC / HFC</option></select></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Interest rate / range</label><input name="rate" placeholder="e.g. 8.50% p.a. onwards"></div>' +
+        '<div class="a-field"><label>Tenure</label><input name="tenure" placeholder="e.g. Up to 30 years"></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Loan amount</label><input name="amount" placeholder="e.g. As per profile & product"></div>' +
+        '<div class="a-field"><label>Processing / charges</label><input name="fee" placeholder="e.g. As per lender schedule"></div></div>' +
+        '<div class="a-field"><label>Products (comma separated keys/labels)</label><input name="products" placeholder="e.g. home, lap, personal, business"></div>' +
+        '<div class="a-field"><label>Benefits (one per line)</label><textarea name="benefits" rows="3" placeholder="Key benefit 1&#10;Key benefit 2"></textarea></div>' +
+        '<div class="form-row"><div class="a-field"><label>Status</label><select name="active"><option value="true" selected>Visible (active)</option><option value="false">Hidden</option></select></div>' +
+        '<div class="a-field"><label>Order</label><input name="order" type="number" min="0" value="' + esc(order) + '"></div></div>' +
+        '<div class="a-field"><small style="display:block;color:var(--muted);font-size:.72rem">Logo is assigned automatically (no manual upload). If no logo can be found, the lender will be added without one.</small></div>',
+      submitLabel: 'Add lender',
+      onSubmit: async (data) => {
+        const name = String(data.get('name') || '').trim();
+        if (!name) { toast('Lender name is required.', 'error'); return false; }
+        const category = String(data.get('category') || 'nbfc').toLowerCase();
+        const products = String(data.get('products') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean).slice(0, 12);
+        const benefits = String(data.get('benefits') || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean).slice(0, 8);
+        const logo = await resolveLogoForBank(name);
+        const lender = {
+          id: uid('LND-', 2),
+          name,
+          category: (category === 'psu' || category === 'private' || category === 'nbfc') ? category : 'nbfc',
+          monogram: name.replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase() || 'LN',
+          color: '#163968',
+          logo: logo || '',
+          rate: String(data.get('rate') || '').trim(),
+          emi: '',
+          tenure: String(data.get('tenure') || '').trim(),
+          amount: String(data.get('amount') || '').trim(),
+          fee: String(data.get('fee') || '').trim(),
+          benefits,
+          products,
+          active: data.get('active') !== 'false',
+          published: data.get('active') !== 'false',
+          order: Number.isFinite(Number(data.get('order'))) ? Math.max(0, Math.floor(Number(data.get('order')))) : order
+        };
+        const next = (Array.isArray(contentLendersCache) ? contentLendersCache.slice() : []).concat([lender]);
+        const ok = await saveContentLenders(next, logo ? 'Lender added and logo auto-assigned.' : 'Lender added (logo not found automatically).');
+        return ok;
+      }
+    });
+  }
+
+  async function syncPartnerLogoToWebsiteLenders(partnerName, logo) {
+    if (!partnerName || !logo) return false;
+    try {
+      if (!Array.isArray(contentLendersCache)) {
+        // try to load website lenders; ignore failure (e.g. not signed in to backend)
+        await loadContentLenders();
+      }
+      if (!Array.isArray(contentLendersCache) || !contentLendersCache.length) return false;
+      const norm = (s) => String(s || '').toLowerCase().replace(/&amp;/g, '&').replace(/[^a-z0-9&]+/g, ' ').trim().replace(/\s+/g, ' ');
+      const target = norm(partnerName);
+      let changed = false;
+      const next = contentLendersCache.map(l => {
+        const name = norm(l && (l.name || l.n));
+        if (!name || !target) return l;
+        const match = name === target || name.indexOf(target) > -1 || target.indexOf(name) > -1;
+        if (match && (l.logo || '') !== logo) { changed = true; return Object.assign({}, l, { logo }); }
+        return l;
+      });
+      if (changed) {
+        await saveContentLenders(next, 'Partner logo synced to website lender directory.');
+        return true;
+      }
+    } catch (e) { /* best effort */ }
+    return false;
+  }
+
+  function bindLendersContentAdmin() {
+    const list = $('#lenders-content-list');
+    const refresh = $('#refresh-lenders-content-btn');
+    const addBtn = $('#add-lender-content-btn');
+    if (refresh && !refresh._bound) {
+      refresh._bound = true;
+      refresh.addEventListener('click', () => loadContentLenders(true));
+    }
+    if (addBtn && !addBtn._bound) {
+      addBtn._bound = true;
+      addBtn.addEventListener('click', () => addLenderContentModal());
+    }
+    if (!list || list._bound) return;
+    list._bound = true;
+  }
+
   function renderContent() {
-    $('#testimonials-list').innerHTML = testimonials.length ? testimonials.map(t =>
-      '<div class="content-item">' +
-        '<div class="ci-main"><b>' + esc(t.name) + '</b>' +
-        '<p>' + esc(t.quote) + '</p>' +
-        '<div class="ci-meta"><span>' + esc(t.product) + '</span><span>' + esc(t.location) + '</span><span>' + fmtShort(t.date) + '</span><span class="badge badge-' + (t.published ? 'active' : 'inactive') + '">' + (t.published ? 'Published' : 'Hidden') + '</span></div></div>' +
-        '<div class="ci-actions">' +
-          '<label class="switch" style="margin-top:4px" title="Show this review on the homepage"><input type="checkbox" data-toggle="testimonial" data-id="' + esc(t.id) + '" aria-label="Show review from ' + esc(t.name) + ' on the homepage" ' + (t.published ? 'checked' : '') + '><span></span></label>' +
-          '<button class="a-btn-icon" data-action="edit-testimonial" data-id="' + esc(t.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
-          '<button class="a-btn-icon danger" data-action="delete-testimonial" data-id="' + esc(t.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
-        '</div></div>'
-    ).join('') : '<div class="empty-state"><p>No testimonials yet.</p></div>';
+    const tList = $('#testimonials-list');
+    const pList = $('#posts-list');
+
+    if (tList) {
+      tList.innerHTML = testimonials.length ? testimonials.map(t =>
+        '<div class="content-item">' +
+          '<div class="ci-main"><b>' + esc(t.name) + '</b>' +
+          '<p>' + esc(t.quote) + '</p>' +
+          '<div class="ci-meta"><span>' + esc(t.product) + '</span><span>' + esc(t.location) + '</span><span>' + fmtShort(t.date) + '</span><span class="badge badge-' + (t.published ? 'active' : 'inactive') + '">' + (t.published ? 'Published' : 'Hidden') + '</span></div></div>' +
+          '<div class="ci-actions">' +
+            '<label class="switch" title="Show this review on the homepage"><input type="checkbox" data-toggle="testimonial" data-id="' + esc(t.id) + '" aria-label="Show review from ' + esc(t.name) + ' on the homepage" ' + (t.published ? 'checked' : '') + '><span></span></label>' +
+            '<button class="a-btn-icon" data-action="edit-testimonial" data-id="' + esc(t.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
+            '<button class="a-btn-icon danger" data-action="delete-testimonial" data-id="' + esc(t.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
+          '</div></div>'
+      ).join('') : '<div class="empty-state"><h4>No testimonials yet</h4><p>Add client reviews to build trust on the homepage.</p></div>';
+    }
 
     const summary = $('#testimonials-summary');
     if (summary) {
-      const publishedCount = testimonials.filter(t => t.published).length;
-      summary.textContent = publishedCount + ' of ' + testimonials.length + ' reviews published. The homepage shows published reviews in this list order. Selections are saved in this browser only.';
+      if (!testimonials.length) {
+        summary.textContent = 'No testimonials added yet.';
+      } else {
+        const publishedCount = testimonials.filter(t => t.published).length;
+        summary.textContent = publishedCount + ' of ' + testimonials.length + ' published · Homepage shows published reviews in this order';
+      }
     }
 
-    $('#posts-list').innerHTML = posts.length ? posts.map(p =>
-      '<div class="content-item">' +
-        '<div class="ci-main"><b>' + esc(p.title) + '</b><p>' + esc(p.excerpt) + '</p>' +
-        '<div class="ci-meta"><span>' + esc(p.category) + '</span><span>' + esc(p.readTime) + ' read</span><span>' + fmtShort(p.date) + '</span><span class="badge badge-' + (p.published ? 'active' : 'inactive') + '">' + (p.published ? 'Published' : 'Draft') + '</span></div></div>' +
-        '<div class="ci-actions">' +
-          '<label class="switch" style="margin-top:4px" title="Publish this article on the website"><input type="checkbox" data-toggle="post" data-id="' + esc(p.id) + '" aria-label="Publish article: ' + esc(p.title) + '" ' + (p.published ? 'checked' : '') + '><span></span></label>' +
-          '<button class="a-btn-icon" data-action="edit-post" data-id="' + esc(p.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
-          '<button class="a-btn-icon danger" data-action="delete-post" data-id="' + esc(p.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
-        '</div></div>'
-    ).join('') : '<div class="empty-state"><p>No articles yet.</p></div>';
+    if (pList) {
+      pList.innerHTML = posts.length ? posts.map(p =>
+        '<div class="content-item">' +
+          '<div class="ci-main"><b>' + esc(p.title) + '</b><p>' + esc(p.excerpt) + '</p>' +
+          '<div class="ci-meta"><span>' + esc(p.category) + '</span><span>' + esc(p.readTime) + ' read</span><span>' + fmtShort(p.date) + '</span><span class="badge badge-' + (p.published ? 'active' : 'inactive') + '">' + (p.published ? 'Published' : 'Draft') + '</span></div></div>' +
+          '<div class="ci-actions">' +
+            '<label class="switch" title="Publish this article on the website"><input type="checkbox" data-toggle="post" data-id="' + esc(p.id) + '" aria-label="Publish article: ' + esc(p.title) + '" ' + (p.published ? 'checked' : '') + '><span></span></label>' +
+            '<button class="a-btn-icon" data-action="edit-post" data-id="' + esc(p.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
+            '<button class="a-btn-icon danger" data-action="delete-post" data-id="' + esc(p.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
+          '</div></div>'
+      ).join('') : '<div class="empty-state"><h4>No articles yet</h4><p>Add guides and articles to help visitors make informed decisions.</p></div>';
+    }
+
+    const postsSummary = $('#posts-summary');
+    if (postsSummary) {
+      if (!posts.length) {
+        postsSummary.textContent = 'No guides or articles added yet.';
+      } else {
+        const publishedCount = posts.filter(p => p.published).length;
+        postsSummary.textContent = publishedCount + ' of ' + posts.length + ' published · Drafts stay hidden from the website';
+      }
+    }
 
     renderGalleryAdmin();
   }
@@ -1839,11 +2057,22 @@
     $('#modal-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
     const form = $('#modal-form');
-    form.addEventListener('submit', (e) => {
+    let submitting = false;
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (submitting) return;
       if (!modalSubmitHandler) return closeModal();
-      const result = modalSubmitHandler(new FormData(form));
-      if (result !== false) closeModal();
+      const submitBtn = $('#modal-foot button[type="submit"]') || $('#modal-foot .a-btn-primary');
+      const prevLabel = submitBtn ? submitBtn.textContent : '';
+      try {
+        submitting = true;
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...'; }
+        const result = await Promise.resolve(modalSubmitHandler(new FormData(form)));
+        if (result !== false) closeModal();
+      } finally {
+        submitting = false;
+        if (submitBtn && document.body.contains(submitBtn)) { submitBtn.disabled = false; submitBtn.textContent = prevLabel; }
+      }
     });
     $('#modal-cancel').addEventListener('click', closeModal);
     setTimeout(() => { const f = form.querySelector('input,select,textarea'); if (f) f.focus(); }, 60);
@@ -1960,6 +2189,10 @@
         if (!ok) throw Object.assign(new Error('Backend is unavailable. Start the server and try again.'), { status: 503 });
         return api.login(email, pass);
       }).then((result) => {
+        if (result && !isAllowedAdminRole(result)) {
+          denyAccess('Administrator access only.');
+          return;
+        }
         enterApp(result || { email: email }, true);
       }).catch((error) => {
         err.textContent = (error && error.message) || 'Sign in failed. Check your details and try again.';
@@ -2170,7 +2403,8 @@
     $('#partner-filter').addEventListener('change', (e) => { filters.partnerType = e.target.value; renderPartners(); });
     $('#add-testimonial-btn').addEventListener('click', () => testimonialModal());
     $('#add-post-btn').addEventListener('click', () => postModal());
-    $('#add-gallery-btn').addEventListener('click', () => {
+    const addGalleryBtn = $('#add-gallery-btn');
+    if (addGalleryBtn) addGalleryBtn.addEventListener('click', () => {
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
@@ -2243,15 +2477,10 @@
       });
     });
 
-    $('#reset-data-btn').addEventListener('click', () => {
-      confirmDialog('Reset demo data?', 'All leads, applications, products, partners and content will be replaced with the sample dataset.', () => {
-        ['as_leads', 'as_applications', 'as_products', 'as_partners', 'as_testimonials', 'as_posts', 'as_tasks', 'as_customers', 'as_documents', 'as_notifications', 'as_settings'].forEach(store.remove);
-        seedAll(true);
-        loadData();
-        renderAll();
-        toast('Demo data restored.');
-      });
-    });
+    const resetDataBtn = $('#reset-data-btn');
+    if (resetDataBtn) {
+      resetDataBtn.addEventListener('click', () => {});
+    }
 
     // global search
     $('#global-search').addEventListener('input', debounce((e) => {
@@ -2502,7 +2731,7 @@
 
   /* ---------------------------------------------------------------- init */
   function init() {
-    seedAll(false);
+    clearSampleDataOnce();
     loadData();
     bindEvents();
     $('#login-year').textContent = new Date().getFullYear();
@@ -2515,9 +2744,13 @@
     if (!api) return;
 
     api.available().then((ok) => {
-      if (!ok) return; // backend optional for public/demo, but admin login requires it
+      if (!ok) return; // backend unavailable: stay on login screen
       return api.session().then((user) => {
         if (user && user.email) {
+          if (!isAllowedAdminRole(user)) {
+            denyAccess('Administrator access only.');
+            return;
+          }
           enterApp(user, false);
           const hash = location.hash.replace('#', '');
           if (VIEW_TITLES[hash]) setView(hash, true);

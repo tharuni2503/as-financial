@@ -6,6 +6,7 @@
  * All public methods are async to match the store interface.
  */
 
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -16,13 +17,22 @@ const DB_FILE = path.join(DATA_DIR, 'db.json');
 const TMP_FILE = path.join(DATA_DIR, 'db.tmp.json');
 const BACKUP_FILE = path.join(DATA_DIR, 'db.backup.json');
 
-const SECTIONS = ['testimonials', 'gallery', 'posts'];
+let DEFAULT_LENDERS = [];
+try {
+  // eslint-disable-next-line global-require
+  DEFAULT_LENDERS = require(path.join(__dirname, 'default-lenders.json'));
+  if (!Array.isArray(DEFAULT_LENDERS)) DEFAULT_LENDERS = [];
+} catch (e) {
+  DEFAULT_LENDERS = [];
+}
+
+const SECTIONS = ['testimonials', 'gallery', 'posts', 'lenders'];
 const ADMIN_COLLECTIONS = ['leads', 'applications', 'products', 'partners', 'tasks', 'customers', 'documents', 'notifications'];
 const MAX_ENQUIRIES = 2000;
 const MAX_AUDIT = 2000;
 
 function emptyContent() {
-  return { testimonials: [], gallery: [], posts: [], images: {} };
+  return { testimonials: [], gallery: [], posts: [], lenders: [], images: {} };
 }
 
 function emptyAdmin() {
@@ -54,6 +64,9 @@ function normalise(parsed) {
   SECTIONS.forEach((key) => {
     if (Array.isArray(source[key])) content[key] = source[key];
   });
+  if (!Array.isArray(source.lenders) && DEFAULT_LENDERS.length) {
+    content.lenders = DEFAULT_LENDERS;
+  }
   if (source.images && typeof source.images === 'object' && !Array.isArray(source.images)) {
     content.images = source.images;
   }
@@ -182,9 +195,14 @@ async function findUserById(id) {
   return db.users.find((u) => u && u.id === id) || null;
 }
 
+function hashResetToken(token) {
+  return crypto.createHash('sha256').update(String(token || '')).digest('hex');
+}
+
 async function findUserByResetToken(token) {
   if (!token) return null;
-  return db.users.find((u) => u && u.resetToken === token) || null;
+  const hashed = hashResetToken(token);
+  return db.users.find((u) => u && (u.resetToken === hashed || u.resetTokenHash === hashed)) || null;
 }
 
 async function upsertUser(user) {
@@ -352,6 +370,22 @@ async function setSecurityState(state) {
   return db.security;
 }
 
+const rateLimitBuckets = new Map();
+async function takeRateLimit(key, limit, windowMs) {
+  const k = String(key || '').slice(0, 200);
+  const lim = Math.max(1, Number(limit) || 1);
+  const win = Math.max(1000, Number(windowMs) || 60000);
+  const now = Date.now();
+  const rec = rateLimitBuckets.get(k);
+  if (!rec || rec.resetAt <= now) {
+    const next = { count: 1, resetAt: now + win };
+    rateLimitBuckets.set(k, next);
+    return { allowed: true, remaining: Math.max(0, lim - 1), resetAt: new Date(next.resetAt).toISOString(), count: 1, limit: lim };
+  }
+  rec.count += 1;
+  return { allowed: rec.count <= lim, remaining: Math.max(0, lim - rec.count), resetAt: new Date(rec.resetAt).toISOString(), count: rec.count, limit: lim };
+}
+
 async function stats() {
   const publishedTestimonials = db.content.testimonials.filter((item) => item && item.published).length;
   return {
@@ -413,6 +447,7 @@ module.exports = {
   listAudit,
   getSecurityState,
   setSecurityState,
+  takeRateLimit,
   stats,
   describe
 };

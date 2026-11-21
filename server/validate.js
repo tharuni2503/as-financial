@@ -46,6 +46,15 @@ function source(value) {
   throw new HttpError(400, 'Image must be a site asset or an uploaded PNG/JPEG/WebP.');
 }
 
+function sourceOptional(value) {
+  if (value === undefined || value === null || value === '') return '';
+  if (typeof value !== 'string') throw new HttpError(400, 'Invalid image.');
+  if (value.length > MAX_DATA_SRC) throw new HttpError(400, 'Image is too large.');
+  if (ASSET_SRC.test(value) && !value.includes('..')) return value;
+  if (DATA_SRC.test(value)) return value;
+  throw new HttpError(400, 'Image must be a site asset or an uploaded PNG/JPEG/WebP.');
+}
+
 function testimonial(item, index) {
   if (!item || typeof item !== 'object') throw new HttpError(400, 'Invalid testimonial entry.');
   const name = text(item.name, 80, { required: true, label: 'name' });
@@ -102,6 +111,38 @@ function images(value) {
   return out;
 }
 
+function lenderItem(item, index) {
+  if (!item || typeof item !== 'object') throw new HttpError(400, 'Invalid lender entry.');
+  const cat = text(item.category || item.c, 20).toLowerCase();
+  const category = (cat === 'psu' || cat === 'private' || cat === 'nbfc') ? cat : 'nbfc';
+  const benefits = Array.isArray(item.benefits || item.b)
+    ? (item.benefits || item.b).map((b) => text(b, 180)).filter(Boolean).slice(0, 8)
+    : [];
+  const products = Array.isArray(item.products || item.p)
+    ? (item.products || item.p).map((p) => text(p, 24).toLowerCase()).filter(Boolean).slice(0, 12)
+    : [];
+  const order = Number.isFinite(Number(item.order)) ? Math.max(0, Math.min(9999, Math.floor(Number(item.order)))) : index;
+  const colorRaw = text(item.color || item.k, 12);
+  return {
+    id: text(item.id, 40) || 'LND-' + (index + 1),
+    name: text(item.name || item.n, 80),
+    category,
+    monogram: text(item.monogram || item.i, 4).toUpperCase() || text(item.name || item.n, 2).toUpperCase().slice(0, 2),
+    color: /^#[0-9a-fA-F]{3,8}$/.test(colorRaw) ? colorRaw : '#163968',
+    logo: sourceOptional(item.logo || item.image || item.logoUrl || item.img || ''),
+    rate: text(item.rate || item.r, 80),
+    emi: text(item.emi, 80),
+    tenure: text(item.tenure || item.t, 80),
+    amount: text(item.amount || item.amt, 80),
+    fee: text(item.fee, 120),
+    benefits,
+    products,
+    active: item.active !== false,
+    published: item.published !== false,
+    order
+  };
+}
+
 function content(section, payload) {
   switch (section) {
     case 'testimonials':
@@ -112,6 +153,8 @@ function content(section, payload) {
       return list(payload, 60, 'posts').map(post);
     case 'images':
       return images(payload);
+    case 'lenders':
+      return list(payload, 120, 'lenders').map(lenderItem).sort((a, b) => (a.order || 0) - (b.order || 0));
     default:
       throw new HttpError(404, 'Unknown content section.');
   }
@@ -166,7 +209,7 @@ function scalar(value, maxString) {
   return null;
 }
 
-function sanitize(value, depth, maxString) {
+function sanitize(value, depth, maxString, keyHint) {
   if (depth > 8) return null;
   if (value === null) return null;
   if (Array.isArray(value)) {
@@ -182,11 +225,16 @@ function sanitize(value, depth, maxString) {
       if (typeof key !== 'string') return;
       const safeKey = clean(key).slice(0, 80);
       if (!safeKey) return;
-      out[safeKey] = sanitize(value[key], depth + 1, maxString);
+      const lower = safeKey.toLowerCase();
+      const isImageKey = /(^|_)(logo|image|img|photo|src|avatar|iconurl|poster)($|_)/.test(lower);
+      const childMax = isImageKey ? Math.max(maxString, MAX_DATA_SRC) : maxString;
+      out[safeKey] = sanitize(value[key], depth + 1, childMax, safeKey);
     });
     return out;
   }
-  return scalar(value, maxString);
+  const effectiveMax = (/logo|image|img|photo|src|avatar|iconurl|poster/i.test(String(keyHint || '')) && maxString < MAX_DATA_SRC)
+    ? MAX_DATA_SRC : maxString;
+  return scalar(value, effectiveMax);
 }
 
 function adminCollection(name, payload) {

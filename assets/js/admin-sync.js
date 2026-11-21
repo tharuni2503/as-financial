@@ -14,6 +14,7 @@
     as_testimonials: 'testimonials',
     as_gallery: 'gallery',
     as_posts: 'posts',
+    as_lenders: 'lenders',
     as_content_images: 'images'
   };
 

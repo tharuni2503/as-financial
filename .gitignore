@@ -6,3 +6,9 @@ desktop.ini
 node_modules/
 .vercel/
 data/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+!.env.sample

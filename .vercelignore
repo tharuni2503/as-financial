@@ -1,8 +1,10 @@
 .git
 .gitignore
 data
+tests
 *.zip
 *.log
+*.bak
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -14,3 +16,5 @@ Thumbs.db
 node_modules/.cache
 AS-Financial-Light-Theme-updated
 Downloads
+IMPLEMENTATION_PLAN.md
+README.md

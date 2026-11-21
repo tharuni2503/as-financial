@@ -95,6 +95,103 @@
     window.addEventListener('scroll', onScroll, { passive: true });
   }
 
+  /* ---------- live ticker (under navbar) ---------- */
+  (function initLiveTicker() {
+    try {
+      if (document.body && document.body.classList.contains('admin-page')) return;
+      const siteHeader = document.querySelector('.site-header');
+      if (!siteHeader || document.querySelector('.live-ticker')) return;
+
+      const fallbackItems = [
+        'Compare loan options from SBI, HDFC Bank, ICICI Bank, Axis Bank & Kotak Mahindra Bank',
+        'Public sector banks: Bank of Baroda, Canara Bank, Union Bank, PNB & Indian Bank',
+        'Private banks: IDFC FIRST Bank, Yes Bank, Federal Bank, IndusInd Bank & Bandhan Bank',
+        'NBFCs & HFCs: Bajaj Finserv, Tata Capital, HDB Financial, L&T Finance & LIC Housing Finance',
+        'Rates & terms indicative*, subject to lender policy & eligibility',
+        'Call +91 91827 03079 • Medipalli, Hyderabad'
+      ];
+
+      const ticker = document.createElement('div');
+      ticker.className = 'live-ticker';
+      ticker.setAttribute('role', 'status');
+      ticker.setAttribute('aria-label', 'Live lender updates');
+      ticker.innerHTML =
+        '<span class="live-ticker-badge"><span class="live-ticker-dot" aria-hidden="true"></span>LIVE</span>' +
+        '<div class="live-ticker-track"><div class="live-ticker-marquee"></div></div>';
+      siteHeader.insertAdjacentElement('afterend', ticker);
+      document.body.classList.add('has-live-ticker');
+
+      const marquee = ticker.querySelector('.live-ticker-marquee');
+      const escHtml = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      function renderItems(items) {
+        if (!marquee) return;
+        const list = (items && items.length ? items : fallbackItems).slice(0, 60);
+        const row = list.map(t => '<span class="live-ticker-item">' + escHtml(t) + '</span>').join('');
+        marquee.innerHTML = row + row;
+      }
+
+      const prodShort = { home: 'Home', lap: 'LAP', personal: 'Personal', business: 'Business', education: 'Education', plot: 'Plot', car: 'Car', vehicle: 'Vehicle', gold: 'Gold', transfer: 'BT', msme: 'MSME' };
+      function normalizeLenders(raw) {
+        const list = Array.isArray(raw && raw.list) ? raw.list : (Array.isArray(raw) ? raw : []);
+        return list.map(l => {
+          if (!l || typeof l !== 'object') return null;
+          const name = String(l.n || l.name || '').trim();
+          if (!name) return null;
+          const rate = String(l.r || l.rate || l.interestRate || '').trim();
+          const tenure = String(l.t || l.tenure || '').trim();
+          const amount = String(l.amt || l.amount || '').trim();
+          const products = Array.isArray(l.p) ? l.p : (Array.isArray(l.products) ? l.products : []);
+          return { name, rate, tenure, amount, products };
+        }).filter(Boolean);
+      }
+      function buildItems(lenders, productsMap) {
+        const pmap = productsMap || (window.AS_LENDERS && window.AS_LENDERS.products) || prodShort;
+        const out = [];
+        lenders.slice(0, 24).forEach(l => {
+          const parts = [l.name];
+          if (l.rate) parts.push(l.rate.replace(/\s+/g, ' '));
+          if (l.tenure) parts.push(l.tenure);
+          else if (l.amount) parts.push(l.amount);
+          const prods = (l.products || []).map(p => pmap[p] || prodShort[p] || p).filter(Boolean).slice(0, 3);
+          if (prods.length) parts.push(prods.join(', ') + ((l.products || []).length > 3 ? ' & more' : ''));
+          out.push(parts.join(' • '));
+        });
+        if (out.length) {
+          out.push('Rates, tenure & amounts are indicative* • Subject to lender policy & eligibility');
+          out.push('Compare banks & NBFCs with AS Financial • Call +91 91827 03079');
+        }
+        return out.length ? out : fallbackItems;
+      }
+
+      async function loadAndRender() {
+        try {
+          let lenders = normalizeLenders(window.AS_LENDERS);
+          let pmap = (window.AS_LENDERS && window.AS_LENDERS.products) || null;
+          if (!lenders.length && window.ASBackend && window.ASBackend.request) {
+            const data = await window.ASBackend.request('api/content');
+            lenders = normalizeLenders(data && data.lenders);
+          }
+          if (lenders.length) renderItems(buildItems(lenders, pmap));
+        } catch (e) { /* keep fallback */ }
+      }
+
+      renderItems(fallbackItems);
+      loadAndRender();
+      // lenders.js may load after this script (deferred order varies by page); retry shortly
+      let tries = 0;
+      const retry = setInterval(() => {
+        tries++;
+        if (window.AS_LENDERS && Array.isArray(window.AS_LENDERS.list) && window.AS_LENDERS.list.length) {
+          renderItems(buildItems(normalizeLenders(window.AS_LENDERS), window.AS_LENDERS.products));
+          clearInterval(retry);
+        } else if (tries >= 20) {
+          clearInterval(retry);
+        }
+      }, 300);
+      window.addEventListener('load', () => { loadAndRender().catch(() => {}); }, { once: true });
+    } catch (e) { /* no-op */ }
+  })();
+
   /* ---------- mobile nav ---------- */
   let lastMenuTrigger = null;
   function closeMobileNav(restoreFocus) {
@@ -154,6 +251,14 @@
   }
 
   /* ---------- FAQ ---------- */
+  function asSetFaqState(item, open) {
+    const btn = item.querySelector('.faq-q');
+    const panel = item.querySelector('.faq-a');
+    if (!btn || !panel) return;
+    item.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', String(open));
+    panel.style.maxHeight = open ? panel.scrollHeight + 'px' : '';
+  }
   document.querySelectorAll('.faq-item').forEach(item => {
     const btn = item.querySelector('.faq-q');
     const panel = item.querySelector('.faq-a');
@@ -163,16 +268,20 @@
       const parent = item.parentElement;
       if (parent) {
         parent.querySelectorAll('.faq-item.open').forEach(other => {
-          if (other !== item) {
-            other.classList.remove('open');
-            other.querySelector('.faq-q').setAttribute('aria-expanded', 'false');
-            other.querySelector('.faq-a').style.maxHeight = '';
-          }
+          if (other !== item) asSetFaqState(other, false);
         });
       }
-      item.classList.toggle('open', !isOpen);
-      btn.setAttribute('aria-expanded', String(!isOpen));
-      panel.style.maxHeight = isOpen ? '' : panel.scrollHeight + 'px';
+      asSetFaqState(item, !isOpen);
+    });
+    item.addEventListener('mouseenter', () => {
+      if (item.classList.contains('open')) return;
+      const parent = item.parentElement;
+      if (parent) {
+        parent.querySelectorAll('.faq-item.open').forEach(other => {
+          if (other !== item) asSetFaqState(other, false);
+        });
+      }
+      asSetFaqState(item, true);
     });
   });
 
@@ -886,6 +995,122 @@
     const images = server && Object.keys(server).length ? server : local();
     apply(images);
   });
+})();
+
+/* ---------- homepage offerings: compact popup cards ---------- */
+(function () {
+  const grid = document.getElementById('products-grid');
+  if (!grid) return;
+  const cards = Array.prototype.slice.call(grid.querySelectorAll('.pcard'));
+  if (!cards.length) return;
+
+  cards.forEach((card) => {
+    if (card.dataset.enhanced === 'popup') return;
+    const body = card.querySelector('.pcard-body');
+    if (!body) return;
+    const head = body.querySelector('.pcard-head');
+    const tag = body.querySelector('.tag');
+    const ul = body.querySelector('ul');
+    const foot = body.querySelector('.pcard-foot');
+    if (!head) return;
+
+    const popup = document.createElement('div');
+    popup.className = 'pcard-popup';
+    const headClone = head.cloneNode(true);
+    headClone.classList.add('pcard-head-popup');
+    popup.appendChild(headClone);
+    if (tag) popup.appendChild(tag);
+    if (ul) popup.appendChild(ul);
+    if (foot) popup.appendChild(foot);
+
+    body.innerHTML = '';
+    body.appendChild(head);
+    card.appendChild(popup);
+
+    function setRevealed(c, on) {
+      const pop = c.querySelector('.pcard-popup');
+      c.classList.toggle('is-revealed', !!on);
+      if (pop) {
+        if (on) { pop.style.setProperty('opacity', '1', 'important'); pop.style.setProperty('visibility', 'visible', 'important'); pop.style.setProperty('transform', 'translateY(0)', 'important'); }
+        else { pop.style.removeProperty('opacity'); pop.style.removeProperty('visibility'); pop.style.removeProperty('transform'); }
+      }
+    }
+
+    // Tap/click to reveal popup (desktop + touch)
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('a, button, input, select, textarea, label')) return;
+      const open = card.classList.contains('is-revealed');
+      if (!open) {
+        e.preventDefault();
+        grid.querySelectorAll('.pcard.is-revealed').forEach((c) => { if (c !== card) setRevealed(c, false); });
+        setRevealed(card, true);
+      } else {
+        setRevealed(card, false);
+      }
+    });
+
+    card._setRevealed = setRevealed;
+    card.dataset.enhanced = 'popup';
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#products-grid .pcard')) {
+      grid.querySelectorAll('.pcard.is-revealed').forEach((c) => (c._setRevealed ? c._setRevealed(c, false) : c.classList.remove('is-revealed')));
+    }
+  });
+})();
+
+/* ---------- homepage offerings: horizontal scroll arrows ---------- */
+(function () {
+  const grid = document.getElementById('products-grid');
+  if (!grid || grid.dataset.navReady === '1') return;
+  const parent = grid.parentNode;
+  if (!parent) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pgrid-wrap';
+  parent.insertBefore(wrap, grid);
+  wrap.appendChild(grid);
+
+  const makeBtn = (dir) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pgrid-nav pgrid-nav-' + dir;
+    btn.setAttribute('aria-label', dir === 'prev' ? 'Scroll offerings left' : 'Scroll offerings right');
+    const path = dir === 'prev' ? 'M15 18l-6-6 6-6' : 'M9 6l6 6-6 6';
+    btn.innerHTML = '<svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="' + path + '"></path></svg>';
+    return btn;
+  };
+  const prev = makeBtn('prev');
+  const next = makeBtn('next');
+  wrap.appendChild(prev);
+  wrap.appendChild(next);
+
+  const scrollByAmount = (dir) => {
+    const amount = Math.max(240, Math.round(grid.clientWidth * 0.8));
+    grid.scrollBy({ left: dir * amount, behavior: 'smooth' });
+  };
+  prev.addEventListener('click', () => scrollByAmount(-1));
+  next.addEventListener('click', () => scrollByAmount(1));
+
+  const update = () => {
+    const max = grid.scrollWidth - grid.clientWidth;
+    const left = grid.scrollLeft;
+    const canScroll = max > 4;
+    prev.disabled = !canScroll || left <= 2;
+    next.disabled = !canScroll || left >= max - 2;
+    wrap.classList.toggle('can-scroll', canScroll);
+  };
+
+  grid.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  if ('ResizeObserver' in window) {
+    try { new ResizeObserver(update).observe(grid); } catch (e) {}
+  }
+  setTimeout(update, 0);
+  setTimeout(update, 300);
+  window.addEventListener('load', update, { once: true });
+  grid.dataset.navReady = '1';
 })();
 
 /* ---------- homepage offerings: show more ---------- */

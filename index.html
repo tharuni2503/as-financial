@@ -10,14 +10,17 @@
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#10294D">
+  <meta name="color-scheme" content="light">
+  <link rel="preload" as="image" href="assets/img/hero-family-home.jpg">
   <link rel="icon" href="assets/img/brand/favicon.png" type="image/png">
   <link rel="alternate icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/img/brand/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261118z22">
-  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261118z22">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261120z40">
+  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261120z40">
+  <link rel="stylesheet" href="assets/css/lenders.css?v=20261120z40">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -61,20 +64,30 @@
   "currenciesAccepted": "INR"
 }
 </script>
+
+  <link rel="canonical" href="https://as-financial-services-psi.vercel.app/">
+  <meta name="robots" content="index, follow">
+  <meta property="og:url" content="https://as-financial-services-psi.vercel.app/">
+  <meta property="og:site_name" content="AS Financial Services and Solutions">
+  <meta property="og:locale" content="en_IN">
+
+  <meta property="og:image" content="https://as-financial-services-psi.vercel.app/assets/img/hero-family-home.jpg">
+  <meta property="og:image:alt" content="AS Financial Services and Solutions">
+  <meta name="twitter:image" content="https://as-financial-services-psi.vercel.app/assets/img/hero-family-home.jpg">
+  <meta name="twitter:image:alt" content="AS Financial Services and Solutions">
 </head>
-<body>
+<body class="page-home">
   <a class="skip-link" href="#main">Skip to content</a>
 
   <!-- Announcement -->
   <div class="topbar">
     <div class="container">
       <div class="topbar-left">
-        <span class="topbar-badge"><span class="dot"></span> Loan assistance in Medipalli, Hyderabad</span>
         <span class="topbar-item"><svg class="icon" aria-hidden="true"><use href="#i-pin"></use></svg> <span class="full">Medipalli, Hyderabad</span></span>
         <span class="topbar-item"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg> <span class="full" data-setting="hours">Mon &ndash; Sat &middot; 9:30 AM &ndash; 7:00 PM</span></span>
       </div>
       <div class="topbar-right">
-        <a class="topbar-item" href="tel:+919182703079" data-setting="phone"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg> 91827 03079</a>
+        <a class="topbar-item" href="tel:+919182703079" data-setting="phone" aria-label="Call +91 91827 03079"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg> 91827 03079</a>
         <a class="topbar-item" href="admin.html"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg> Admin</a>
       </div>
     </div>
@@ -86,7 +99,7 @@
       <a class="brand" href="index.html" aria-label="AS Financial Services &amp; Solutions &mdash; home"><img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions &mdash; Your Goals, Our Solutions" width="200" height="51" decoding="async" loading="lazy"></a>
 
       <nav class="nav" aria-label="Primary">
-        <a class="nav-link" href="index.html">Home</a>
+        <a class="nav-link" href="index.html" aria-current="page">Home</a>
         <div class="nav-item">
           <a class="nav-link" href="loans.html">Loan Products <svg class="icon icon-chevron" aria-hidden="true"><use href="#i-chevron"></use></svg></a>
           <div class="dropdown dropdown-wide">
@@ -104,7 +117,7 @@
             <a href="loans.html#insurance"><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg><span>Insurance<small>Life, health &amp; general cover</small></span></a>
           </div>
         </div>
-        <div class="nav-item nav-tools"><a class="nav-link" href="emi-calculator.html">Calculators <svg class="icon icon-chevron" aria-hidden="true"><use href="#i-chevron"></use></svg></a><div class="dropdown dropdown-tools"><span class="dropdown-head">Planning tools</span><a href="emi-calculator.html"><svg class="icon" aria-hidden="true"><use href="#i-calculator"></use></svg><span>EMI Calculator<small>Monthly EMI, interest &amp; amortisation</small></span></a><a href="balance-transfer-calculator.html"><svg class="icon" aria-hidden="true"><use href="#i-transfer"></use></svg><span>Balance Transfer<small>Compare rates and estimate savings</small></span></a><a href="prepayment-calculator.html"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg><span>Prepayment<small>Part-payment impact on tenure &amp; interest</small></span></a><a href="tenure-calculator.html"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg><span>Loan Tenure<small>Tenure needed for a target EMI</small></span></a><a href="buy-vs-rent-calculator.html"><svg class="icon" aria-hidden="true"><use href="#i-key"></use></svg><span>Buy vs Rent<small>Compare indicative monthly costs</small></span></a><a href="home-loan-tax-saving-calculator.html"><svg class="icon" aria-hidden="true"><use href="#i-wallet"></use></svg><span>Tax Saving<small>Home loan tax benefit estimator</small></span></a></div></div>
+        <a class="nav-link" href="#calculator">Calculators</a>
         <a class="nav-link" href="#why-us">Why AS</a>
         <a class="nav-link" href="#partners">Partners</a>
         <a class="nav-link" href="guides.html">Guides</a>
@@ -117,8 +130,8 @@
           <svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg>
           <span><small>Talk to an advisor</small><strong>91827 03079</strong></span>
         </a>
-        <button class="btn btn-gold" data-popup-open="apply-popup">Apply Now <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
-        <a class="header-call-btn" href="tel:+919182703079" data-setting="phone" aria-label="Call advisor"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg></a><button class="menu-toggle" data-menu-open aria-label="Open menu">
+        <button type="button" class="btn btn-gold" data-popup-open="apply-popup">Apply Now <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+        <a class="header-call-btn" href="tel:+919182703079" data-setting="phone" aria-label="Call advisor"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg></a><button type="button" class="menu-toggle" data-menu-open aria-label="Open menu">
           <svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg>
         </button>
       </div>
@@ -129,18 +142,18 @@
   <div class="mobile-nav" aria-label="Mobile menu">
     <div class="mobile-nav-head">
       <a class="brand" href="index.html"><img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions &mdash; Your Goals, Our Solutions" width="200" height="51" decoding="async" loading="lazy"></a>
-      <button class="menu-toggle" data-menu-close aria-label="Close menu"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
+      <button type="button" class="menu-toggle" data-menu-close aria-label="Close menu"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
     </div>
-    <a class="m-link" href="index.html">Home</a>
+    <a class="m-link" href="index.html" aria-current="page">Home</a>
     <a class="m-link" href="loans.html">Loan Products <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a>
-    <a class="m-link" href="emi-calculator.html">EMI Calculator</a>
-    <a class="m-link" href="emi-calculator.html">Calculators</a><div class="m-tools" aria-label="Calculator shortcuts"><span class="m-tools-label">Popular calculators</span><div class="m-tools-grid"><a href="emi-calculator.html">EMI</a><a href="balance-transfer-calculator.html">Balance transfer</a><a href="prepayment-calculator.html">Prepayment</a><a href="tenure-calculator.html">Tenure</a><a href="buy-vs-rent-calculator.html">Buy vs rent</a><a href="home-loan-tax-saving-calculator.html">Tax saving</a></div></div>
+    <a class="m-link" href="#calculator">EMI Calculator</a>
+    <a class="m-link" href="#calculator">Calculators</a>
     <a class="m-link" href="#why-us">Why AS</a>
     <a class="m-link" href="#partners">Our Partners</a>
     <a class="m-link" href="about.html">About Us</a>
     <a class="m-link" href="contact.html">Contact</a>
     <div class="m-cta">
-      <button class="btn btn-gold btn-block" data-popup-open="apply-popup">Apply for a loan</button>
+      <button type="button" class="btn btn-gold btn-block" data-popup-open="apply-popup">Apply for a loan</button>
       <a class="btn btn-outline btn-block" href="tel:+919182703079" data-setting="phone"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-phone"></use></svg> Call 91827 03079</a>
     </div>
     <div class="m-contact">
@@ -151,151 +164,96 @@
 
   <main id="main">
     <!-- Hero -->
-    <section class="hero2" id="hero">
+    <section class="hero2 hero-clean" id="hero">
       <div class="container hero2-grid hero-ambak">
         <div class="hero2-copy">
-          <span class="pill pill-gold"><span class="dot"></span> Your Goals, Our Solutions &middot; Medipalli, Hyderabad</span>
-          <h1>Home loans, <span class="serif">simplified for you.</span></h1>
-          <p class="hero2-lede">Compare options across <strong>banks and NBFCs under one roof</strong>, get guided documentation support, and move from enquiry to approval with one dedicated advisor.</p>
-
-          <div class="hero-float-cards" aria-label="Highlights">
-            <div class="hero-float-card"><small>Fast guidance</small><b>Quick process</b><span>Clear steps from start to finish</span></div>
-            <div class="hero-float-card"><small>Less hassle</small><b>Minimal documentation</b><span>Know exactly what’s needed</span></div>
-            <div class="hero-float-card"><small>Human support</small><b>Dedicated advisor</b><span>Phone, WhatsApp & in-office help</span></div>
-          </div>
+          <span class="pill pill-gold"><span class="dot"></span> Loan assistance &middot; Medipalli, Hyderabad</span>
+          <h1>Find the right loan, <span class="serif">with clear guidance.</span></h1>
+          <p class="hero2-lede">Compare lender options and get step-by-step support for your loan enquiry.</p>
 
           <div class="hero2-cta">
-            <button class="btn btn-gold btn-lg" data-popup-open="apply-popup">Check loan options <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
-            <a class="btn btn-outline btn-lg" href="emi-calculator.html"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-calculator"></use></svg> Explore calculators</a>
+            <button type="button" class="btn btn-gold btn-lg" data-popup-open="apply-popup">Apply now <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+            <a class="btn btn-outline btn-lg" href="tel:+919182703079" data-setting="phone"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-phone"></use></svg> Call an advisor</a>
           </div>
-          <div class="hero2-phone">
-            <span>Visit office<b>Panchavati Colony, Medipalli</b></span>
-          </div>
+
+          <ul class="hero2-points" aria-label="What we help with">
+            <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg> Home, personal &amp; business loans</li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg> Banks &amp; NBFC options</li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg> In-office &amp; phone support</li>
+          </ul>
         </div>
 
-        <div class="hero2-visual hero3d-wrap">
-          <div class="hero3d-scene" id="hero3d-scene">
-            <div class="hero3d-orb orb-a" aria-hidden="true"></div>
-            <div class="hero3d-orb orb-b" aria-hidden="true"></div>
-
-            <article class="hero3d-card hero3d-main tilt-live">
-              <img src="assets/img/hero-family-home.jpg" alt="Family planning their new home with AS Financial support" width="1600" height="901" fetchpriority="high" decoding="async">
-              <span class="hero3d-badge"><svg class="icon" aria-hidden="true"><use href="#i-pin"></use></svg> Medipalli, Hyderabad</span>
-              <div class="hero3d-overlay">
-                <div class="hero3d-glass">
-                  <span class="ico"><svg class="icon" aria-hidden="true"><use href="#i-sparkle"></use></svg></span>
-                  <div class="hero3d-glass-copy">
-                    <small>Compare &middot; Choose &middot; Apply</small>
-                    <b>Banks &amp; NBFCs under one roof</b>
-                    <span>Home &middot; Personal &middot; Business &middot; Mortgage</span>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            <div class="hero3d-rail">
-              <div class="hero3d-card hero3d-stat tilt-live">
-                <div class="hero3d-card-top">
-                  <span class="hero3d-ico"><svg class="icon" aria-hidden="true"><use href="#i-calculator"></use></svg></span>
-                  <div><small>Planning tools</small><b>6 loan calculators</b></div>
-                </div>
-                <div class="hero3d-card-foot">
-                  <span>EMI, transfer &amp; prepayment</span>
-                  <a href="emi-calculator.html">Open tools <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
-                </div>
-              </div>
-
-              <a class="hero3d-card hero3d-contact tilt-live" href="tel:+919182703079">
-                <span class="hero3d-ico"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg></span>
-                <span class="hero3d-contact-copy">
-                  <small>Talk to an advisor</small>
-                  <b data-setting="phone">+91 91827 03079</b>
-                  <span data-setting="hours">Mon &ndash; Sat &middot; 9:30 AM &ndash; 7:00 PM</span>
-                </span>
-              </a>
-            </div>
-          </div>
+        <div class="hero2-visual hero-clean-visual">
+          <figure class="hero-clean-frame">
+            <img src="assets/img/hero-family-home.jpg" alt="Family discussing loan options with AS Financial Services and Solutions" width="1600" height="901" fetchpriority="high" decoding="async">
+            <figcaption class="hero-clean-caption">
+              <span class="hero-clean-caption-title">AS Financial Services &amp; Solutions</span>
+              <span>Panchavati Colony Road No. 1, Medipalli, Hyderabad</span>
+            </figcaption>
+          </figure>
         </div>
       </div>
     </section>
 
     <!-- Trust strip -->
-    <div class="trust-strip" aria-label="Why customers choose AS Financial">
+    <div class="trust-strip sec-trust" aria-label="Why customers choose AS Financial">
       <div class="container">
-        <div class="trust-item"><span class="ico"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg></span><span><b>Quick Process</b><span class="s">Fast, guided steps</span></span></div>
-        <div class="trust-item"><span class="ico"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg></span><span><b>Minimal Documentation</b><span class="s">Only what is needed</span></span></div>
-        <div class="trust-item"><span class="ico"><svg class="icon" aria-hidden="true"><use href="#i-percent"></use></svg></span><span><b>Competitive Rates</b><span class="s">Compare many lenders</span></span></div>
-        <div class="trust-item"><span class="ico"><svg class="icon" aria-hidden="true"><use href="#i-handshake"></use></svg></span><span><b>Trusted Partnership</b><span class="s">Banks &amp; NBFCs</span></span></div>
-        <div class="trust-item"><span class="ico"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg></span><span><b>Dedicated Support</b><span class="s">One advisor, start to finish</span></span></div>
+        <div class="trust-item"><span class="ico"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg></span><span><b>Clear Process</b><span class="s">Step-by-step guidance</span></span></div>
+        <div class="trust-item"><span class="ico"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg></span><span><b>Document Guidance</b><span class="s">Know what’s required</span></span></div>
+        <div class="trust-item"><span class="ico"><svg class="icon" aria-hidden="true"><use href="#i-percent"></use></svg></span><span><b>Compare Options</b><span class="s">Across banks &amp; NBFCs</span></span></div>
+        <div class="trust-item"><span class="ico"><svg class="icon" aria-hidden="true"><use href="#i-handshake"></use></svg></span><span><b>Lender Network</b><span class="s">Multiple lending partners</span></span></div>
+        <div class="trust-item"><span class="ico"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg></span><span><b>Personal Support</b><span class="s">Phone, WhatsApp &amp; office</span></span></div>
       </div>
     </div>
 
     <!-- Partners -->
-    <section class="section section-white" id="partners">
+    <section class="section section-white sec-partners" id="partners">
       <div class="container">
         <div class="section-head center reveal">
           <div class="eyebrow center">Our lender network</div>
-          <h2>All leading banks &amp; NBFCs <span class="serif">under one roof.</span></h2>
-          <p>One conversation, many lenders. We help you compare options across public sector banks, private banks and NBFCs/HFCs, then choose the one that suits your profile.</p>
+          <h2>Compare banks &amp; NBFCs <span class="serif">with confidence.</span></h2>
+          <p>Explore indicative lender details and product highlights. Share your requirement and we can help you review suitable options based on your profile and lender criteria.</p>
         </div>
 
-        <div class="under-one-roof reveal">
-          <strong>Compare &nbsp;|&nbsp; Choose &nbsp;|&nbsp; Get Approved</strong>
-          <span>Multiple banks &middot; Multiple NBFCs &middot; One trusted partner</span>
+        <div class="lp2-stats" aria-label="Lender network highlights">
+          <div class="lp2-stat reveal"><b data-lp2-count>37</b><span>Lending partners</span></div>
+          <div class="lp2-stat reveal"><b>3</b><span>Lender categories</span></div>
+          <div class="lp2-stat reveal"><b>10+</b><span>Loan products</span></div>
+          <div class="lp2-stat reveal"><b>1:1</b><span>Dedicated advisor</span></div>
         </div>
 
-        <div class="partner-tabs reveal" data-partner-tabs>
-          <button class="partner-tab active" data-filter="all">All partners</button>
-          <button class="partner-tab" data-filter="psu">Public sector banks</button>
-          <button class="partner-tab" data-filter="private">Private banks</button>
-          <button class="partner-tab" data-filter="nbfc">NBFCs &amp; HFCs</button>
+        <div class="lp2-toolbar reveal">
+          <div class="lp2-tabs" data-lp2-tabs role="group" aria-label="Filter lenders">
+            <button class="lp2-tab active" type="button" data-filter="all" aria-pressed="true">All lenders <span class="n" data-lp2-tabcount="all">37</span></button>
+            <button class="lp2-tab" type="button" data-filter="psu" aria-pressed="false">Public sector <span class="n" data-lp2-tabcount="psu">10</span></button>
+            <button class="lp2-tab" type="button" data-filter="private" aria-pressed="false">Private banks <span class="n" data-lp2-tabcount="private">10</span></button>
+            <button class="lp2-tab" type="button" data-filter="nbfc" aria-pressed="false">NBFCs &amp; HFCs <span class="n" data-lp2-tabcount="nbfc">17</span></button>
+          </div>
+          <label class="lp2-search">
+            <svg class="icon" aria-hidden="true"><use href="#i-search"></use></svg>
+            <span class="sr-only" style="position:absolute;left:-9999px">Search lenders</span>
+            <input type="search" data-lp2-search placeholder="Search bank, NBFC or loan type" autocomplete="off" aria-label="Search lenders by bank, NBFC or loan type">
+          </label>
         </div>
 
-        <div class="logo-grid reveal" data-partner-grid>
-          <div class="logo-tile" data-category="psu"><span>SBI<small>Public sector bank</small></span></div>
-          <div class="logo-tile" data-category="private"><span>HDFC Bank<small>Private bank</small></span></div>
-          <div class="logo-tile" data-category="private"><span>ICICI Bank<small>Private bank</small></span></div>
-          <div class="logo-tile" data-category="private"><span>Axis Bank<small>Private bank</small></span></div>
-          <div class="logo-tile" data-category="private"><span>Kotak Mahindra Bank<small>Private bank</small></span></div>
-          <div class="logo-tile" data-category="psu"><span>Bank of Baroda<small>Public sector bank</small></span></div>
-          <div class="logo-tile" data-category="psu"><span>Canara Bank<small>Public sector bank</small></span></div>
-          <div class="logo-tile" data-category="psu"><span>Union Bank of India<small>Public sector bank</small></span></div>
-          <div class="logo-tile" data-category="psu"><span>Punjab National Bank<small>Public sector bank</small></span></div>
-          <div class="logo-tile" data-category="psu"><span>Indian Bank<small>Public sector bank</small></span></div>
-          <div class="logo-tile" data-category="private"><span>IDFC FIRST Bank<small>Private bank</small></span></div>
-          <div class="logo-tile" data-category="private"><span>Yes Bank<small>Private bank</small></span></div>
-          <div class="logo-tile" data-category="private"><span>Federal Bank<small>Private bank</small></span></div>
-          <div class="logo-tile" data-category="private"><span>IndusInd Bank<small>Private bank</small></span></div>
-          <div class="logo-tile" data-category="private"><span>Bandhan Bank<small>Private bank</small></span></div>
-          <div class="logo-tile" data-category="psu"><span>UCO Bank<small>Public sector bank</small></span></div>
-          <div class="logo-tile" data-category="psu"><span>Central Bank of India<small>Public sector bank</small></span></div>
-          <div class="logo-tile" data-category="psu"><span>Indian Overseas Bank<small>Public sector bank</small></span></div>
-          <div class="logo-tile" data-category="psu"><span>Bank of India<small>Public sector bank</small></span></div>
-          <div class="logo-tile" data-category="private"><span>IDBI Bank<small>Private bank</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>Bajaj Finserv<small>NBFC / HFC</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>Tata Capital<small>NBFC / HFC</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>HDB Financial Services<small>NBFC / HFC</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>L&amp;T Finance<small>NBFC / HFC</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>Muthoot Finance<small>NBFC / HFC</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>Shriram Finance<small>NBFC / HFC</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>Cholamandalam<small>NBFC / HFC</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>Edelweiss<small>NBFC / HFC</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>IIFL Finance<small>NBFC / HFC</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>Sundaram Finance<small>NBFC / HFC</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>Mahindra Finance<small>NBFC / HFC</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>Hero FinCorp<small>NBFC / HFC</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>Shriram City<small>NBFC / HFC</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>CreditAccess Grameen<small>NBFC / HFC</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>Tata Motors Finance<small>NBFC / HFC</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>LIC Housing Finance<small>NBFC / HFC</small></span></div>
-          <div class="logo-tile" data-category="nbfc"><span>Reliance Home Finance<small>NBFC / HFC</small></span></div>
+        <div class="lp2-grid" data-lp2-grid aria-live="polite"></div>
+        <p class="lp2-empty" data-lp2-empty hidden>No lender matches your search. Try another name, category or loan type, or ask our advisor for help.</p>
+        <div class="lp2-more"><button class="btn btn-outline" type="button" data-lp2-more>Show more lenders</button></div>
+
+        <div class="lp2-help reveal">
+          <div>
+            <h3>Not sure which lender fits your profile?</h3>
+            <p>Tell us your requirement and we’ll suggest suitable lender options, documents and next steps.</p>
+          </div>
+          <button class="btn btn-gold" type="button" data-popup-open="apply-popup">Get a shortlist <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
         </div>
-        <p style="text-align:center;font-size:.72rem;color:#55677b;margin-top:18px">Partner names and marks belong to their respective owners. Lender availability depends on product, profile and lender policy.</p>
+
+        <p class="lp2-note">*Interest rates, EMI per ₹1 lakh, loan amount, tenure, processing fees/charges and other terms shown are indicative and may change. Actual offers depend on lender policy, product, property, eligibility, credit profile and market conditions. No approval, rate or amount is guaranteed. Lender names and marks belong to their respective owners; coloured initials are not official logos.</p>
       </div>
     </section>
 
     <!-- Products -->
-    <section class="section section-cream" id="products">
+    <section class="section section-cream sec-products" id="products">
       <div class="container">
         <div class="section-head center reveal">
           <div class="eyebrow center">Our offerings</div>
@@ -305,7 +263,7 @@
 
         <div class="pgrid" id="products-grid">
           <article class="pcard reveal" data-content-img="home-loan">
-            <div class="pcard-media"><img src="assets/img/poster/home-loan.jpg" alt="Modern family home" loading="lazy" decoding="async"></div>
+            <div class="pcard-media"><img height="190" width="408" src="assets/img/poster/home-loan.jpg" alt="Modern family home" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
               <div class="pcard-head"><span class="pcard-ico"><svg class="icon" aria-hidden="true"><use href="#i-home"></use></svg></span><h3>Home Loans</h3></div>
               <p class="tag">Own your dream home</p>
@@ -314,7 +272,7 @@
             </div>
           </article>
           <article class="pcard reveal" data-content-img="mortgage">
-            <div class="pcard-media"><img src="assets/img/poster/mortgage.jpg" alt="House model with keys" loading="lazy" decoding="async"></div>
+            <div class="pcard-media"><img height="206" width="436" src="assets/img/poster/mortgage.jpg" alt="House model with keys" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
               <div class="pcard-head"><span class="pcard-ico"><svg class="icon" aria-hidden="true"><use href="#i-key"></use></svg></span><h3>Mortgage Loans</h3></div>
               <p class="tag">Leverage your property</p>
@@ -323,7 +281,7 @@
             </div>
           </article>
           <article class="pcard reveal" data-content-img="personal-loan">
-            <div class="pcard-media"><img src="assets/img/poster/personal-loan.jpg" alt="Smiling couple" loading="lazy" decoding="async"></div>
+            <div class="pcard-media"><img height="210" width="256" src="assets/img/poster/personal-loan.jpg" alt="Smiling couple" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
               <div class="pcard-head"><span class="pcard-ico"><svg class="icon" aria-hidden="true"><use href="#i-user"></use></svg></span><h3>Personal Loans</h3></div>
               <p class="tag">Fulfil your personal needs</p>
@@ -332,7 +290,7 @@
             </div>
           </article>
           <article class="pcard reveal" data-content-img="business-loan">
-            <div class="pcard-media"><img src="assets/img/poster/business-loan.jpg" alt="Business professional" loading="lazy" decoding="async"></div>
+            <div class="pcard-media"><img height="214" width="254" src="assets/img/poster/business-loan.jpg" alt="Business professional" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
               <div class="pcard-head"><span class="pcard-ico"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"></use></svg></span><h3>Business Loans</h3></div>
               <p class="tag">Grow your business</p>
@@ -341,7 +299,7 @@
             </div>
           </article>
           <article class="pcard reveal" data-content-img="education-loan">
-            <div class="pcard-media"><img src="assets/img/poster/education-loan.jpg" alt="Graduate in gown" loading="lazy" decoding="async"></div>
+            <div class="pcard-media"><img height="214" width="246" src="assets/img/poster/education-loan.jpg" alt="Graduate in gown" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
               <div class="pcard-head"><span class="pcard-ico"><svg class="icon" aria-hidden="true"><use href="#i-graduation"></use></svg></span><h3>Education Loans</h3></div>
               <p class="tag">Build a better future</p>
@@ -350,7 +308,7 @@
             </div>
           </article>
           <article class="pcard reveal" data-content-img="plot-loan">
-            <div class="pcard-media"><img src="assets/img/plot.jpg" alt="Open land at sunrise" loading="lazy" decoding="async"></div>
+            <div class="pcard-media"><img height="563" width="1000" src="assets/img/plot.jpg" alt="Open land at sunrise" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
               <div class="pcard-head"><span class="pcard-ico"><svg class="icon" aria-hidden="true"><use href="#i-plot"></use></svg></span><h3>Plot Loans</h3></div>
               <p class="tag">Make your dream plot a reality</p>
@@ -395,49 +353,15 @@
             <div class="eyebrow">Beyond the usual</div>
             <h3>More solutions &amp; specialised profiles</h3>
             <p>Not every profile fits a standard checklist. Talk to us about your case &mdash; outcomes depend on lender policy, documents and eligibility.</p>
-            <button class="btn btn-navy" data-popup-open="apply-popup" style="margin-top:8px">Discuss my profile <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+            <button type="button" class="btn btn-navy" data-popup-open="apply-popup" style="margin-top:8px">Discuss my profile <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
           </div>
           <ul><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Instant loans</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Gold loans</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Balance transfer (top-up)</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Leased rental discounting loans</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Single document loans</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Agriculture loans</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Notary loans</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Commercial purchase loans</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Industrial property loans</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Cash salary profiles</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Gramakantam profiles</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>CIBIL deviations (550+)</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Without plan permissions</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Technical deviations</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Without ITR profiles</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>GO 111 profiles</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Sale deed amount fully</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Disburse file</span></li></ul>
         </div>
       </div>
     </section>
 
-    <!-- Problem -->
-    <section class="section section-white">
-      <div class="container">
-        <div class="section-head center reveal">
-          <div class="eyebrow center">Why guidance matters</div>
-          <h2>Getting a loan is harder than it <span class="serif">should be.</span></h2>
-          <p>Approval rules, documentation and rate differences can be confusing. We simplify the journey with clear guidance and lender comparisons.</p>
-        </div>
-        <div class="problem-grid">
-          <article class="problem-card reveal">
-            <span class="num" aria-hidden="true">01</span>
-            <div class="problem-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="#i-target"></use></svg></div>
-            <h3>Approval anxiety</h3>
-            <p><strong>Which lender will actually approve my profile?</strong> We help match your requirement and profile with suitable options across banks and NBFCs.</p>
-            <span class="tag">Right fit</span>
-          </article>
-          <article class="problem-card reveal">
-            <span class="num" aria-hidden="true">02</span>
-            <div class="problem-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="#i-eye"></use></svg></div>
-            <h3>Process opacity</h3>
-            <p><strong>What happens after I apply?</strong> Get step-by-step guidance on documents, follow-ups and progress so you’re never left guessing.</p>
-            <span class="tag">Clear process</span>
-          </article>
-          <article class="problem-card reveal">
-            <span class="num" aria-hidden="true">03</span>
-            <div class="problem-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="#i-trending-up"></use></svg></div>
-            <h3>Rate regret</h3>
-            <p><strong>Could I get a better deal?</strong> Compare rates, charges and terms to make a more informed choice &mdash; and revisit options when it makes sense.</p>
-            <span class="tag">Better comparison</span>
-          </article>
-        </div>
-      </div>
-    </section>
-
     <!-- Process -->
-    <section class="section section-cream">
+    <section class="section section-cream sec-process" id="process-home">
       <div class="container">
         <div class="section-head center reveal">
           <div class="eyebrow center">How it works</div>
@@ -454,73 +378,236 @@
       </div>
     </section>
 
-    <!-- Plan smarter: EMI calculator + other tools -->
-    <section class="section section-cream" id="calculator">
+    <!-- Plan smarter: calculators -->
+    <section class="section section-cream sec-calculator" id="calculator">
       <div class="container">
-        <div class="section-head split reveal">
-          <div class="section-head-text">
-            <div class="eyebrow">Plan smarter</div>
-            <h2>Plan smarter. <span class="serif">Plan your loan.</span></h2>
-            <p>Estimate your monthly EMI instantly. Adjust the amount, interest rate and tenure to see how your repayment changes.</p>
-          </div>
-          <a class="btn btn-outline" href="guides.html#calculators">View all calculators <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
+        <div class="section-head center reveal">
+          <div class="eyebrow">Plan smarter</div>
+          <h2>What will this <span class="serif">actually cost me?</span></h2>
+          <p>Estimate EMI, affordability, down payment and balance transfer savings with quick, indicative calculators.</p>
         </div>
 
-        <div class="ambak-calc reveal" data-calculator="mini">
-          <div class="ambak-calc-inputs">
-            <div class="ambak-field">
-              <div class="ambak-field-top">
-                <label for="mini-amount">Loan amount</label>
-                <output data-label="amount">₹40,00,000</output>
+        <div class="calc-tabs-card reveal" data-calc-tabs>
+          <div class="calc-tabs" role="tablist" aria-label="Loan calculators">
+            <button type="button" class="calc-tab is-active" role="tab" aria-selected="true" aria-controls="calc-panel-emi" id="calc-tab-emi" data-calc-tab="emi">EMI Calculator</button>
+            <button type="button" class="calc-tab" role="tab" aria-selected="false" aria-controls="calc-panel-afford" id="calc-tab-afford" data-calc-tab="afford" tabindex="-1">Affordability</button>
+            <button type="button" class="calc-tab" role="tab" aria-selected="false" aria-controls="calc-panel-down" id="calc-tab-down" data-calc-tab="down" tabindex="-1">Down-Payment</button>
+            <button type="button" class="calc-tab" role="tab" aria-selected="false" aria-controls="calc-panel-bt" id="calc-tab-bt" data-calc-tab="bt" tabindex="-1">BT Calculator</button>
+          </div>
+
+          <div class="calc-panels">
+            <div class="calc-panel is-active" role="tabpanel" id="calc-panel-emi" aria-labelledby="calc-tab-emi" data-calc-panel="emi">
+              <div class="ambak-calc ambak-calc-pro">
+                <div class="ambak-calc-inputs">
+                  <div class="ambak-field">
+                    <div class="ambak-field-top"><label for="emi-amount">Loan amount</label><output id="emi-amount-out">₹40,00,000</output></div>
+                    <input id="emi-amount" type="range" min="100000" max="50000000" step="50000" value="4000000">
+                    <div class="ambak-scale"><span>₹1L</span><span>₹5Cr</span></div>
+                  </div>
+                  <div class="ambak-field">
+                    <div class="ambak-field-top"><label for="emi-rate">Rate of interest (p.a.)</label><output id="emi-rate-out">8.50%</output></div>
+                    <input id="emi-rate" type="range" min="5" max="20" step="0.05" value="8.5">
+                    <div class="ambak-scale"><span>5%</span><span>20%</span></div>
+                  </div>
+                  <div class="ambak-field">
+                    <div class="ambak-field-top"><label for="emi-tenure">Loan tenure (years)</label><output id="emi-tenure-out">20 years</output></div>
+                    <input id="emi-tenure" type="range" min="1" max="30" step="1" value="20">
+                    <div class="ambak-scale"><span>1 yr</span><span>30 yrs</span></div>
+                  </div>
+                </div>
+                <div class="ambak-calc-result">
+                  <div class="ambak-result-top">
+                    <div>
+                      <div class="ambak-result-label">Monthly EMI</div>
+                      <div class="ambak-emi"><span id="emi-out">₹34,713</span></div>
+                      <p class="ambak-emi-sub">Estimated monthly instalment*</p>
+                    </div>
+                    <div class="ambak-donut-wrap" aria-hidden="true">
+                      <svg class="ambak-donut" viewBox="0 0 120 120" role="img">
+                        <circle cx="60" cy="60" r="52" class="ambak-donut-track"></circle>
+                        <circle id="emi-donut-principal" cx="60" cy="60" r="52" class="ambak-donut-principal"></circle>
+                        <circle id="emi-donut-interest" cx="60" cy="60" r="52" class="ambak-donut-interest"></circle>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="ambak-legend">
+                    <div class="ambak-legend-item"><span class="ambak-dot principal"></span><span>Principal</span><b id="emi-principal-pct">48%</b></div>
+                    <div class="ambak-legend-item"><span class="ambak-dot interest"></span><span>Interest</span><b id="emi-interest-pct">52%</b></div>
+                  </div>
+                  <div class="ambak-result-grid">
+                    <div><span>Principal amount</span><b id="emi-principal">₹40,00,000</b></div>
+                    <div><span>Total interest</span><b id="emi-interest">₹43,31,103</b></div>
+                    <div class="ambak-total"><span>Total amount payable</span><b id="emi-total">₹83,31,103</b></div>
+                  </div>
+                  <button class="btn btn-gold btn-block" type="button" data-popup-open="apply-popup">Talk to a loan advisor <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+                </div>
               </div>
-              <div class="ambak-chips" role="group" aria-label="Quick loan amounts">
-                <button type="button" class="ambak-chip" data-amount-chip="5000000">50L</button>
-                <button type="button" class="ambak-chip" data-amount-chip="7500000">75L</button>
-                <button type="button" class="ambak-chip" data-amount-chip="10000000">1Cr</button>
-                <button type="button" class="ambak-chip" data-amount-chip="30000000">3Cr</button>
-                <button type="button" class="ambak-chip" data-amount-chip="50000000">5Cr</button>
-              </div>
-              <input id="mini-amount" type="range" min="100000" max="50000000" step="50000" value="4000000" data-calc="amount" aria-label="Loan amount">
-              <div class="ambak-scale"><span>₹1L</span><span>₹5Cr</span></div>
             </div>
 
-            <div class="ambak-field">
-              <div class="ambak-field-top">
-                <label for="mini-rate">Interest rate (% p.a.)</label>
-                <output data-label="rate">8.50% p.a.</output>
+            <div class="calc-panel" role="tabpanel" id="calc-panel-afford" aria-labelledby="calc-tab-afford" data-calc-panel="afford" hidden>
+              <div class="ambak-calc ambak-calc-pro">
+                <div class="ambak-calc-inputs">
+                  <div class="ambak-field">
+                    <div class="ambak-field-top"><label for="aff-income">Monthly net income</label><output id="aff-income-out">₹1,00,000</output></div>
+                    <input id="aff-income" type="range" min="10000" max="1000000" step="5000" value="100000">
+                    <div class="ambak-scale"><span>₹10K</span><span>₹10L</span></div>
+                  </div>
+                  <div class="ambak-field">
+                    <div class="ambak-field-top"><label for="aff-oblig">Existing monthly obligations</label><output id="aff-oblig-out">₹10,000</output></div>
+                    <input id="aff-oblig" type="range" min="0" max="500000" step="1000" value="10000">
+                    <div class="ambak-scale"><span>₹0</span><span>₹5L</span></div>
+                  </div>
+                  <div class="ambak-field">
+                    <div class="ambak-field-top"><label for="aff-rate">Interest rate (p.a.)</label><output id="aff-rate-out">8.50%</output></div>
+                    <input id="aff-rate" type="range" min="5" max="20" step="0.05" value="8.5">
+                    <div class="ambak-scale"><span>5%</span><span>20%</span></div>
+                  </div>
+                  <div class="ambak-field">
+                    <div class="ambak-field-top"><label for="aff-tenure">Loan tenure (years)</label><output id="aff-tenure-out">20 years</output></div>
+                    <input id="aff-tenure" type="range" min="1" max="30" step="1" value="20">
+                    <div class="ambak-scale"><span>1 yr</span><span>30 yrs</span></div>
+                  </div>
+                </div>
+                <div class="ambak-calc-result">
+                  <div class="ambak-result-top">
+                    <div>
+                      <div class="ambak-result-label">Estimated eligible loan amount</div>
+                      <div class="ambak-emi"><span id="aff-loan-out">₹46,10,000</span></div>
+                      <p class="ambak-emi-sub">Based on an assumed FOIR of 50% of net income*</p>
+                    </div>
+                    <div class="ambak-wheel-wrap" aria-hidden="true">
+                      <div class="ambak-wheel" id="aff-wheel"><div class="ambak-wheel-center"><span>Income<br>split</span></div></div>
+                    </div>
+                  </div>
+                  <div class="ambak-legend ambak-legend-3">
+                    <div class="ambak-legend-item"><span class="ambak-dot oblig"></span><span>Obligations</span><b id="aff-oblig-pct">10%</b></div>
+                    <div class="ambak-legend-item"><span class="ambak-dot capacity"></span><span>EMI capacity</span><b id="aff-capacity-pct">40%</b></div>
+                    <div class="ambak-legend-item"><span class="ambak-dot remain"></span><span>Remaining</span><b id="aff-remain-pct">50%</b></div>
+                  </div>
+                  <div class="ambak-result-grid">
+                    <div><span>Estimated EMI capacity</span><b id="aff-emi-out">₹40,000</b></div>
+                    <div><span>Monthly obligations considered</span><b id="aff-oblig-show">₹10,000</b></div>
+                    <div class="ambak-total"><span>Net income considered</span><b id="aff-income-show">₹1,00,000</b></div>
+                  </div>
+                  <button class="btn btn-gold btn-block" type="button" data-popup-open="apply-popup">Check my eligibility <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+                </div>
               </div>
-              <input id="mini-rate" type="range" min="5" max="20" step="0.05" value="8.5" data-calc="rate" aria-label="Interest rate">
-              <div class="ambak-scale"><span>5%</span><span>20%</span></div>
             </div>
 
-            <div class="ambak-field">
-              <div class="ambak-field-top">
-                <label for="mini-tenure">Loan tenure (years)</label>
-                <output data-label="tenure">20 years</output>
+            <div class="calc-panel" role="tabpanel" id="calc-panel-down" aria-labelledby="calc-tab-down" data-calc-panel="down" hidden>
+              <div class="ambak-calc ambak-calc-pro">
+                <div class="ambak-calc-inputs">
+                  <div class="ambak-field">
+                    <div class="ambak-field-top"><label for="dp-value">Property value</label><output id="dp-value-out">₹50,00,000</output></div>
+                    <input id="dp-value" type="range" min="500000" max="50000000" step="50000" value="5000000">
+                    <div class="ambak-scale"><span>₹5L</span><span>₹5Cr</span></div>
+                  </div>
+                  <div class="ambak-field">
+                    <div class="ambak-field-top"><label for="dp-amount">Down payment</label><output id="dp-amount-out">₹10,00,000 (20%)</output></div>
+                    <input id="dp-amount" type="range" min="0" max="50000000" step="50000" value="1000000">
+                    <div class="ambak-scale"><span>₹0</span><span>₹5Cr</span></div>
+                  </div>
+                  <div class="ambak-field">
+                    <div class="ambak-field-top"><label for="dp-rate">Interest rate (p.a.)</label><output id="dp-rate-out">8.50%</output></div>
+                    <input id="dp-rate" type="range" min="5" max="20" step="0.05" value="8.5">
+                    <div class="ambak-scale"><span>5%</span><span>20%</span></div>
+                  </div>
+                  <div class="ambak-field">
+                    <div class="ambak-field-top"><label for="dp-tenure">Loan tenure (years)</label><output id="dp-tenure-out">20 years</output></div>
+                    <input id="dp-tenure" type="range" min="1" max="30" step="1" value="20">
+                    <div class="ambak-scale"><span>1 yr</span><span>30 yrs</span></div>
+                  </div>
+                </div>
+                <div class="ambak-calc-result">
+                  <div class="ambak-result-top">
+                    <div>
+                      <div class="ambak-result-label">Estimated loan amount required</div>
+                      <div class="ambak-emi"><span id="dp-loan-out">₹40,00,000</span></div>
+                      <p class="ambak-emi-sub">Property value minus down payment*</p>
+                    </div>
+                    <div class="ambak-donut-wrap" aria-hidden="true">
+                      <svg class="ambak-donut" viewBox="0 0 120 120" role="img">
+                        <circle cx="60" cy="60" r="52" class="ambak-donut-track"></circle>
+                        <circle id="dp-donut-loan" cx="60" cy="60" r="52" class="ambak-donut-principal"></circle>
+                        <circle id="dp-donut-dp" cx="60" cy="60" r="52" class="ambak-donut-interest"></circle>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="ambak-legend">
+                    <div class="ambak-legend-item"><span class="ambak-dot principal"></span><span>Loan amount</span><b id="dp-loan-pct">80%</b></div>
+                    <div class="ambak-legend-item"><span class="ambak-dot interest"></span><span>Down payment</span><b id="dp-dp-pct">20%</b></div>
+                  </div>
+                  <div class="ambak-result-grid">
+                    <div><span>Down payment</span><b id="dp-amount-show">₹10,00,000 (20%)</b></div>
+                    <div><span>Estimated monthly EMI</span><b id="dp-emi-out">₹34,713</b></div>
+                    <div class="ambak-total"><span>Property value considered</span><b id="dp-value-show">₹50,00,000</b></div>
+                  </div>
+                  <button class="btn btn-gold btn-block" type="button" data-popup-open="apply-popup">Talk to a loan advisor <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+                </div>
               </div>
-              <input id="mini-tenure" type="range" min="1" max="30" step="1" value="20" data-calc="tenure" aria-label="Loan tenure">
-              <div class="ambak-scale"><span>1 yr</span><span>30 yrs</span></div>
+            </div>
+
+            <div class="calc-panel" role="tabpanel" id="calc-panel-bt" aria-labelledby="calc-tab-bt" data-calc-panel="bt" hidden>
+              <div class="ambak-calc ambak-calc-pro">
+                <div class="ambak-calc-inputs">
+                  <div class="ambak-field">
+                    <div class="ambak-field-top"><label for="bt-balance">Outstanding balance</label><output id="bt-balance-out">₹30,00,000</output></div>
+                    <input id="bt-balance" type="range" min="100000" max="20000000" step="50000" value="3000000">
+                    <div class="ambak-scale"><span>₹1L</span><span>₹2Cr</span></div>
+                  </div>
+                  <div class="ambak-field">
+                    <div class="ambak-field-top"><label for="bt-old">Current interest rate (p.a.)</label><output id="bt-old-out">10.50%</output></div>
+                    <input id="bt-old" type="range" min="6" max="20" step="0.05" value="10.5">
+                    <div class="ambak-scale"><span>6%</span><span>20%</span></div>
+                  </div>
+                  <div class="ambak-field">
+                    <div class="ambak-field-top"><label for="bt-new">New interest rate (p.a.)</label><output id="bt-new-out">8.75%</output></div>
+                    <input id="bt-new" type="range" min="6" max="20" step="0.05" value="8.75">
+                    <div class="ambak-scale"><span>6%</span><span>20%</span></div>
+                  </div>
+                  <div class="ambak-field">
+                    <div class="ambak-field-top"><label for="bt-months">Remaining tenure (months)</label><output id="bt-months-out">180 months</output></div>
+                    <input id="bt-months" type="range" min="12" max="360" step="1" value="180">
+                    <div class="ambak-scale"><span>12</span><span>360</span></div>
+                  </div>
+                </div>
+                <div class="ambak-calc-result">
+                  <div class="ambak-result-top">
+                    <div>
+                      <div class="ambak-result-label">Estimated monthly savings</div>
+                      <div class="ambak-emi"><span id="bt-save-out">₹3,386</span></div>
+                      <p class="ambak-emi-sub">Indicative EMI difference; charges/fees not included*</p>
+                    </div>
+                    <div class="ambak-wheel-wrap" aria-hidden="true">
+                      <div class="ambak-wheel" id="bt-wheel"><div class="ambak-wheel-center"><span>Savings</span></div></div>
+                    </div>
+                  </div>
+                  <div class="ambak-bars">
+                    <div class="ambak-bar-row"><span>Current EMI</span><div class="ambak-bar"><i id="bt-bar-old" style="width:100%"></i></div><b id="bt-old-emi-bar">₹33,214</b></div>
+                    <div class="ambak-bar-row"><span>New EMI</span><div class="ambak-bar alt"><i id="bt-bar-new" style="width:90%"></i></div><b id="bt-new-emi-bar">₹29,828</b></div>
+                  </div>
+                  <div class="ambak-legend">
+                    <div class="ambak-legend-item"><span class="ambak-dot capacity"></span><span>New EMI</span><b id="bt-new-pct">90%</b></div>
+                    <div class="ambak-legend-item"><span class="ambak-dot interest"></span><span>Savings</span><b id="bt-save-pct">10%</b></div>
+                  </div>
+                  <div class="ambak-result-grid">
+                    <div><span>Current EMI</span><b id="bt-old-emi">₹33,214</b></div>
+                    <div><span>New EMI</span><b id="bt-new-emi">₹29,828</b></div>
+                    <div class="ambak-total"><span>Total interest saving (approx.)</span><b id="bt-interest-save">₹6,09,480</b></div>
+                  </div>
+                  <button class="btn btn-gold btn-block" type="button" data-popup-open="apply-popup">Compare BT options <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="ambak-calc-result">
-            <div class="ambak-result-label">Monthly EMI</div>
-            <div class="ambak-emi"><span data-out="emi">₹ 34,713</span></div>
-            <div class="ambak-result-grid">
-              <div><span>Principal amount</span><b data-out="principal">₹40,00,000</b></div>
-              <div><span>Total interest</span><b data-out="interest">₹43,31,146</b></div>
-              <div class="ambak-total"><span>Total payable</span><b data-out="total">₹83,31,146</b></div>
-            </div>
-            <button class="btn btn-gold btn-block" type="button" data-popup-open="apply-popup">Talk to a loan advisor <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
-            <a class="ambak-full-link" href="emi-calculator.html">Open full EMI calculator <svg class="icon icon-sm" aria-hidden="true"><use href="#i-calculator"></use></svg></a>
-            <p class="ambak-note">Indicative only. Actual EMI, rates and eligibility depend on lender policy and your profile.</p>
-          </div>
+          <p class="ambak-note calc-global-note">*Indicative estimates only. Actual EMI, eligibility, savings, interest rates, charges and terms depend on lender policy and your profile.</p>
         </div>
       </div>
     </section>
 
     <!-- Why us -->
-    <section class="section section-cream" id="why-us">
+    <section class="section section-cream sec-whyus" id="why-us">
       <div class="container split">
         <div class="split-media reveal">
           <img src="assets/img/hero-family.jpg" alt="AS Financial advisors celebrating a client's loan approval" loading="lazy" width="1400" height="933" decoding="async">
@@ -549,86 +636,52 @@
     </section>
 
     <!-- Benefits -->
-    <section class="section section-soft section-tight">
+    <section class="section section-tight benefits-unique" id="benefits">
       <div class="container">
-        <div class="benefits-grid">
-          <div class="benefit reveal">
-            <div class="b-icon"><svg class="icon" aria-hidden="true"><use href="#i-wallet"></use></svg></div>
-            <div class="b-metric">Clear</div>
+        <div class="benefits-unique-head reveal">
+          <div class="eyebrow">What you can expect</div>
+          <h2>Clear guidance, <span class="serif">made simple.</span></h2>
+          <p>Practical support to help you understand options, paperwork and next steps before you proceed.</p>
+        </div>
+        <div class="benefits-unique-grid">
+          <article class="bu-item reveal">
+            <div class="bu-top">
+              <div class="bu-icon"><svg class="icon" aria-hidden="true"><use href="#i-wallet"></use></svg></div>
+            </div>
+            <div class="bu-metric">Clear</div>
             <h3>Transparent advice</h3>
-            <p>Know the key details and costs involved before you make a decision.</p>
-          </div>
-          <div class="benefit reveal">
-            <div class="b-icon"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg></div>
-            <div class="b-metric">Options</div>
+            <p>Know the key details and likely costs involved before you make a decision.</p>
+          </article>
+          <article class="bu-item reveal">
+            <div class="bu-top">
+              <div class="bu-icon"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg></div>
+            </div>
+            <div class="bu-metric">Options</div>
             <h3>Multiple lenders</h3>
-            <p>Explore and compare loan options from banks and NBFCs.</p>
-          </div>
-          <div class="benefit reveal">
-            <div class="b-icon"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg></div>
-            <div class="b-metric">Guided</div>
+            <p>Explore and compare loan options from banks and NBFCs, based on your profile.</p>
+          </article>
+          <article class="bu-item reveal">
+            <div class="bu-top">
+              <div class="bu-icon"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg></div>
+            </div>
+            <div class="bu-metric">Guided</div>
             <h3>Document support</h3>
-            <p>Get help understanding paperwork and application requirements.</p>
-          </div>
-          <div class="benefit reveal">
-            <div class="b-icon"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg></div>
-            <div class="b-metric">1:1</div>
+            <p>Get help understanding paperwork and application requirements for your case.</p>
+          </article>
+          <article class="bu-item reveal">
+            <div class="bu-top">
+              <div class="bu-icon"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg></div>
+            </div>
+            <div class="bu-metric">1:1</div>
             <h3>Personal assistance</h3>
-            <p>Speak with an advisor who can guide you through your queries.</p>
-          </div>
+            <p>Speak with an advisor who can guide you through your queries and next steps.</p>
+          </article>
         </div>
       </div>
     </section>
-
-    <!-- Gallery -->
-    <section class="section section-cream" id="gallery">
-      <div class="container">
-        <div class="section-head center reveal">
-          <div class="eyebrow center">Our office &amp; posters</div>
-          <h2>Everything we do, <span class="serif">at a glance.</span></h2>
-          <p>Loan categories, bank and NBFC partners, and the specialised profiles we discuss. Select any poster to view it larger.</p>
-        </div>
-        <div class="gal-grid" data-gallery>
-          <button class="gal-item reveal" type="button" data-full="assets/img/gallery/banner.jpg" aria-label="View larger: Signboard &amp; services banner">
-            <img src="assets/img/gallery/banner.jpg" alt="AS Financial Services and Solutions signboard banner" loading="lazy" width="1200" height="453">
-            <span>Signboard &amp; services banner</span>
-          </button>
-          <button class="gal-item reveal" type="button" data-full="assets/img/gallery/storefront.jpg" aria-label="View larger: Our office in Medipalli">
-            <img src="assets/img/gallery/storefront.jpg" alt="Our office in Medipalli, Hyderabad" loading="lazy" width="645" height="755">
-            <span>Our office in Medipalli</span>
-          </button>
-          <button class="gal-item reveal" type="button" data-full="assets/img/gallery/instant.jpg" aria-label="View larger: Instant loan support">
-            <img src="assets/img/gallery/instant.jpg" alt="Instant loan support poster" loading="lazy" width="659" height="782">
-            <span>Instant loan support</span>
-          </button>
-          <button class="gal-item reveal" type="button" data-full="assets/img/gallery/dreams.jpg" aria-label="View larger: Your dreams, our financial support">
-            <img src="assets/img/gallery/dreams.jpg" alt="Your dreams, our financial support poster" loading="lazy" width="597" height="790">
-            <span>Your dreams, our financial support</span>
-          </button>
-          <button class="gal-item reveal" type="button" data-full="assets/img/gallery/partner.jpg" aria-label="View larger: Loan types we arrange">
-            <img src="assets/img/gallery/partner.jpg" alt="Your trusted financial partner: loan types" loading="lazy" width="1192" height="565">
-            <span>Loan types we arrange</span>
-          </button>
-          <button class="gal-item reveal" type="button" data-full="assets/img/gallery/services.jpg" aria-label="View larger: Services &amp; specialised profiles">
-            <img src="assets/img/gallery/services.jpg" alt="All loan services and specialised profiles" loading="lazy" width="1047" height="620">
-            <span>Services &amp; specialised profiles</span>
-          </button>
-          <button class="gal-item reveal" type="button" data-full="assets/img/gallery/banks.jpg" aria-label="View larger: Bank &amp; NBFC partners">
-            <img src="assets/img/gallery/banks.jpg" alt="Our bank and NBFC partners" loading="lazy" width="1200" height="467">
-            <span>Bank &amp; NBFC partners</span>
-          </button>
-        </div>
-        <p class="gal-note">Posters shown for information only. Loan options and availability depend on lender policy and your profile.</p>
-      </div>
-    </section>
-
-    <dialog class="gallery-lightbox" id="gallery-lightbox" aria-label="Poster preview">
-      <button class="gallery-close" type="button" aria-label="Close preview"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
-      <img alt="">
-    </dialog>
 
     <!-- Testimonials -->
-    <section class="section section-white">
+    <section class="section section-white sec-testimonials" id="testimonials">
       <div class="container">
         <div class="section-head center reveal">
           <div class="eyebrow center">Client stories</div>
@@ -666,7 +719,7 @@
     </section>
 
     <!-- Guides -->
-    <section class="section section-cream">
+    <section class="section section-cream sec-guides" id="guides">
       <div class="container">
         <div class="section-head split reveal">
           <div class="section-head-text">
@@ -699,14 +752,14 @@
               <h3>When a balance transfer may make sense</h3>
               <p>Compare rates, fees, remaining tenure and overall savings before switching your existing loan.</p>
             </div>
-            <div class="blog-foot"><span>5 min read</span><a href="emi-calculator.html">Calculate EMI <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a></div>
+            <div class="blog-foot"><span>5 min read</span><a href="#calculator">Calculate EMI <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a></div>
           </article>
         </div>
       </div>
     </section>
 
     <!-- FAQ -->
-    <section class="section section-white" id="faq">
+    <section class="section section-white sec-faq" id="faq">
       <div class="container faq-layout">
         <div class="faq-side reveal">
           <div class="eyebrow">Questions, answered</div>
@@ -720,24 +773,24 @@
         </div>
         <div class="faq-list reveal">
           <div class="faq-item open">
-            <button class="faq-q" aria-expanded="true">Does AS Financial charge a fee for loan assistance? <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></button>
-            <div class="faq-a" style="max-height:220px"><div>For many retail loans we may be compensated by the lender. If any service fee applies, we will inform you clearly before you proceed. You can discuss charges and terms with our advisor.</div></div>
+            <button type="button" class="faq-q" aria-expanded="true" id="home-faq-q1" aria-controls="home-faq-a1">Does AS Financial charge a fee for loan assistance? <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></button>
+            <div class="faq-a" style="max-height:220px" id="home-faq-a1" role="region" aria-labelledby="home-faq-q1"><div>For many retail loans we may be compensated by the lender. If any service fee applies, we will inform you clearly before you proceed. You can discuss charges and terms with our advisor.</div></div>
           </div>
           <div class="faq-item">
-            <button class="faq-q" aria-expanded="false">Will checking my eligibility affect my credit score? <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></button>
-            <div class="faq-a"><div>An initial discussion or soft check typically does not impact your credit score. Formal lender applications may involve checks as per lender process &mdash; we can explain this before submission.</div></div>
+            <button type="button" class="faq-q" aria-expanded="false" id="home-faq-q2" aria-controls="home-faq-a2">Will checking my eligibility affect my credit score? <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></button>
+            <div class="faq-a" id="home-faq-a2" role="region" aria-labelledby="home-faq-q2"><div>An initial discussion or soft check typically does not impact your credit score. Formal lender applications may involve checks as per lender process &mdash; we can explain this before submission.</div></div>
           </div>
           <div class="faq-item">
-            <button class="faq-q" aria-expanded="false">I have a low CIBIL score or no ITR. Can I still get a loan? <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></button>
-            <div class="faq-a"><div>Possibilities depend on lender policies and your overall profile. Share your details with us and we can discuss available options and what documents may help.</div></div>
+            <button type="button" class="faq-q" aria-expanded="false" id="home-faq-q3" aria-controls="home-faq-a3">I have a low CIBIL score or no ITR. Can I still get a loan? <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></button>
+            <div class="faq-a" id="home-faq-a3" role="region" aria-labelledby="home-faq-q3"><div>Possibilities depend on lender policies and your overall profile. Share your details with us and we can discuss available options and what documents may help.</div></div>
           </div>
           <div class="faq-item">
-            <button class="faq-q" aria-expanded="false">How long does approval and disbursal take? <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></button>
-            <div class="faq-a"><div>Timelines vary by loan type, lender and document readiness. We will guide you on the expected steps and help coordinate during the process.</div></div>
+            <button type="button" class="faq-q" aria-expanded="false" id="home-faq-q4" aria-controls="home-faq-a4">How long does approval and disbursal take? <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></button>
+            <div class="faq-a" id="home-faq-a4" role="region" aria-labelledby="home-faq-q4"><div>Timelines vary by loan type, lender and document readiness. We will guide you on the expected steps and help coordinate during the process.</div></div>
           </div>
           <div class="faq-item">
-            <button class="faq-q" aria-expanded="false">What happens after I submit an enquiry? <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></button>
-            <div class="faq-a"><div>We review your requirement, contact you to understand your profile, discuss possible options with relevant lenders, and share a checklist of documents/next steps if you choose to proceed. The process and outcomes depend on lender policies and your profile.</div></div>
+            <button type="button" class="faq-q" aria-expanded="false" id="home-faq-q5" aria-controls="home-faq-a5">What happens after I submit an enquiry? <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></button>
+            <div class="faq-a" id="home-faq-a5" role="region" aria-labelledby="home-faq-q5"><div>We review your requirement, contact you to understand your profile, discuss possible options with relevant lenders, and share a checklist of documents/next steps if you choose to proceed. The process and outcomes depend on lender policies and your profile.</div></div>
           </div>
 
         </div>
@@ -745,10 +798,10 @@
     </section>
 
     <!-- Visit us -->
-    <section class="section section-white">
+    <section class="section section-white sec-visit" id="visit-us">
       <div class="container visit">
         <div class="visit-photo reveal">
-          <img src="assets/img/poster/storefront.jpg" alt="AS Financial Services and Solutions office front in Medipalli, Hyderabad" loading="lazy" decoding="async">
+          <img height="806" width="638" src="assets/img/poster/storefront.jpg" alt="AS Financial Services and Solutions office front in Medipalli, Hyderabad" loading="lazy" decoding="async">
         </div>
         <div class="reveal">
           <div class="eyebrow">Visit our office</div>
@@ -778,16 +831,16 @@
     </section>
 
     <!-- CTA -->
-    <section class="cta-band">
-      <div class="container cta-inner">
-        <div>
-          <span class="pill pill-soft"><span class="dot"></span> Let's plan your loan together</span>
-          <h2 style="margin-top:16px">Your goals. <span class="serif">Our guidance.</span></h2>
-          <p>Tell us what you are planning. We’ll help you understand suitable options &mdash; with no obligation.</p>
-        </div>
-        <div class="cta-actions">
-          <button class="btn btn-gold btn-lg" data-popup-open="apply-popup">Apply for a loan <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
-          <a class="cta-phone" href="tel:+919182703079" data-setting="phone"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg> 91827 03079</a>
+    <section class="cta-band sec-cta">
+      <div class="container">
+        <div class="cta-card reveal">
+          <span class="pill pill-soft"><span class="dot"></span> Let’s plan your loan together</span>
+          <h2>Your goals. <span class="serif">Our guidance.</span></h2>
+          <p>Tell us what you need and we’ll help you understand suitable options with clear, no-obligation guidance.</p>
+          <div class="cta-card-actions">
+            <button type="button" class="btn btn-gold" data-popup-open="apply-popup">Get a call back <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+            <a class="btn btn-light" href="tel:+919182703079" data-setting="phone"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-phone"></use></svg> Call 91827 03079</a>
+          </div>
         </div>
       </div>
     </section>
@@ -796,94 +849,30 @@
   <!-- Footer -->
   <footer class="site-footer">
     <div class="container">
-      <div class="footer-grid">
-        <div class="footer-brand">
-          <a class="brand" href="index.html" style="margin-bottom:0"><img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions &mdash; Your Goals, Our Solutions" width="200" height="51" decoding="async" loading="lazy"></a>
-          <p class="footer-about">AS Financial Services and Solutions &mdash; loan assistance in Medipalli, Hyderabad. Contact us for guidance on your loan requirements.</p>
-          <div class="footer-social">
-            <a href="contact.html" title="No Facebook profile linked — contact us" aria-label="Facebook profile not linked; contact us"><svg class="icon" aria-hidden="true"><use href="#i-facebook"></use></svg></a>
-            <a href="contact.html" title="No Instagram profile linked — contact us" aria-label="Instagram profile not linked; contact us"><svg class="icon" aria-hidden="true"><use href="#i-instagram"></use></svg></a>
-            <a href="contact.html" title="No LinkedIn profile linked — contact us" aria-label="LinkedIn profile not linked; contact us"><svg class="icon" aria-hidden="true"><use href="#i-linkedin"></use></svg></a>
-            <a href="https://wa.me/919182703079" data-wa-link="Hi AS Financial, I have a question about loans." aria-label="WhatsApp"><svg class="icon" aria-hidden="true"><use href="#i-whatsapp"></use></svg></a>
-          </div>
+      <div class="footer-compact">
+        <div class="footer-compact-brand">
+          <a class="brand" href="index.html" aria-label="AS Financial home"><img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions" width="170" height="43" loading="lazy" decoding="async"></a>
+          <p>Loan assistance in Medipalli, Hyderabad. Guidance for home, personal, business and other loan needs.</p>
         </div>
-
-        <div class="footer-col">
-          <h3>Loan products</h3>
-          <ul>
-            <li><a href="loans.html#home-loan">Home Loan</a></li>
-            <li><a href="loans.html#personal-loan">Personal Loan</a></li>
-            <li><a href="loans.html#business-loan">Business Loan</a></li>
-            <li><a href="loans.html#mortgage-loan">Mortgage / LAP</a></li>
-            <li><a href="loans.html#education-loan">Education Loan</a></li>
-            <li><a href="loans.html#plot-loan">Plot &amp; Land Loan</a></li>
-            <li><a href="loans.html">All products</a></li>
-          </ul>
+        <div class="footer-compact-contact">
+          <a href="tel:+919182703079" data-setting="phone"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-phone"></use></svg> +91 91827 03079</a>
+          <a href="mailto:asfinancialservicesandsolution@gmail.com" data-setting="email"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-mail"></use></svg> asfinancialservicesandsolution@gmail.com</a>
+          <a href="https://www.google.com/maps/place/AS+FINANCIAL+SERVICES+AND+SOLUTIONS/@17.4063233,78.6029049,17z/data=!4m16!1m9!3m8!1s0x3bcb9f000330811d:0x920b837d9e505c0a!2sAS+FINANCIAL+SERVICES+AND+SOLUTIONS!8m2!3d17.4063233!4d78.6054798!9m1!1b1!16s%2Fg%2F11zy2k0x6g!3m5!1s0x3bcb9f000330811d:0x920b837d9e505c0a!8m2!3d17.4063233!4d78.6054798!16s%2Fg%2F11zy2k0x6g?entry=ttu" data-setting="address" target="_blank" rel="noopener noreferrer"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-pin"></use></svg> Panchavati Colony Road No. 1, Medipalli, Hyderabad 500098</a>
+          <span class="footer-hours"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-clock"></use></svg> <span data-setting="hours">Mon &ndash; Sat &middot; 9:30 AM &ndash; 7:00 PM</span></span>
         </div>
-
-        <div class="footer-col">
-          <h3>Company</h3>
-          <ul>
-            <li><a href="about.html">About us</a></li>
-            <li><a href="loans.html#process">Our process</a></li>
-            <li><a href="emi-calculator.html">EMI calculator</a></li>
-            <li><a href="index.html#partners">Bank partners</a></li>
-            <li><a href="index.html#faq">FAQs</a></li>
-            <li><a href="guides.html">Guides</a></li>
-            <li><a href="contact.html">Contact</a></li>
-            <li><a href="admin.html">Admin dashboard</a></li>
-          </ul>
-        </div>
-
-        <div class="footer-col">
-          <h3>Calculators</h3>
-          <ul>
-            <li><a href="emi-calculator.html">EMI Calculator</a></li>
-            <li><a href="balance-transfer-calculator.html">Balance Transfer</a></li>
-            <li><a href="prepayment-calculator.html">Prepayment</a></li>
-            <li><a href="tenure-calculator.html">Loan Tenure</a></li>
-            <li><a href="buy-vs-rent-calculator.html">Buy vs Rent</a></li>
-            <li><a href="home-loan-tax-saving-calculator.html">Tax Saving</a></li>
-          </ul>
-        </div>
-
-        <div class="footer-col">
-          <h3>Visit our office</h3>
-          <ul class="footer-contact" style="list-style:none;padding:0">
-            <li>
-              <svg class="icon" aria-hidden="true"><use href="#i-pin"></use></svg>
-              <span><strong>AS Financial Services</strong><a href="https://www.google.com/maps/place/AS+FINANCIAL+SERVICES+AND+SOLUTIONS/@17.4063233,78.6029049,17z/data=!4m16!1m9!3m8!1s0x3bcb9f000330811d:0x920b837d9e505c0a!2sAS+FINANCIAL+SERVICES+AND+SOLUTIONS!8m2!3d17.4063233!4d78.6054798!9m1!1b1!16s%2Fg%2F11zy2k0x6g!3m5!1s0x3bcb9f000330811d:0x920b837d9e505c0a!8m2!3d17.4063233!4d78.6054798!16s%2Fg%2F11zy2k0x6g?entry=ttu" data-setting="address" target="_blank" rel="noopener noreferrer">Panchavati Colony Road No. 1, Medipalli, Hyderabad, Telangana 500098</a></span>
-            </li>
-            <li>
-              <svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg>
-              <span><strong>Call us</strong><a href="tel:+919182703079" data-setting="phone">+91 91827 03079</a></span>
-            </li>
-            <li>
-              <svg class="icon" aria-hidden="true"><use href="#i-mail"></use></svg>
-              <span><strong>Email us</strong><a href="mailto:asfinancialservicesandsolution@gmail.com" data-setting="email" style="word-break:break-word">asfinancialservicesandsolution@gmail.com</a></span>
-            </li>
-            <li>
-              <svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg>
-              <span><strong>Office hours</strong><span data-setting="hours">Mon &ndash; Sat &middot; 9:30 AM &ndash; 7:00 PM</span></span>
-            </li>
-          </ul>
-        
-          <a class="btn btn-outline btn-sm" href="https://www.google.com/maps/place/AS+FINANCIAL+SERVICES+AND+SOLUTIONS/@17.4063233,78.6029049,17z/data=!4m16!1m9!3m8!1s0x3bcb9f000330811d:0x920b837d9e505c0a!2sAS+FINANCIAL+SERVICES+AND+SOLUTIONS!8m2!3d17.4063233!4d78.6054798!9m1!1b1!16s%2Fg%2F11zy2k0x6g!3m5!1s0x3bcb9f000330811d:0x920b837d9e505c0a!8m2!3d17.4063233!4d78.6054798!16s%2Fg%2F11zy2k0x6g?entry=ttu" target="_blank" rel="noopener noreferrer" style="margin-top:10px;display:inline-flex">Open in Google Maps</a>
+        <div class="footer-compact-links" aria-label="Footer links">
+          <a href="index.html">Home</a>
+          <a href="loans.html">Loans</a>
+          <a href="guides.html">Guides</a>
+          <a href="contact.html">Contact</a>
+          <a href="privacy-policy.html">Privacy</a>
+          <a href="terms-of-use.html">Terms</a>
+          <a href="admin.html">Admin</a>
         </div>
       </div>
-
-      <div class="footer-disclaimer">
-        Credit is subject to lender approval. Interest rates shown are indicative and subject to change without notice. AS Financial Services and Solutions is a loan facilitator and does not itself lend money. All bank and NBFC names, logos and trademarks belong to their respective owners. Please read all loan documents carefully before signing.
-      </div>
-
       <div class="footer-bottom">
-        <span>&copy; <span data-year>2026</span> AS Financial Services and Solutions. All rights reserved.</span>
-        <div class="footer-links">
-          <a href="privacy-policy.html">Privacy policy</a>
-          <a href="terms-of-use.html">Terms of use</a>
-          <a href="contact.html">Grievance redressal</a>
-          <a class="admin-chip" href="admin.html"><svg class="icon" style="width:12px;height:12px" aria-hidden="true"><use href="#i-lock"></use></svg> Admin</a>
-        </div>
+        <span>&copy; <span data-year>2026</span> AS Financial Services and Solutions. Loan facilitation only; credit subject to lender approval. Rates/terms indicative.</span>
+        <div class="footer-links"><a href="privacy-policy.html">Privacy</a><a href="terms-of-use.html">Terms</a><a href="contact.html">Contact</a></div>
       </div>
     </div>
   </footer>
@@ -901,12 +890,12 @@
   <!-- Apply popup -->
   <div class="popup-overlay" id="apply-popup" role="dialog" aria-modal="true" aria-labelledby="apply-title">
     <div class="popup">
-      <button class="popup-close" data-popup-close aria-label="Close"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-close"></use></svg></button>
+      <button type="button" class="popup-close" data-popup-close aria-label="Close"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-close"></use></svg></button>
       <span class="pill pill-gold" style="margin-bottom:12px"><span class="dot"></span> Free eligibility check</span>
       <h3 id="apply-title">Let's find your best loan.</h3>
       <p>Share a few details and an advisor will call you within 30 minutes with indicative offers.</p>
       <form data-lead-form data-source="Homepage popup">
-                  <input type="text" name="website" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0">
+                  <input type="text" name="website" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0" aria-label="Website">
         <div class="form-grid">
           <div class="field full">
             <label for="ap-name">Full name <span class="req">*</span></label>
@@ -914,13 +903,13 @@
           </div>
           <div class="field">
             <label for="ap-phone">Mobile number <span class="req">*</span></label>
-            <input id="ap-phone" name="phone" type="tel" placeholder="e.g. 9182703079" required autocomplete="tel" inputmode="tel">
-            <small class="field-hint">Enter a 10-digit mobile number (you can include country code if needed).</small>
+            <input id="ap-phone" name="phone" type="tel" placeholder="e.g. 9182703079" required autocomplete="tel" inputmode="tel" aria-describedby="ap-phone-hint">
+            <small class="field-hint" id="ap-phone-hint">Enter a 10-digit mobile number (you can include country code if needed).</small>
           </div>
           <div class="field">
             <label for="ap-email">Email</label>
-            <input id="ap-email" name="email" type="email" placeholder="you@example.com" autocomplete="email">
-            <small class="field-hint">Optional. Helpful if you prefer email updates.</small>
+            <input id="ap-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" aria-describedby="ap-email-hint">
+            <small class="field-hint" id="ap-email-hint">Optional. Helpful if you prefer email updates.</small>
           </div>
           <div class="field">
             <label for="ap-product">Loan type</label>
@@ -971,14 +960,17 @@
           <div class="field full">
             <button class="btn btn-gold btn-block" type="submit">Get a call back <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
           </div>
-          <div class="form-success full"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Thanks! Your enquiry is in. Our advisor will call you within 30 minutes.</span></div>
+          <div class="form-success full" role="status" aria-live="polite"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Thanks! Your enquiry is in. Our advisor will call you within 30 minutes.</span></div>
         </div>
       </form>
     </div>
   </div>
 
+  <script src="assets/js/calculators.js?v=20261120z40" defer></script>
   <script src="assets/js/icons.js?v=20261118z22" defer></script>
-  <script src="assets/js/backend.js?v=20261118z22" defer></script><script src="assets/js/main.js?v=20261118z22" defer></script>
+  <script src="assets/js/backend.js?v=20261118z22" defer></script><script src="assets/js/main.js?v=20261120z40" defer></script>  <script src="assets/js/lenders.js?v=20261120i" defer></script>
+  <script src="assets/js/lenders-ui.js?v=20261120z40" defer></script>
+
   <script>
     /* Subtle layered-depth parallax for the hero (pure CSS transforms, no WebGL) */
     (function () {
