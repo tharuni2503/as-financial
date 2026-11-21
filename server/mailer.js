@@ -87,18 +87,18 @@ function buildResetEmail({ name, resetUrl, expiresAt }) {
   const displayName = String(name || 'there');
   const subject = 'Reset your AS Financial admin password';
   const text = [
-    \`Hi \${displayName},\`,
+    `Hi ${displayName},`,
     '',
     'A password reset was requested for your account.',
-    \`Reset link: \${href}\`,
-    expiresAt ? \`This link expires at: \${expiresAt}\` : 'This link expires soon.',
+    `Reset link: ${href}`,
+    expiresAt ? `This link expires at: ${expiresAt}` : 'This link expires soon.',
     '',
     'If you did not request this, you can ignore this email.'
   ].join('\n');
-  const html = \`<p>Hi \${escapeHtml(displayName)},</p>\n\` +
+  const html = `<p>Hi ${escapeHtml(displayName)},</p>\n` +
     '<p>A password reset was requested for your account.</p>\n' +
-    \`<p><a href="\${escapeHtml(href)}">Reset your password</a></p>\n\` +
-    (expiresAt ? \`<p>This link expires at: \${escapeHtml(expiresAt)}</p>\n\` : '<p>This link expires soon.</p>\n') +
+    `<p><a href="${escapeHtml(href)}">Reset your password</a></p>\n` +
+    (expiresAt ? `<p>This link expires at: ${escapeHtml(expiresAt)}</p>\n` : '<p>This link expires soon.</p>\n') +
     '<p>If you did not request this, you can ignore this email.</p>';
   return { subject, text, html };
 }
