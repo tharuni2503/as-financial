@@ -134,7 +134,7 @@ function enquiry(payload) {
   if (email && !EMAIL.test(email)) throw new HttpError(400, 'Please enter a valid email address.');
 
   const consent = payload.consent;
-  if (consent === false || consent === 'false') {
+  if (consent !== true && consent !== 'true') {
     throw new HttpError(400, 'Please accept the consent note so we can contact you.');
   }
 
@@ -181,7 +181,7 @@ function sanitize(value, depth, maxString) {
     keys.forEach((key) => {
       if (typeof key !== 'string') return;
       const safeKey = clean(key).slice(0, 80);
-      if (!safeKey) return;
+      if (!safeKey || ['__proto__', 'prototype', 'constructor'].includes(safeKey)) return;
       out[safeKey] = sanitize(value[key], depth + 1, maxString);
     });
     return out;
