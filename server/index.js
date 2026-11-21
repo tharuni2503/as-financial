@@ -945,7 +945,12 @@ app.post('/api/forgot-password', asyncRoute(async (req, res) => {
     console.warn('[auth] Password reset requested in production but email was not delivered (configured=' + emailConfigured + ', reason=' + (mailResult.reason || 'unknown') + ') for', user.email);
   }
   audit(req, { type: 'auth.forgot_password', actorEmail: user.email, summary: 'Password reset requested', targetType: 'user', targetId: user.id, meta: { emailSent, emailConfigured, reason: mailResult.reason || null } });
-  console.log('[auth] Password reset requested for', user.email, 'token expires', rt.expiresAt, 'url', resetUrl, 'emailSent=' + emailSent + ' emailConfigured=' + emailConfigured);
+  // Never write reset tokens or token-bearing URLs to production logs.
+  if (IS_PRODUCTION) {
+    console.log('[auth] Password reset requested; emailSent=' + emailSent + ' emailConfigured=' + emailConfigured);
+  } else {
+    console.log('[auth] Password reset requested for', user.email, 'token expires', rt.expiresAt, 'url', resetUrl, 'emailSent=' + emailSent + ' emailConfigured=' + emailConfigured);
+  }
   if (!IS_PRODUCTION) {
     res.json(Object.assign({}, generic, { devResetToken: rt.token, devResetUrl: resetPath, resetUrl, expiresAt: rt.expiresAt, emailSent, emailConfigured }));
   } else {
