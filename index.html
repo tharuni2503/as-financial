@@ -932,30 +932,25 @@
   </div>
 
   <!-- Apply popup -->
-  <div class="popup-overlay" id="apply-popup" role="dialog" aria-modal="true" aria-labelledby="apply-title">
+    <div class="popup-overlay" id="apply-popup" role="dialog" aria-modal="true" aria-labelledby="apply-title">
     <div class="popup">
       <button type="button" class="popup-close" data-popup-close aria-label="Close"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-close"></use></svg></button>
       <span class="pill pill-gold" style="margin-bottom:12px"><span class="dot"></span> Free eligibility check</span>
       <h3 id="apply-title">Let's find your best loan.</h3>
       <p>Share a few details and an advisor will call you within 30 minutes with indicative offers.</p>
       <form data-lead-form data-source="Homepage popup">
-                  <input type="text" name="website" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0" aria-label="Website">
+        <input type="text" name="website" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0" aria-label="Website">
         <div class="form-grid">
           <div class="field full">
             <label for="ap-name">Full name <span class="req">*</span></label>
             <input id="ap-name" name="name" type="text" placeholder="e.g. Ramesh Kumar" required autocomplete="name">
           </div>
-          <div class="field">
+          <div class="field full">
             <label for="ap-phone">Mobile number <span class="req">*</span></label>
             <input id="ap-phone" name="phone" type="tel" placeholder="e.g. 9182703079" required autocomplete="tel" inputmode="tel" aria-describedby="ap-phone-hint">
-            <small class="field-hint" id="ap-phone-hint">Enter a 10-digit mobile number (you can include country code if needed).</small>
+            <small class="field-hint" id="ap-phone-hint">Enter a 10-digit mobile number (country code optional).</small>
           </div>
-          <div class="field">
-            <label for="ap-email">Email</label>
-            <input id="ap-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" aria-describedby="ap-email-hint">
-            <small class="field-hint" id="ap-email-hint">Optional. Helpful if you prefer email updates.</small>
-          </div>
-          <div class="field">
+          <div class="field full">
             <label for="ap-product">Loan type</label>
             <select id="ap-product" name="product">
               <option>Home Loan</option>
@@ -965,38 +960,11 @@
               <option>Education Loan</option>
               <option>Plot / Land Loan</option>
               <option>Car Loan</option>
+              <option>Doctor Loan</option>
               <option>Balance Transfer</option>
               <option>Insurance</option>
               <option>Other / not sure</option>
             </select>
-          </div>
-          <div class="field">
-            <label for="ap-amount">Loan amount</label>
-            <select id="ap-amount" name="amount">
-              <option>Below &#8377;5 Lakh</option>
-              <option>&#8377;5 &ndash; 10 Lakh</option>
-              <option selected>&#8377;10 &ndash; 25 Lakh</option>
-              <option>&#8377;25 &ndash; 50 Lakh</option>
-              <option>&#8377;50 Lakh &ndash; 1 Crore</option>
-              <option>Above &#8377;1 Crore</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="ap-employment">Employment type</label>
-            <select id="ap-employment" name="employment">
-              <option>Salaried</option>
-              <option>Self-employed</option>
-              <option>Business owner</option>
-              <option>NRI</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="ap-city">City</label>
-            <input id="ap-city" name="city" type="text" value="Hyderabad">
-          </div>
-          <div class="field full">
-            <label for="ap-message">Anything we should know?</label>
-            <input id="ap-message" name="message" type="text" placeholder="Optional">
           </div>
           <div class="full">
             <label class="consent"><input type="checkbox" required> I agree to be contacted by AS Financial about my enquiry by phone, SMS or WhatsApp and accept the <a href="privacy-policy.html">privacy policy</a>.</label>
@@ -1009,8 +977,7 @@
       </form>
     </div>
   </div>
-
-  <script src="assets/js/calculators.js?v=20261120z40" defer></script>
+<script src="assets/js/calculators.js?v=20261120z40" defer></script>
   <script src="assets/js/icons.js?v=20261118z22" defer></script>
   <script src="assets/js/backend.js?v=20261118z22" defer></script><script src="assets/js/main.js?v=20261122z21" defer></script>  <script src="assets/js/lenders.js?v=20261120i" defer></script>
   <script src="assets/js/assistant.js?v=20261121a" defer></script>

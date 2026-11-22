@@ -348,32 +348,52 @@
     <a class="fab" href="tel:+919182703079" data-setting="phone" aria-label="Call AS Financial"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg></a>
   </div>
 
-  <div class="popup-overlay" id="apply-popup" role="dialog" aria-modal="true" aria-labelledby="apply-title">
+    <div class="popup-overlay" id="apply-popup" role="dialog" aria-modal="true" aria-labelledby="apply-title">
     <div class="popup">
       <button type="button" class="popup-close" data-popup-close aria-label="Close"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-close"></use></svg></button>
       <span class="pill pill-gold" style="margin-bottom:12px"><span class="dot"></span> Free eligibility check</span>
       <h3 id="apply-title">Let's find your best loan.</h3>
       <p>Share a few details and an advisor will call you within 30 minutes with indicative offers.</p>
       <form data-lead-form data-source="Loans page popup">
-                  <input type="text" name="website" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0" aria-label="Website">
+        <input type="text" name="website" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0" aria-label="Website">
         <div class="form-grid">
-          <div class="field full"><label for="lp-name">Full name <span class="req">*</span></label><input id="lp-name" name="name" type="text" placeholder="e.g. Ramesh Kumar" required></div>
-          <div class="field"><label for="lp-phone">Mobile number <span class="req">*</span></label><input id="lp-phone" name="phone" type="tel" placeholder="10-digit mobile" required inputmode="tel" autocomplete="tel"></div>
-          <div class="field"><label for="lp-email">Email</label><input id="lp-email" name="email" type="email" placeholder="you@example.com"></div>
-          <div class="field"><label for="lp-product">Loan type</label><select id="lp-product" name="product"><option>Home Loan</option><option>Personal Loan</option><option>Business Loan</option><option>Mortgage / LAP</option><option>Education Loan</option><option>Plot / Land Loan</option><option>Car Loan</option><option>Doctor Loan</option><option>Balance Transfer</option><option>Insurance</option><option>Other</option></select></div>
-          <div class="field"><label for="lp-amount">Loan amount</label><select id="lp-amount" name="amount"><option>Below â‚¹5 Lakh</option><option>â‚¹5 â€“ 10 Lakh</option><option selected>â‚¹10 â€“ 25 Lakh</option><option>â‚¹25 â€“ 50 Lakh</option><option>â‚¹50 Lakh â€“ 1 Crore</option><option>Above â‚¹1 Crore</option></select></div>
-          <div class="field"><label for="lp-employment">Employment</label><select id="lp-employment" name="employment"><option>Salaried</option><option>Self-employed</option><option>Business owner</option><option>NRI</option></select></div>
-          <div class="field"><label for="lp-city">City</label><input id="lp-city" name="city" type="text" value="Hyderabad"></div>
-          <div class="field full"><label for="lp-message">Tell us more</label><input id="lp-message" name="message" type="text" placeholder="Optional"></div>
-          <div class="full"><label class="consent"><input type="checkbox" required> I agree to be contacted by AS Financial about my enquiry by phone, SMS or WhatsApp and accept the <a href="privacy-policy.html">privacy policy</a>.</label></div>
-          <div class="field full"><button class="btn btn-gold btn-block" type="submit">Get a call back <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button></div>
+          <div class="field full">
+            <label for="ap-name">Full name <span class="req">*</span></label>
+            <input id="ap-name" name="name" type="text" placeholder="e.g. Ramesh Kumar" required autocomplete="name">
+          </div>
+          <div class="field full">
+            <label for="ap-phone">Mobile number <span class="req">*</span></label>
+            <input id="ap-phone" name="phone" type="tel" placeholder="e.g. 9182703079" required autocomplete="tel" inputmode="tel" aria-describedby="ap-phone-hint">
+            <small class="field-hint" id="ap-phone-hint">Enter a 10-digit mobile number (country code optional).</small>
+          </div>
+          <div class="field full">
+            <label for="ap-product">Loan type</label>
+            <select id="ap-product" name="product">
+              <option>Home Loan</option>
+              <option>Personal Loan</option>
+              <option>Business Loan</option>
+              <option>Mortgage / LAP</option>
+              <option>Education Loan</option>
+              <option>Plot / Land Loan</option>
+              <option>Car Loan</option>
+              <option>Doctor Loan</option>
+              <option>Balance Transfer</option>
+              <option>Insurance</option>
+              <option>Other / not sure</option>
+            </select>
+          </div>
+          <div class="full">
+            <label class="consent"><input type="checkbox" required> I agree to be contacted by AS Financial about my enquiry by phone, SMS or WhatsApp and accept the <a href="privacy-policy.html">privacy policy</a>.</label>
+          </div>
+          <div class="field full">
+            <button class="btn btn-gold btn-block" type="submit">Get a call back <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+          </div>
           <div class="form-success full" role="status" aria-live="polite"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Thanks! Your enquiry is in. Our advisor will call you within 30 minutes.</span></div>
         </div>
       </form>
     </div>
   </div>
-
-  <script src="assets/js/calculators.js?v=20261120z40" defer></script>
+<script src="assets/js/calculators.js?v=20261120z40" defer></script>
   <script src="assets/js/icons.js?v=20261118z22" defer></script>
   <script src="assets/js/backend.js?v=20261118z22" defer></script><script src="assets/js/main.js?v=20261122z21" defer></script>
 </body>
