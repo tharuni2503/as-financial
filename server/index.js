@@ -142,18 +142,32 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-const enquiriesByIp = new Map();
+const rateLimitFallback = new Map();
+async function takeRateLimit(key, limit, windowMs) {
+  const k = String(key || '').slice(0, 200);
+  const lim = Math.max(1, Number(limit) || 1);
+  const win = Math.max(1000, Number(windowMs) || 60000);
+  if (store.takeRateLimit) {
+    try { return await store.takeRateLimit(k, lim, win); } catch (e) { console.warn('[rate-limit] store fallback:', e.message); }
+  }
+  const now = Date.now();
+  let rec = rateLimitFallback.get(k);
+  if (!rec || rec.resetAt <= now) rec = { count: 0, resetAt: now + win };
+  rec.count += 1;
+  rateLimitFallback.set(k, rec);
+  if (rateLimitFallback.size > 5000) {
+    for (const [rk, rv] of rateLimitFallback) { if (rv.resetAt <= now) rateLimitFallback.delete(rk); }
+    if (rateLimitFallback.size > 5000) rateLimitFallback.clear();
+  }
+  return { allowed: rec.count <= lim, count: rec.count, limit: lim, resetAt: rec.resetAt };
+}
+
 const ENQUIRY_LIMIT = 6;
 const ENQUIRY_WINDOW_MS = 10 * 60 * 1000;
 
-function enquiryRateLimited(ip) {
-  const now = Date.now();
-  const hits = (enquiriesByIp.get(ip) || []).filter((time) => now - time < ENQUIRY_WINDOW_MS);
-  hits.push(now);
-  enquiriesByIp.set(ip, hits);
-  if (enquiriesByIp.size > 5000) enquiriesByIp.clear();
-  scheduleSecurityPersist(false);
-  return hits.length > ENQUIRY_LIMIT;
+async function enquiryRateLimited(ip) {
+  const r = await takeRateLimit('enquiry:' + (ip || 'unknown'), ENQUIRY_LIMIT, ENQUIRY_WINDOW_MS);
+  return !r.allowed;
 }
 
 async function requireSession(req, res, next) {
@@ -311,7 +325,9 @@ app.post('/api/login', asyncRoute(async (req, res) => {
   const ip = req.ip || 'unknown';
   const email = String((req.body && req.body.email) || '').trim().toLowerCase();
   const acctKey = email ? ('acct:' + email) : '';
-  if (auth.tooManyAttempts(ip) || (acctKey && auth.tooManyAttempts(acctKey))) {
+  const ipRl = await takeRateLimit('login:ip:' + ip, 20, 15 * 60 * 1000);
+  const acctRl = acctKey ? await takeRateLimit('login:' + acctKey, 10, 15 * 60 * 1000) : { allowed: true };
+  if (!ipRl.allowed || !acctRl.allowed || auth.tooManyAttempts(ip) || (acctKey && auth.tooManyAttempts(acctKey))) {
     audit(req, { type: 'auth.login_rate_limited', actorEmail: email, summary: 'Login rate limited', meta: { ip } });
     res.status(429).json({ error: 'Too many attempts. Please try again in a few minutes.' });
     return;
@@ -465,7 +481,7 @@ app.put('/api/content/:section', requireSession, requireRole('staff', 'admin', '
 
 app.post('/api/enquiries', asyncRoute(async (req, res) => {
   const ip = req.ip || 'unknown';
-  if (enquiryRateLimited(ip)) {
+  if (await enquiryRateLimited(ip)) {
     res.status(429).json({ error: 'Too many enquiries from this connection. Please call us instead.' });
     return;
   }
@@ -640,7 +656,7 @@ async function writeAdminCollection(req, name, list) {
 
 app.post('/api/track', asyncRoute(async (req, res) => {
   const ip = req.ip || 'unknown';
-  if (pwRateLimited('track:' + ip, 120, 60 * 1000)) {
+  if (await pwRateLimited('track:' + ip, 120, 60 * 1000)) {
     res.status(429).json({ error: 'Too many requests.' });
     return;
   }
@@ -1203,17 +1219,9 @@ app.get('/api/admin/uploads/:file', requireSession, requireRole('staff', 'admin'
 
 /* --------------------------------------------------- password & users */
 
-const pwAttemptsByIp = new Map();
-function pwRateLimited(ip, limit, windowMs) {
-  const now = Date.now();
-  const key = ip || 'unknown';
-  const rec = pwAttemptsByIp.get(key) || { hits: [] };
-  rec.hits = rec.hits.filter((t) => now - t < (windowMs || 15 * 60 * 1000));
-  rec.hits.push(now);
-  pwAttemptsByIp.set(key, rec);
-  if (pwAttemptsByIp.size > 5000) pwAttemptsByIp.clear();
-  scheduleSecurityPersist(false);
-  return rec.hits.length > (limit || 10);
+async function pwRateLimited(key, limit, windowMs) {
+  const r = await takeRateLimit('pw:' + String(key || 'unknown'), limit || 10, windowMs || 15 * 60 * 1000);
+  return !r.allowed;
 }
 
 function validatePassword(pw) {
@@ -1237,7 +1245,7 @@ function userPublic(user) {
 
 app.post('/api/change-password', requireSession, requireCsrf, asyncRoute(async (req, res) => {
   const ip = req.ip || 'unknown';
-  if (pwRateLimited(ip, 12, 15 * 60 * 1000)) {
+  if (await pwRateLimited(ip, 12, 15 * 60 * 1000)) {
     res.status(429).json({ error: 'Too many attempts. Please try again later.' });
     return;
   }
@@ -1269,7 +1277,7 @@ app.post('/api/change-password', requireSession, requireCsrf, asyncRoute(async (
 
 app.post('/api/forgot-password', asyncRoute(async (req, res) => {
   const ip = req.ip || 'unknown';
-  if (pwRateLimited('forgot:' + ip, 6, 15 * 60 * 1000)) {
+  if (await pwRateLimited('forgot:' + ip, 6, 15 * 60 * 1000)) {
     res.status(429).json({ error: 'Too many requests. Please try again later.' });
     return;
   }
@@ -1306,7 +1314,7 @@ app.post('/api/forgot-password', asyncRoute(async (req, res) => {
 
 app.post('/api/reset-password', asyncRoute(async (req, res) => {
   const ip = req.ip || 'unknown';
-  if (pwRateLimited('reset:' + ip, 10, 15 * 60 * 1000)) {
+  if (await pwRateLimited('reset:' + ip, 10, 15 * 60 * 1000)) {
     res.status(429).json({ error: 'Too many attempts. Please try again later.' });
     return;
   }

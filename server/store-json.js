@@ -446,6 +446,25 @@ function describe() {
   };
 }
 
+
+const rateLimits = new Map();
+async function takeRateLimit(key, limit, windowMs) {
+  const k = String(key || '').slice(0, 200);
+  const lim = Math.max(1, Number(limit) || 1);
+  const win = Math.max(1000, Number(windowMs) || 60000);
+  const now = Date.now();
+  let rec = rateLimits.get(k);
+  if (!rec || rec.resetAt <= now) {
+    rec = { count: 0, resetAt: now + win };
+  }
+  rec.count += 1;
+  rateLimits.set(k, rec);
+  if (rateLimits.size > 5000) {
+    for (const [rk, rv] of rateLimits) { if (rv.resetAt <= now) rateLimits.delete(rk); }
+    if (rateLimits.size > 5000) rateLimits.clear();
+  }
+  return { allowed: rec.count <= lim, count: rec.count, limit: lim, resetAt: rec.resetAt };
+}
 module.exports = {
   DATA_DIR,
   ADMIN_COLLECTIONS,
@@ -481,5 +500,6 @@ module.exports = {
   addAnalyticsEvent,
   getAnalytics,
   stats,
-  describe
+  describe,
+  takeRateLimit
 };

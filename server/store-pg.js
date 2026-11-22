@@ -627,6 +627,25 @@ function describe() {
   };
 }
 
+
+async function takeRateLimit(key, limit, windowMs) {
+  const k = String(key || '').slice(0, 200);
+  const lim = Math.max(1, Number(limit) || 1);
+  const win = Math.max(1000, Number(windowMs) || 60000);
+  const resetAt = new Date(Date.now() + win);
+  const sql = `
+    INSERT INTO rate_limits (key, count, reset_at)
+    VALUES ($1, 1, $2)
+    ON CONFLICT (key) DO UPDATE SET
+      count = CASE WHEN rate_limits.reset_at <= NOW() THEN 1 ELSE rate_limits.count + 1 END,
+      reset_at = CASE WHEN rate_limits.reset_at <= NOW() THEN $2 ELSE rate_limits.reset_at END
+    RETURNING count, reset_at`;
+  const res = await getPool().query(sql, [k, resetAt.toISOString()]);
+  const row = res.rows[0] || { count: 1, reset_at: resetAt };
+  const count = Number(row.count) || 1;
+  const ra = row.reset_at ? new Date(row.reset_at).getTime() : resetAt.getTime();
+  return { allowed: count <= lim, count, limit: lim, resetAt: ra };
+}
 module.exports = {
   DATA_DIR: process.env.AS_DATA_DIR ? path.resolve(process.env.AS_DATA_DIR) : path.join(__dirname, '..', 'data'),
   ADMIN_COLLECTIONS,
@@ -662,5 +681,6 @@ module.exports = {
   addAnalyticsEvent,
   getAnalytics,
   stats,
-  describe
+  describe,
+  takeRateLimit
 };
