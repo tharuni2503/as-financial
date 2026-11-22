@@ -493,20 +493,53 @@ async function listAudit(options) {
 
 /* ------------------------------------------------------------- analytics */
 
-async function addAnalyticsEvent(event) {
-  const MAX_ANALYTICS_EVENTS = 2000;
-  const current = await getAnalytics();
-  const record = Object.assign({ id: 'AEV-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 7).toUpperCase(), at: new Date().toISOString() }, event || {});
-  current.events.push(record);
-  if (current.events.length > MAX_ANALYTICS_EVENTS) current.events = current.events.slice(-MAX_ANALYTICS_EVENTS);
-  await getPool().query(
-    'INSERT INTO app_meta (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
-    ['analytics', JSON.stringify(current)]
-  );
-  return record;
+function normalizeAnalyticsEvent(event) {
+  const src = event && typeof event === 'object' ? event : {};
+  const meta = src.meta && typeof src.meta === 'object' && !Array.isArray(src.meta) ? src.meta : {};
+  return {
+    id: String(src.id || ('AEV-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 7).toUpperCase())),
+    eventId: String(src.eventId || src.event_id || ''),
+    type: String(src.type || ''),
+    page: String(src.page || '/').slice(0, 200),
+    visitorId: String(src.visitorId || src.visitor_id || '').slice(0, 80),
+    sessionId: String(src.sessionId || src.session_id || '').slice(0, 80),
+    referrer: String(src.referrer || '').slice(0, 200),
+    utmSource: String(src.utmSource || src.utm_source || meta.utm_source || '').slice(0, 80),
+    utmMedium: String(src.utmMedium || src.utm_medium || meta.utm_medium || '').slice(0, 80),
+    utmCampaign: String(src.utmCampaign || src.utm_campaign || meta.utm_campaign || '').slice(0, 120),
+    deviceType: String(src.deviceType || src.device_type || '').slice(0, 40),
+    ip: String(src.ip || src.ip_hash || '').slice(0, 128),
+    ua: String(src.ua || '').slice(0, 200),
+    meta,
+    at: src.at || src.created_at || new Date().toISOString()
+  };
 }
 
-async function getAnalytics() {
+async function addAnalyticsEvent(event) {
+  const record = normalizeAnalyticsEvent(event);
+  try {
+    await getPool().query(
+      `INSERT INTO analytics_events (id, event_id, type, page, visitor_id, session_id, referrer, utm_source, utm_medium, utm_campaign, device_type, ip_hash, meta, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+       ON CONFLICT (event_id) WHERE event_id IS NOT NULL AND event_id <> '' DO NOTHING`,
+      [record.id, record.eventId || null, record.type, record.page, record.visitorId, record.sessionId, record.referrer, record.utmSource, record.utmMedium, record.utmCampaign, record.deviceType, record.ip, JSON.stringify(record.meta || {}), record.at]
+    );
+    return record;
+  } catch (e) {
+    // Fallback to legacy blob if table unavailable
+    const MAX_ANALYTICS_EVENTS = 2000;
+    const current = await getAnalyticsLegacyBlob();
+    current.events.push(record);
+    if (current.events.length > MAX_ANALYTICS_EVENTS) current.events = current.events.slice(-MAX_ANALYTICS_EVENTS);
+    await getPool().query(
+      'INSERT INTO app_meta (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+      ['analytics', JSON.stringify(current)]
+    );
+    return record;
+  }
+}
+
+async function getAnalyticsLegacyBlob() {
   try {
     const res = await getPool().query('SELECT value FROM app_meta WHERE key = $1', ['analytics']);
     if (!res.rows[0] || !res.rows[0].value) return { events: [] };
@@ -516,6 +549,37 @@ async function getAnalytics() {
   } catch (e) {
     return { events: [] };
   }
+}
+
+async function getAnalytics() {
+  try {
+    const res = await getPool().query(
+      `SELECT id, event_id, type, page, visitor_id, session_id, referrer, utm_source, utm_medium, utm_campaign, device_type, ip_hash, meta, created_at
+       FROM analytics_events ORDER BY created_at DESC LIMIT 5000`
+    );
+    if (res.rows && res.rows.length) {
+      const events = res.rows.map(r => ({
+        id: r.id,
+        eventId: r.event_id || '',
+        type: r.type,
+        page: r.page || '/',
+        visitorId: r.visitor_id || '',
+        sessionId: r.session_id || '',
+        referrer: r.referrer || '',
+        utmSource: r.utm_source || '',
+        utmMedium: r.utm_medium || '',
+        utmCampaign: r.utm_campaign || '',
+        deviceType: r.device_type || '',
+        ip: r.ip_hash || '',
+        meta: r.meta && typeof r.meta === 'object' ? r.meta : {},
+        at: r.created_at ? new Date(r.created_at).toISOString() : null
+      })).reverse();
+      return { events };
+    }
+  } catch (e) {
+    // fall through to legacy blob
+  }
+  return getAnalyticsLegacyBlob();
 }
 
 async function stats() {

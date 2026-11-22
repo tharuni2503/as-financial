@@ -36,9 +36,40 @@
     } catch (e) { return ''; }
   }
 
+  function getSessionId() {
+    try {
+      let id = sessionStorage.getItem('as_sid');
+      if (!id) { id = 'S-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); sessionStorage.setItem('as_sid', id); }
+      return id;
+    } catch (e) { return ''; }
+  }
+
+  function getUtm() {
+    try {
+      const p = new URLSearchParams(location.search);
+      const utm = {};
+      ['utm_source','utm_medium','utm_campaign'].forEach(k => { const v = p.get(k); if (v) utm[k] = v.slice(0, 80); });
+      if (Object.keys(utm).length) sessionStorage.setItem('as_utm', JSON.stringify(utm));
+      const stored = JSON.parse(sessionStorage.getItem('as_utm') || '{}');
+      return stored && typeof stored === 'object' ? stored : {};
+    } catch (e) { return {}; }
+  }
+
   function trackEvent(type, meta) {
     try {
-      const payload = { type: type, page: location.pathname + (location.hash || ''), visitorId: getVisitorId(), meta: meta || {} };
+      const utm = getUtm();
+      const payload = {
+        eventId: 'EVT-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+        type: type,
+        page: location.pathname + (location.hash || ''),
+        visitorId: getVisitorId(),
+        sessionId: getSessionId(),
+        referrer: document.referrer || '',
+        utmSource: utm.utm_source || '',
+        utmMedium: utm.utm_medium || '',
+        utmCampaign: utm.utm_campaign || '',
+        meta: Object.assign({}, utm, meta || {})
+      };
       fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), keepalive: true }).catch(() => {});
     } catch (e) {}
   }

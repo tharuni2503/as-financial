@@ -376,9 +376,34 @@ async function setSecurityState(state) {
 
 /* ------------------------------------------------------------- analytics */
 
+function normalizeAnalyticsEvent(event) {
+  const src = event && typeof event === 'object' ? event : {};
+  const meta = src.meta && typeof src.meta === 'object' && !Array.isArray(src.meta) ? src.meta : {};
+  return {
+    id: String(src.id || ('AEV-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 7).toUpperCase())),
+    eventId: String(src.eventId || src.event_id || '').slice(0, 120),
+    at: src.at || new Date().toISOString(),
+    type: String(src.type || '').slice(0, 40),
+    page: String(src.page || '/').slice(0, 200),
+    visitorId: String(src.visitorId || src.visitor_id || '').slice(0, 80),
+    sessionId: String(src.sessionId || src.session_id || '').slice(0, 80),
+    referrer: String(src.referrer || '').slice(0, 200),
+    utmSource: String(src.utmSource || src.utm_source || meta.utm_source || '').slice(0, 80),
+    utmMedium: String(src.utmMedium || src.utm_medium || meta.utm_medium || '').slice(0, 80),
+    utmCampaign: String(src.utmCampaign || src.utm_campaign || meta.utm_campaign || '').slice(0, 120),
+    deviceType: String(src.deviceType || src.device_type || '').slice(0, 40),
+    ip: String(src.ip || '').slice(0, 128),
+    ua: String(src.ua || '').slice(0, 200),
+    meta
+  };
+}
+
 async function addAnalyticsEvent(event) {
   if (!db.analytics || !Array.isArray(db.analytics.events)) db.analytics = emptyAnalytics();
-  const record = Object.assign({ id: 'AEV-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 7).toUpperCase(), at: new Date().toISOString() }, event || {});
+  const record = normalizeAnalyticsEvent(event);
+  if (record.eventId && db.analytics.events.some(e => e && e.eventId === record.eventId)) {
+    return db.analytics.events.find(e => e && e.eventId === record.eventId);
+  }
   db.analytics.events.push(record);
   if (db.analytics.events.length > MAX_ANALYTICS_EVENTS) {
     db.analytics.events = db.analytics.events.slice(-MAX_ANALYTICS_EVENTS);

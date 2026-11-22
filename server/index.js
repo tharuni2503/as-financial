@@ -622,20 +622,32 @@ app.post('/api/track', asyncRoute(async (req, res) => {
     res.status(400).json({ error: 'Invalid event type.' });
     return;
   }
-  const page = validate.text(body.page || req.get('referer') || '/', 200).slice(0, 200);
+  const page = validate.text(body.page || '/', 200).slice(0, 200);
   const visitorId = validate.text(body.visitorId, 80).slice(0, 80);
+  const eventId = validate.text(body.eventId, 120).slice(0, 120);
+  const referrer = validate.text(body.referrer, 200).slice(0, 200);
   const safeMeta = {};
   if (body.meta && typeof body.meta === 'object' && !Array.isArray(body.meta)) {
     ['form', 'product', 'source', 'field', 'reason', 'action', 'label', 'href', 'utm_source', 'utm_medium', 'utm_campaign'].forEach((k) => {
       if (body.meta[k] != null) safeMeta[k] = validate.text(body.meta[k], 160);
     });
   }
+  const ua = validate.text(req.get('user-agent') || '', 160);
+  const uaLower = ua.toLowerCase();
+  const deviceType = /mobile|android|iphone|ipod/.test(uaLower) ? 'mobile' : /ipad|tablet/.test(uaLower) ? 'tablet' : ua ? 'desktop' : 'unknown';
   await store.addAnalyticsEvent({
+    eventId: eventId || undefined,
     type,
     page,
     visitorId: visitorId || null,
+    sessionId: validate.text(body.sessionId, 80).slice(0, 80) || null,
+    referrer,
+    utmSource: validate.text(body.utmSource || safeMeta.utm_source, 80),
+    utmMedium: validate.text(body.utmMedium || safeMeta.utm_medium, 80),
+    utmCampaign: validate.text(body.utmCampaign || safeMeta.utm_campaign, 120),
+    deviceType,
     ip: crypto.createHash('sha256').update(String(ip)).digest('hex').slice(0, 16),
-    ua: validate.text(req.get('user-agent') || '', 160),
+    ua,
     meta: safeMeta
   });
   res.json({ ok: true });
@@ -671,14 +683,44 @@ app.get('/api/admin/analytics', requireSession, requireRole('staff', 'admin', 's
     if (e.type === 'form_submit' || e.type === 'form_submit_success' || e.type === 'submit_attempt') byDayMap[key].formSubmits += 1;
   });
   const pageMap = {};
+  const sourceMap = {};
+  const deviceMap = {};
+  const utmMap = {};
+  const landingMap = {};
+  const refMap = {};
   events30.forEach((e) => {
-    if (!e || e.type !== 'page_view') return;
-    const page = String(e.page || '/').slice(0, 120);
-    pageMap[page] = (pageMap[page] || 0) + 1;
+    if (!e) return;
+    if (e.type === 'page_view') {
+      const page = String(e.page || '/').slice(0, 120);
+      pageMap[page] = (pageMap[page] || 0) + 1;
+      const device = String(e.deviceType || e.device_type || 'unknown').toLowerCase() || 'unknown';
+      deviceMap[device] = (deviceMap[device] || 0) + 1;
+      const utm = String(e.utmSource || e.utm_source || (e.meta && e.meta.utm_source) || '').trim().toLowerCase();
+      const ref = String(e.referrer || '').trim();
+      let source = 'direct';
+      if (utm) source = utm;
+      else if (ref) {
+        try { const host = new URL(ref).hostname.replace(/^www\./, ''); source = host || 'referral'; }
+        catch (_) { source = 'referral'; }
+      }
+      sourceMap[source] = (sourceMap[source] || 0) + 1;
+      if (ref) { try { const host = new URL(ref).hostname.replace(/^www\./, ''); if (host) refMap[host] = (refMap[host] || 0) + 1; } catch (_) {} }
+      const campaign = String(e.utmCampaign || e.utm_campaign || (e.meta && e.meta.utm_campaign) || '').trim();
+      if (campaign) utmMap[campaign] = (utmMap[campaign] || 0) + 1;
+      if (!landingMap[e.visitorId || e.ip || page + e.at]) landingMap[e.visitorId || e.ip || page + e.at] = page;
+    }
   });
-  const topPages = Object.entries(pageMap).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([page, views]) => ({ page, views }));
+  const landingPages = {};
+  Object.values(landingMap).forEach(p => { landingPages[p] = (landingPages[p] || 0) + 1; });
+  const topList = (obj, keyName) => Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([k,v]) => ({ [keyName]: k, count: v }));
+  const topPages = topList(pageMap, 'page').map(x => ({ page: x.page, views: x.count }));
+  const trafficSources = topList(sourceMap, 'source');
+  const devices = topList(deviceMap, 'device');
+  const utmCampaigns = topList(utmMap, 'campaign');
+  const topReferrers = topList(refMap, 'referrer');
+  const topLandingPages = topList(landingPages, 'page').map(x => ({ page: x.page, entries: x.count }));
   const recent = events.slice(-20).reverse().map((e) => ({
-    at: e.at, type: e.type, page: e.page || '', visitorId: e.visitorId || '', meta: e.meta || {}
+    at: e.at, type: e.type, page: e.page || '', visitorId: e.visitorId || '', deviceType: e.deviceType || '', referrer: e.referrer || '', meta: e.meta || {}
   }));
   const lastFormAttempt = [...events].reverse().find((e) => e && ['form_start', 'form_submit', 'form_submit_success', 'form_submit_failed'].includes(e.type));
   res.json({
@@ -705,6 +747,11 @@ app.get('/api/admin/analytics', requireSession, requireRole('staff', 'admin', 's
     },
     daily: Object.values(byDayMap),
     topPages,
+    trafficSources,
+    devices,
+    utmCampaigns,
+    topReferrers,
+    topLandingPages,
     recent
   });
 }));

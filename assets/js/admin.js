@@ -149,6 +149,7 @@
 
   /* ---------------------------------------------------------------- state */
   let leads = [], products = [], partners = [], testimonials = [], posts = [], contentImages = {}, gallery = [], tasks = [], customers = [], notifications = [], settings = {};
+  let analyticsData = null;
   let apps = []; // applications removed from UI; kept as empty stub to avoid stale refs
   let leadPage = 1;
   const PAGE_SIZE = 8;
@@ -707,6 +708,7 @@
     else if (view === 'partners') renderPartners();
     else if (view === 'content') renderContent();
     else if (view === 'settings') renderSettings();
+    else if (view === 'analytics') renderAnalytics();
     else if (view === 'recovery') renderRecovery();
     else if (view === 'followups') renderFollowups();
     else if (view === 'health') renderHealth();
@@ -811,6 +813,7 @@
     if (!api) return;
     try {
       const data = await api.request('api/admin/analytics');
+      analyticsData = data;
       const s = (data && data.summary) || {};
       const views = Number(s.totalPageViews || 0);
       const visitors = Number(s.uniqueVisitors || 0);
@@ -893,6 +896,21 @@
       '<span style="flex:1"><b style="font-size:.78rem;color:' + (t.done ? '#5b6b7e' : '#0d2b4e') + ';text-decoration:' + (t.done ? 'line-through' : 'none') + ';font-weight:600;display:block">' + esc(t.text) + '</b><span style="font-size:.66rem;color:#5b6b7e">' + esc(t.due) + '</span></span>' +
       '</label>'
     ).join('');
+  }
+
+  async function renderAnalytics() {
+    const api = window.ASBackend; if (!api) return;
+    if (!analyticsData) { try { analyticsData = await api.request('api/admin/analytics'); } catch(e) {} }
+    const d = analyticsData || {};
+    const renderList = (id, arr, labelKey, valueKey, empty) => {
+      const el = $('#'+id); if (!el) return;
+      const max = Math.max(...arr.map(x => Number(x[valueKey]||0)), 1);
+      el.innerHTML = arr.length ? arr.map(x => '<div class="pipeline-row"><div class="p-top"><span>'+esc(String(x[labelKey]||'-'))+'</span><b>'+Number(x[valueKey]||0)+'</b></div><div class="pipeline-track"><span style="width:'+Math.round((Number(x[valueKey]||0)/max)*100)+'%"></span></div></div>').join('') : '<div class="empty-state" style="padding:18px"><p>'+esc(empty)+'</p></div>';
+    };
+    renderList('an-sources', Array.isArray(d.trafficSources)?d.trafficSources:[], 'source', 'count', 'No source data yet.');
+    renderList('an-devices', Array.isArray(d.devices)?d.devices:[], 'device', 'count', 'No device data yet.');
+    renderList('an-landings', Array.isArray(d.topLandingPages)?d.topLandingPages:[], 'page', 'entries', 'No landing data yet.');
+    renderList('an-utms', Array.isArray(d.utmCampaigns)?d.utmCampaigns:[], 'campaign', 'count', 'No UTM campaign data yet.');
   }
 
   function renderRecovery() {

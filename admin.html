@@ -549,8 +549,15 @@
 
         <!-- SETTINGS -->
         <section class="view" id="view-analytics">
-          <div class="page-head"><div><h2>Website Analytics</h2><p>Track visitors, page views, traffic sources, and engagement.</p></div></div>
-          <div class="card"><div class="card-body"><div class="empty-state" style="padding:28px"><h3>Coming soon</h3><p>First-party analytics summary is available on Overview. Detailed traffic-source, device, landing-page, and retention dashboards will be added here using real collected data.</p></div></div></div>
+          <div class="page-head"><div><h2>Website Analytics</h2><p>Track visitors, page views, traffic sources, and engagement from first-party data.</p></div></div>
+          <div class="dash-grid equal">
+            <div class="card"><div class="card-head"><div><h3>Traffic sources</h3><p>Page view sources (30 days)</p></div></div><div class="card-body"><div class="pipeline" id="an-sources"><div class="empty-state" style="padding:18px"><p>No source data yet.</p></div></div></div></div>
+            <div class="card"><div class="card-head"><div><h3>Devices</h3><p>Page views by device type</p></div></div><div class="card-body"><div class="pipeline" id="an-devices"><div class="empty-state" style="padding:18px"><p>No device data yet.</p></div></div></div></div>
+          </div>
+          <div class="dash-grid equal" style="margin-top:18px">
+            <div class="card"><div class="card-head"><div><h3>Top landing pages</h3><p>First pages visited</p></div></div><div class="card-body"><div class="pipeline" id="an-landings"><div class="empty-state" style="padding:18px"><p>No landing data yet.</p></div></div></div></div>
+            <div class="card"><div class="card-head"><div><h3>UTM campaigns</h3><p>Campaign-tagged page views</p></div></div><div class="card-body"><div class="pipeline" id="an-utms"><div class="empty-state" style="padding:18px"><p>No UTM campaign data yet.</p></div></div></div></div>
+          </div>
         </section>
 
         <section class="view" id="view-funnel">
