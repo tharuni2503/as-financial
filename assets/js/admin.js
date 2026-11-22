@@ -456,7 +456,7 @@
     return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + alpha + ')';
   }
 
-  function drawDonut(canvas, data) {
+  function drawDonut(canvas, data, centerLabel) {
     const c = setupCanvas(canvas);
     if (!c) return;
     const { ctx, w, h } = c;
@@ -481,7 +481,7 @@
     ctx.fillText(compact(total), cx, cy - 4);
     ctx.fillStyle = '#94a0ad';
     ctx.font = '600 9px Manrope, sans-serif';
-    ctx.fillText('SANCTIONED', cx, cy + 13);
+    ctx.fillText(String(centerLabel || 'TOTAL').toUpperCase(), cx, cy + 13);
   }
 
   const MIX_COLORS = ['#0d2b4e', '#c9a227', '#2b6cb0', '#137a5b', '#6b4fa0', '#b2651c'];
@@ -496,6 +496,18 @@
     if (currentView === 'reports') {
       drawBarChart(charts.disb, monthLabels(6), monthlyDisbursements(), '#c9a227');
       renderSourceChart();
+    }
+    if (currentView === 'analytics' && analyticsData) {
+      const d = analyticsData || {};
+      const s = d.summary || {};
+      analyticsDonut('#anly-sources-chart', '#anly-sources-legend', d.trafficSources, 'source', 'count', 'Views');
+      analyticsDonut('#anly-devices-chart', '#anly-devices-legend', d.devices, 'device', 'count', 'Views');
+      analyticsBars('#anly-landings-chart', d.topLandingPages, 'page', 'entries');
+      analyticsBars('#anly-utms-chart', d.utmCampaigns, 'campaign', 'count');
+      const engCanvas = $('#anly-engagement-chart');
+      if (engCanvas && typeof drawBarChart === 'function') {
+        drawBarChart(engCanvas, ['CTA', 'Phone', 'WhatsApp', 'Email'], [Number(s.ctaClicks||0), Number(s.phoneClicks||0), Number(s.whatsappClicks||0), Number(s.emailClicks||0)]);
+      }
     }
   }
 
@@ -1043,19 +1055,55 @@
     if (host) host.innerHTML = rows.length ? rows.map(r=>'<div class="pipeline-row"><div class="p-top"><span>'+esc(r.month)+'</span><b>'+r.count+'</b></div><div class="pipeline-track"><span style="width:'+Math.round((r.count/max)*100)+'%"></span></div></div>').join('') : '<div class="empty-state" style="padding:18px"><p>No lead data yet.</p></div>';
   }
 
+  function analyticsPalette() { return ['#10294B', '#D6A329', '#2B8C89', '#6C5CE7', '#E17055', '#0984E3', '#00B894', '#F39C12']; }
+
+  function analyticsDonut(canvasId, legendId, rows, labelKey, valueKey, centerLabel) {
+    const canvas = $(canvasId); if (!canvas) return;
+    const palette = analyticsPalette();
+    const list = Array.isArray(rows) ? rows : [];
+    const data = list.map((row, i) => ({ label: String(row[labelKey] || '-'), value: Number(row[valueKey] || 0), color: palette[i % palette.length] })).filter(d => d.value > 0).slice(0, 6);
+    drawDonut(canvas, data, centerLabel);
+    const legend = $(legendId);
+    if (legend) {
+      const total = data.reduce((sum, d) => sum + d.value, 0) || 1;
+      legend.innerHTML = data.length ? data.map(d => '<div class="donut-legend-item"><i style="background:' + d.color + '"></i><span>' + esc(d.label) + '</span><b>' + Math.round(d.value / total * 100) + '%</b></div>').join('') : '<div class="empty-state" style="padding:4px"><p>No data yet.</p></div>';
+    }
+  }
+
+  function analyticsBars(canvasId, rows, labelKey, valueKey) {
+    const canvas = $(canvasId); if (!canvas || typeof drawBarChart !== 'function') return;
+    const list = Array.isArray(rows) ? rows : [];
+    const labels = list.map(r => { const t = String(r[labelKey] || '-'); return t.length > 11 ? t.slice(0, 10) + '…' : t; });
+    const values = list.map(r => Number(r[valueKey] || 0));
+    drawBarChart(canvas, labels.length ? labels : ['—'], values.length ? values : [0]);
+  }
+
   async function renderAnalytics() {
     const api = window.ASBackend; if (!api) return;
     if (!analyticsData) { try { analyticsData = await api.request('api/admin/analytics'); } catch(e) {} }
     const d = analyticsData || {};
-    const renderList = (id, arr, labelKey, valueKey, empty) => {
-      const el = $('#'+id); if (!el) return;
-      const max = Math.max(...arr.map(x => Number(x[valueKey]||0)), 1);
-      el.innerHTML = arr.length ? arr.map(x => '<div class="pipeline-row"><div class="p-top"><span>'+esc(String(x[labelKey]||'-'))+'</span><b>'+Number(x[valueKey]||0)+'</b></div><div class="pipeline-track"><span style="width:'+Math.round((Number(x[valueKey]||0)/max)*100)+'%"></span></div></div>').join('') : '<div class="empty-state" style="padding:18px"><p>'+esc(empty)+'</p></div>';
-    };
-    renderList('an-sources', Array.isArray(d.trafficSources)?d.trafficSources:[], 'source', 'count', 'No source data yet.');
-    renderList('an-devices', Array.isArray(d.devices)?d.devices:[], 'device', 'count', 'No device data yet.');
-    renderList('an-landings', Array.isArray(d.topLandingPages)?d.topLandingPages:[], 'page', 'entries', 'No landing data yet.');
-    renderList('an-utms', Array.isArray(d.utmCampaigns)?d.utmCampaigns:[], 'campaign', 'count', 'No UTM campaign data yet.');
+    const s = d.summary || {};
+    const set = (id, v) => { const el = $('#' + id); if (el) el.textContent = v; };
+
+    const engagement = Number(s.ctaClicks||0) + Number(s.phoneClicks||0) + Number(s.whatsappClicks||0) + Number(s.emailClicks||0);
+    const engagement7 = Number(s.last7CtaClicks||0) + Number(s.last7PhoneClicks||0) + Number(s.last7WhatsappClicks||0);
+    set('anly-views', Number(s.totalPageViews||0));
+    set('anly-views7', Number(s.last7PageViews||0));
+    set('anly-visitors', Number(s.uniqueVisitors||0));
+    set('anly-visitors7', Number(s.last7UniqueVisitors||0));
+    set('anly-starts', Number(s.formStarts||0));
+    set('anly-submits', Number(s.formSubmits||0));
+    set('anly-engagement', engagement);
+    set('anly-engagement7', engagement7);
+
+    analyticsDonut('#anly-sources-chart', '#anly-sources-legend', d.trafficSources, 'source', 'count', 'Views');
+    analyticsDonut('#anly-devices-chart', '#anly-devices-legend', d.devices, 'device', 'count', 'Views');
+    analyticsBars('#anly-landings-chart', d.topLandingPages, 'page', 'entries');
+    analyticsBars('#anly-utms-chart', d.utmCampaigns, 'campaign', 'count');
+    const engCanvas = $('#anly-engagement-chart');
+    if (engCanvas && typeof drawBarChart === 'function') {
+      drawBarChart(engCanvas, ['CTA', 'Phone', 'WhatsApp', 'Email'], [Number(s.ctaClicks||0), Number(s.phoneClicks||0), Number(s.whatsappClicks||0), Number(s.emailClicks||0)]);
+    }
   }
 
   async function renderRecovery() {
@@ -2792,6 +2840,13 @@
     if (addTaskBtn) addTaskBtn.addEventListener('click', taskModal);
     const refreshAnalyticsBtn = $('#refresh-analytics-btn');
     if (refreshAnalyticsBtn) refreshAnalyticsBtn.addEventListener('click', () => { renderOverview(); toast('Analytics refreshed.'); });
+    const analyticsRefreshBtn = $('#analytics-refresh-btn');
+    if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', async () => {
+      const api = window.ASBackend;
+      if (api) { try { analyticsData = await api.request('api/admin/analytics'); } catch (e) {} }
+      renderAnalytics();
+      toast('Analytics refreshed.');
+    });
 
     const markAllNotifsBtn = $('#mark-all-notifs-read');
     if (markAllNotifsBtn) markAllNotifsBtn.addEventListener('click', () => {
