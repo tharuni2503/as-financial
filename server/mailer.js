@@ -38,16 +38,11 @@ function getTransport() {
   return transport;
 }
 
-function absoluteResetUrl(resetPathOrUrl, req) {
+function absoluteResetUrl(resetPathOrUrl) {
   if (!resetPathOrUrl) return '';
   if (/^https?:\/\//i.test(resetPathOrUrl)) return resetPathOrUrl;
   if (APP_URL) return APP_URL + (resetPathOrUrl.startsWith('/') ? resetPathOrUrl : '/' + resetPathOrUrl);
-  if (req && req.headers) {
-    const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-    const host = req.headers['x-forwarded-host'] || req.headers.host;
-    if (host) return String(proto).split(',')[0].trim() + '://' + host + (resetPathOrUrl.startsWith('/') ? resetPathOrUrl : '/' + resetPathOrUrl);
-  }
-  return resetPathOrUrl;
+  return '';
 }
 
 async function sendPasswordReset({ to, name, resetUrl, expiresAt }) {

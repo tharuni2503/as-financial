@@ -366,6 +366,7 @@ h3, h4 { margin: 0; font-weight: 800; letter-spacing: -.02em; color: var(--navy)
 .kpi-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.6); }
 .kpi-icon.gold { background: linear-gradient(180deg,#FBF5E6,#f4e7c2); color: var(--gold-deep); }
 .kpi-icon.blue { background: linear-gradient(180deg,#f0f6fd,#e6eff9); color: var(--blue); }
+.kpi-icon.amber { background: linear-gradient(180deg,#fff6df,#f4e3b2); color: #9a6700; }
 .kpi-icon.green { background: linear-gradient(180deg,#edf9f3,#e3f3eb); color: var(--green); }
 .kpi-icon.purple { background: linear-gradient(180deg,#f5f1fb,#ece6f6); color: var(--purple); }
 .kpi-chip { font-size: .66rem; font-weight: 800; padding: 3px 8px; border-radius: 99px; display: inline-flex; align-items: center; gap: 3px; }

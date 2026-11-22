@@ -47,11 +47,7 @@ function getPool() {
         .replace(/([?&])uselibpqcompat=[^&]*/ig, '$1')
         .replace(/[?&]$/, '');
     }
-    // Supabase/managed Postgres may present cert chains Node rejects even with rejectUnauthorized:false in some setups.
-    // Keep encrypted TLS but relax verification unless strict verification is explicitly requested.
-    if (process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0') {
-      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    }
+    // Keep encrypted TLS. Set PG_TLS_INSECURE=1 only when the environment requires relaxed verification.
   }
   const ssl = wantsSsl ? { rejectUnauthorized: !!verify } : undefined;
   pool = new pg.Pool({ connectionString, ssl });

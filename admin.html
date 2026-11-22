@@ -205,7 +205,7 @@
           <div class="page-head">
             <div>
               <h2><span id="greeting-text">Good morning</span>, <span class="serif" id="greeting-name">Admin</span></h2>
-              <p>Track website performance, enquiries, and follow-up actions in one place.</p>
+              <p>Website analytics, enquiry growth, and urgent follow-ups.</p>
             </div>
             <div class="page-head-actions">
               <button type="button" class="a-btn a-btn-light" data-view-link="leads"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg> View enquiries</button>
@@ -217,7 +217,7 @@
             <div class="kpi">
               <div class="kpi-top">
                 <span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-eye"></use></svg></span>
-                <span class="kpi-chip up" id="an-views-chip">All time</span>
+                <span class="kpi-chip up">All time</span>
               </div>
               <div class="kpi-value" id="an-total-views">0</div>
               <div class="kpi-label">Page views</div>
@@ -234,12 +234,12 @@
             </div>
             <div class="kpi">
               <div class="kpi-top">
-                <span class="kpi-icon green"><svg class="icon" aria-hidden="true"><use href="#i-file-text"></use></svg></span>
-                <span class="kpi-chip" id="an-conversion-chip">Conversion</span>
+                <span class="kpi-icon amber"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></span>
+                <span class="kpi-chip">Intent</span>
               </div>
-              <div class="kpi-value" id="an-form-submits">0</div>
-              <div class="kpi-label">Form submit attempts</div>
-              <div class="kpi-sub" id="an-last-attempt">No attempts yet</div>
+              <div class="kpi-value" id="an-started-not-submitted">0</div>
+              <div class="kpi-label">Started, not submitted</div>
+              <div class="kpi-sub"><b id="an-form-starts">0</b> started &middot; <b id="an-form-submits">0</b> submitted</div>
             </div>
             <div class="kpi">
               <div class="kpi-top">
@@ -254,25 +254,39 @@
 
           <div class="dash-grid equal">
             <div class="card">
+              <div class="card-head"><div><h3>Website growth (7 days)</h3><p>Page views, form starts, and submissions</p></div></div>
+              <div class="card-body">
+                <div class="chart-wrap" style="height:260px"><canvas id="ov-trend-chart"></canvas></div>
+                <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:.75rem;color:var(--muted)">
+                  <span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#2b6cb0;margin-right:6px"></i>Page views</span>
+                  <span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#c9a227;margin-right:6px"></i>Submissions</span>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head"><div><h3>Enquiry funnel</h3><p>Visitor intent to enquiry submission</p></div></div>
+              <div class="card-body">
+                <div class="chart-wrap" style="height:260px"><canvas id="ov-funnel-chart"></canvas></div>
+                <div id="ov-funnel-note" style="margin-top:12px;font-size:.8125rem;color:var(--muted)">No funnel data yet.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dash-grid equal" style="margin-top:18px">
+            <div class="card">
+              <div class="card-head">
+                <div><h3>Urgent reminders</h3><p>Leads and follow-ups that need attention</p></div>
+                <button type="button" class="a-btn a-btn-ghost a-btn-sm" data-view-link="leads">View enquiries</button>
+              </div>
+              <div class="card-body"><div class="alert-list" id="ov-urgent-list"><div class="empty-state" style="padding:18px"><p>No urgent reminders right now.</p></div></div></div>
+            </div>
+            <div class="card">
               <div class="card-head">
                 <div><h3>Lead pipeline</h3><p>Current enquiry status breakdown</p></div>
                 <button type="button" class="a-btn a-btn-ghost a-btn-sm" data-view-link="leads">Open enquiries</button>
               </div>
               <div class="card-body">
                 <div class="pipeline" id="ov-lead-pipeline"><div class="empty-state" style="padding:18px"><p>No enquiry data yet.</p></div></div>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="card-head">
-                <div><h3>Needs attention</h3><p>Recent enquiries requiring follow-up</p></div>
-                <button type="button" class="a-btn a-btn-ghost a-btn-sm" data-view-link="leads">View all</button>
-              </div>
-              <div class="table-wrap">
-                <table class="a-table">
-                  <thead><tr><th scope="col">Customer</th><th scope="col">Product</th><th scope="col">Status</th><th scope="col">Received</th></tr></thead>
-                  <tbody id="ov-recent-leads"><tr><td colspan="4" class="table-empty">No enquiries yet.</td></tr></tbody>
-                </table>
               </div>
             </div>
           </div>

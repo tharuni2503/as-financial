@@ -776,12 +776,23 @@
       ).join('') : '<div class="empty-state" style="padding:18px"><p>No enquiry data yet.</p><button type="button" class="a-btn a-btn-light a-btn-sm" data-view-link="leads">Go to enquiries</button></div>';
     }
 
-    const recentLeadsBody = $('#ov-recent-leads');
-    if (recentLeadsBody) {
-      const recentLeads = [...leads].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 5);
-      recentLeadsBody.innerHTML = recentLeads.length ? recentLeads.map(l =>
-        '<tr><td><b style="color:var(--navy)">' + esc(l.name || 'Unknown') + '</b><div style="font-size:.75rem;color:var(--muted)">' + esc(l.phone || '') + '</div></td><td>' + esc(l.product || '-') + '</td><td>' + badge(l.status) + '</td><td title="' + esc(fmtDate(l.createdAt)) + '">' + esc(timeAgo(l.createdAt)) + '</td></tr>'
-      ).join('') : '<tr><td colspan="4" class="table-empty">No enquiries yet.</td></tr>';
+    const urgentHost = $('#ov-urgent-list');
+    if (urgentHost) {
+      const now = Date.now();
+      const urgent = [];
+      leads.forEach(l => {
+        const ageHrs = (now - new Date(l.createdAt || 0).getTime()) / 36e5;
+        if (l.status === 'New') urgent.push({ level: ageHrs > 24 ? 'high' : 'medium', title: 'New enquiry needs contact', detail: (l.name || 'Unknown') + ' · ' + (l.product || 'Enquiry'), time: l.createdAt, id: l.id });
+        else if (l.status === 'Contacted' && ageHrs > 72) urgent.push({ level: 'medium', title: 'Follow-up overdue', detail: (l.name || 'Unknown') + ' · contacted ' + Math.floor(ageHrs/24) + 'd ago', time: l.createdAt, id: l.id });
+      });
+      urgent.sort((a,b)=> (a.level==='high'?0:1)-(b.level==='high'?0:1) || new Date(b.time)-new Date(a.time));
+      const top = urgent.slice(0,6);
+      urgentHost.innerHTML = top.length ? top.map(u =>
+        '<div class="alert-item ' + (u.level==='high'?'alert-high':'alert-medium') + '" style="display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line-soft)">' +
+        '<span style="width:10px;height:10px;border-radius:50%;margin-top:6px;flex:none;background:' + (u.level==='high'?'#b3423a':'#c9a227') + '"></span>' +
+        '<div style="flex:1;min-width:0"><b style="display:block;font-size:.875rem;color:var(--navy)">' + esc(u.title) + '</b><div style="font-size:.8125rem;color:var(--muted)">' + esc(u.detail) + '</div></div>' +
+        '<span style="font-size:.75rem;color:var(--muted);white-space:nowrap">' + esc(timeAgo(u.time)) + '</span></div>'
+      ).join('') : '<div class="empty-state" style="padding:18px"><p>No urgent reminders right now.</p></div>';
     }
   }
 
@@ -793,37 +804,47 @@
     try {
       const data = await api.request('api/admin/analytics');
       const s = (data && data.summary) || {};
-      setText('an-total-views', Number(s.totalPageViews || 0));
-      setText('an-views-7d', Number(s.last7PageViews || 0));
-      setText('an-unique-visitors', Number(s.uniqueVisitors || 0));
-      setText('an-visitors-7d', Number(s.last7UniqueVisitors || 0));
-      setText('an-form-submits', Number(s.formSubmits || 0));
-      setText('ov-form-starts', Number(s.formStarts || 0));
-      setText('ov-form-starts-7d', Number(s.last7FormStarts || 0));
-      setText('an-form-success', Number(s.formSubmitSuccess || 0));
+      const views = Number(s.totalPageViews || 0);
+      const visitors = Number(s.uniqueVisitors || 0);
       const starts = Number(s.formStarts || 0);
       const submits = Number(s.formSubmits || 0);
+      const startedNotSubmitted = Math.max(0, starts - submits);
+      setText('an-total-views', views);
+      setText('an-views-7d', Number(s.last7PageViews || 0));
+      setText('an-unique-visitors', visitors);
+      setText('an-visitors-7d', Number(s.last7UniqueVisitors || 0));
+      setText('an-form-starts', starts);
+      setText('ov-form-starts', starts);
+      setText('ov-form-starts-7d', Number(s.last7FormStarts || 0));
+      setText('an-form-submits', submits);
+      setText('an-started-not-submitted', startedNotSubmitted);
+      setText('an-form-success', Number(s.formSubmitSuccess || 0));
       const rate = starts > 0 ? Math.round((submits / starts) * 100) : 0;
       setText('ov-conversion-rate', rate + '%');
-      setText('an-conversion-chip', starts > 0 ? rate + '% conv.' : 'Conversion');
-      const lastAttempt = s.lastFormAttemptAt ? (timeAgo(s.lastFormAttemptAt) + ' · ' + String(s.lastFormAttemptType || '').replace(/_/g, ' ')) : 'No attempts yet';
-      setText('an-last-attempt', lastAttempt);
 
-      // Daily/top page cards removed from overview; recent activity below shows who entered pages.
+      const daily = Array.isArray(data.daily) ? data.daily : [];
+      const labels = daily.map(d => { try { return new Date(d.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' }); } catch(e){ return String(d.date||''); } });
+      const viewSeries = daily.map(d => Number(d.pageViews || 0));
+      const submitSeries = daily.map(d => Number(d.formSubmits || 0));
+      const trendCanvas = $('#ov-trend-chart');
+      if (trendCanvas && typeof drawLineChart === 'function') drawLineChart(trendCanvas, labels.length ? labels : ['-'], viewSeries.length ? viewSeries : [0], submitSeries.length ? submitSeries : [0]);
 
-      const recent = Array.isArray(data.recent) ? data.recent : [];
-      const recentBody = $('#an-recent-body');
-      if (recentBody) recentBody.innerHTML = recent.length ? recent.map(e => {
-        const eventLabel = String(e.type || '').replace(/_/g, ' ');
-        const rawVisitor = String(e.visitorId || '').trim();
-        const visitor = rawVisitor ? 'Visitor ' + esc(rawVisitor.slice(-6).toUpperCase()) : 'Unknown visitor';
-        const page = esc(e.page || '/');
-        const badgeCls = eventLabel.includes('page view') ? 'b-blue' : eventLabel.includes('success') ? 'b-green' : eventLabel.includes('fail') ? 'b-red' : 'b-amber';
-        return '<tr><td title="' + esc(fmtDate(e.at)) + '">' + esc(timeAgo(e.at)) + '</td><td title="' + esc(rawVisitor || 'Unknown') + '">' + visitor + '</td><td><b style="color:var(--navy)">' + page + '</b></td><td><span class="badge ' + badgeCls + '">' + esc(eventLabel) + '</span></td></tr>';
-      }).join('') : '<tr><td colspan="4" class="table-empty">No website activity yet.</td></tr>';
+      const funnelCanvas = $('#ov-funnel-chart');
+      if (funnelCanvas && typeof drawBarChart === 'function') {
+        const fLabels = ['Page views', 'Form starts', 'Submitted', 'Not submitted'];
+        const fValues = [views, starts, submits, startedNotSubmitted];
+        // drawBarChart takes single series; render simple funnel with it
+        drawBarChart(funnelCanvas, fLabels, fValues, '#0d2b4e');
+      }
+      const funnelNote = $('#ov-funnel-note');
+      if (funnelNote) {
+        funnelNote.textContent = starts > 0
+          ? ('Conversion: ' + rate + '% from form start to submit. ' + startedNotSubmitted + ' enquiry form(s) started but not submitted.')
+          : 'No funnel data yet.';
+      }
     } catch (e) {
-      const recentBody = $('#an-recent-body');
-      if (recentBody) recentBody.innerHTML = '<tr><td colspan="4" class="table-empty">Could not load analytics.</td></tr>';
+      const funnelNote = $('#ov-funnel-note');
+      if (funnelNote) funnelNote.textContent = 'Could not load analytics.';
     }
   }
 
@@ -2672,6 +2693,7 @@
     window.addEventListener('resize', debounce(() => {
       renderTasks();
       redrawCharts();
+      if (currentView === 'overview') renderOverview();
     }, 200));
 
     window.addEventListener('load', redrawCharts);
