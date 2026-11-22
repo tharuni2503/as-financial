@@ -1695,3 +1695,55 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
   .page-loans .loan-facts small { font-size: .55rem; margin-bottom: 2px; }
   .page-loans .loan-facts b { font-size: .68rem; }
 }
+
+/* ---------- Offerings section: richer presentation ---------- */
+.page-home #products,
+.page-loans .section-tight {
+  position: relative; overflow: hidden;
+  background:
+    radial-gradient(circle at 92% -10%, rgba(214,163,41,.15), transparent 42%),
+    radial-gradient(circle at 4% 110%, rgba(16,41,75,.07), transparent 38%),
+    linear-gradient(180deg, #fffdf8 0%, var(--cream, #faf6ee) 52%, #fffdf8 100%);
+  border-top: 1px solid rgba(214,163,41,.18);
+  border-bottom: 1px solid rgba(214,163,41,.18);
+}
+.page-home #products > .container,
+.page-loans .section-tight > .container { position: relative; z-index: 1; }
+.page-home #products .eyebrow,
+.page-loans .section-tight .eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-radius: 999px;
+  background: rgba(214,163,41,.14); color: #7a5b16;
+  font-size: .68rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+}
+.page-home #products .section-head h2,
+.page-loans .section-tight .section-head h2 { letter-spacing: -.02em; }
+.page-home #products .section-head.split p,
+.page-loans .section-tight .section-head.split p {
+  padding-left: 16px; border-left: 3px solid var(--gold, #D6A329);
+}
+.page-home .pgrid .pcard,
+.page-loans .pgrid .pcard { transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease; }
+.page-home .pgrid .pcard::after,
+.page-loans .pgrid .pcard::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; z-index: 4;
+  background: linear-gradient(90deg, var(--navy, #10294B), var(--gold, #D6A329));
+  opacity: 0; transition: opacity .28s ease;
+}
+.page-home .pgrid .pcard:hover,
+.page-loans .pgrid .pcard:hover { transform: translateY(-5px); box-shadow: 0 22px 38px -24px rgba(16,41,75,.5); }
+.page-home .pgrid .pcard:hover::after,
+.page-loans .pgrid .pcard:hover::after { opacity: 1; }
+.page-home .pgrid .pcard:hover .pcard-media img,
+.page-loans .pgrid .pcard:hover .pcard-media img { transform: scale(1.06); }
+.page-home .more-wrap .btn,
+.page-loans .more-wrap .btn {
+  min-width: 220px; border-color: var(--gold-deep, #a9822f); color: #6b541c;
+  box-shadow: 0 10px 22px -16px rgba(169,130,47,.6);
+}
+.page-home .more-wrap .btn:hover,
+.page-loans .more-wrap .btn:hover { background: var(--gold, #D6A329); border-color: var(--gold-deep, #a9822f); color: #3b2b06; }
+@media (max-width: 700px) {
+  .page-home #products .section-head.split p,
+  .page-loans .section-tight .section-head.split p { padding-left: 12px; }
+}
