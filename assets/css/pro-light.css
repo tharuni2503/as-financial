@@ -325,6 +325,7 @@ h3, h4 { color: var(--navy); }
 .pcard-foot .icon { width: 15px; height: 15px; transition: transform .2s ease; }
 .pcard-foot a:hover .icon { transform: translateX(3px); }
 .more-wrap { display: flex; justify-content: center; margin-top: 22px; }
+.pgrid.is-collapsed .pcard:nth-child(n+5) { display: none; }
 @media (max-width: 1020px) {
   .pcard { flex-basis: clamp(200px, 34vw, 240px); }
 }
