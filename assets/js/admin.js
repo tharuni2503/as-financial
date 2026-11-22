@@ -718,7 +718,33 @@
     requestAnimationFrame(() => requestAnimationFrame(redrawCharts));
   }
 
+  function syncSlaNotifications() {
+    const now = Date.now();
+    const dismissed = (() => { try { return new Set(JSON.parse(localStorage.getItem('as_sla_dismissed')||'[]')); } catch(e){ return new Set(); }})();
+    const existing = new Set((notifications||[]).map(n => String(n && n.id || '')));
+    let changed = false;
+    (leads||[]).forEach(lead => {
+      if (!lead || !lead.id) return;
+      const status = String(lead.status || 'New');
+      if (!['New','Contacted'].includes(status)) return;
+      const created = new Date(lead.createdAt || lead.receivedAt || 0).getTime();
+      if (!created) return;
+      const ageHrs = (now - created) / 36e5;
+      let rule=null, title='', message='';
+      if (status === 'New' && ageHrs >= 24) { rule='new-24h'; title='SLA reminder: New lead not contacted'; message=[lead.name,lead.phone,lead.product].filter(Boolean).join(' • ').slice(0,220)+' has been waiting over 24 hours.'; }
+      else if (status === 'Contacted' && ageHrs >= 72) { rule='contacted-72h'; title='SLA reminder: Follow-up needed'; message=[lead.name,lead.phone,lead.product].filter(Boolean).join(' • ').slice(0,220)+' needs follow-up (72+ hours).'; }
+      if (!rule) return;
+      const id = 'NTF-SLA-' + rule + '-' + String(lead.id);
+      if (existing.has(id) || dismissed.has(id)) return;
+      notifications.unshift({ id, type:'lead.sla', title, message, targetType:'lead', targetId:String(lead.id), read:false, createdAt:new Date().toISOString(), meta:{ rule, leadStatus:status } });
+      existing.add(id);
+      changed = true;
+    });
+    if (changed) { if (notifications.length > 500) notifications.length = 500; save.notifications(); }
+  }
+
   function renderAll() {
+    syncSlaNotifications();
     updateCounts();
     renderView(currentView);
     populateFilters();
@@ -955,8 +981,17 @@
   function renderFollowups() {
     const body = $('#followups-body');
     if (!body) return;
-    const items = [...leads].filter(l => ['New','Contacted'].includes(l.status)).sort((a,b)=>new Date(a.createdAt||0)-new Date(b.createdAt||0)).slice(0,20);
-    body.innerHTML = items.length ? items.map(l => '<tr><td><b style="color:var(--navy)">'+esc(l.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(l.product||'')+'</div></td><td>'+esc(l.status||'')+'</td><td>'+esc(l.priority||'Medium')+'</td><td>'+esc(fmtShort(l.createdAt))+'</td><td><button type="button" class="a-btn a-btn-light a-btn-sm" data-view-link="leads">Open</button></td></tr>').join('') : '<tr><td colspan="5" class="table-empty">No follow-ups found.</td></tr>';
+    const now = Date.now();
+    const items = [...leads].filter(l => ['New','Contacted'].includes(l.status)).map(l => {
+      const ageH = (now - new Date(l.createdAt||l.receivedAt||0).getTime())/36e5;
+      const overdue = (l.status==='New'&&ageH>=24)||(l.status==='Contacted'&&ageH>=72);
+      return { l, ageH, overdue };
+    }).sort((a,b)=> (b.overdue-a.overdue) || (b.ageH-a.ageH)).slice(0,20);
+    body.innerHTML = items.length ? items.map(x => {
+      const l = x.l;
+      const sla = x.overdue ? ' <span class="badge b-red">SLA</span>' : '';
+      return '<tr><td><b style="color:var(--navy)">'+esc(l.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(l.product||'')+'</div></td><td><span class="badge badge-'+String(l.status).toLowerCase()+'">'+esc(l.status||'')+'</span>'+sla+'</td><td>'+esc(l.priority||'Medium')+'</td><td>'+esc(fmtShort(l.createdAt))+'</td><td><button type="button" class="a-btn a-btn-light a-btn-sm" data-view-link="leads">Open</button></td></tr>';
+    }).join('') : '<tr><td colspan="5" class="table-empty">No follow-ups found.</td></tr>';
   }
 
   async function renderHealth() {
@@ -1009,7 +1044,7 @@
       '<td>' + esc(l.phone) + '</td>' +
       '<td>' + esc(l.product) + '<div style="font-size:.66rem;color:#5b6b7e">' + esc(l.city || 'Hyderabad') + '</div></td>' +
       '<td class="num">' + compact(amountToNumber(l.amount)) + '</td>' +
-      '<td><span class="badge badge-' + String(l.status).toLowerCase() + '">' + esc(l.status) + '</span></td>' +
+      '<td>' + (() => { const ageH=(Date.now()-new Date(l.createdAt||l.receivedAt||0).getTime())/36e5; const sla=(l.status==='New'&&ageH>=24)||(l.status==='Contacted'&&ageH>=72); return '<span class="badge badge-' + String(l.status).toLowerCase() + '">' + esc(l.status) + '</span>' + (sla ? ' <span class="badge b-red" title="SLA reminder">SLA</span>' : ''); })() + '</td>' +
       '<td><span class="badge badge-' + String(l.priority || 'medium').toLowerCase() + '">' + esc(l.priority || 'Medium') + '</span></td>' +
       '<td title="' + fmtDate(l.createdAt) + '">' + fmtShort(l.createdAt) + '</td>' +
       '<td><div class="row-actions">' +
@@ -2718,6 +2753,9 @@
         if (n) { n.read = !n.read; save.notifications(); renderAll(); }
       }
       if (action === 'delete-notification') {
+        if (String(id).indexOf('NTF-SLA-') === 0) {
+          try { const d = new Set(JSON.parse(localStorage.getItem('as_sla_dismissed')||'[]')); d.add(String(id)); localStorage.setItem('as_sla_dismissed', JSON.stringify(Array.from(d))); } catch(e) {}
+        }
         notifications = notifications.filter(x => x.id !== id);
         save.notifications();
         renderAll();

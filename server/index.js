@@ -823,10 +823,63 @@ app.get('/api/admin/google-reviews', requireSession, requireRole('staff', 'admin
   });
 }));
 
+async function ensureLeadReminderNotifications() {
+  if (!store.adminData || !store.setAdminCollection) return;
+  const admin = await store.adminData();
+  const leads = Array.isArray(admin.leads) ? admin.leads : [];
+  const notifications = Array.isArray(admin.notifications) ? admin.notifications.slice() : [];
+  const existing = new Set(notifications.map(n => String(n && n.id || '')));
+  const now = Date.now();
+  let changed = false;
+  for (const lead of leads) {
+    if (!lead || !lead.id) continue;
+    const status = String(lead.status || 'New');
+    if (!['New', 'Contacted'].includes(status)) continue;
+    const created = new Date(lead.createdAt || lead.receivedAt || 0).getTime();
+    if (!created) continue;
+    const ageHrs = (now - created) / 36e5;
+    let rule = null;
+    let title = '';
+    let message = '';
+    if (status === 'New' && ageHrs >= 24) {
+      rule = 'new-24h';
+      title = 'SLA reminder: New lead not contacted';
+      message = [lead.name, lead.phone, lead.product].filter(Boolean).join(' • ').slice(0, 220) + ' has been waiting over 24 hours.';
+    } else if (status === 'Contacted' && ageHrs >= 72) {
+      rule = 'contacted-72h';
+      title = 'SLA reminder: Follow-up needed';
+      message = [lead.name, lead.phone, lead.product].filter(Boolean).join(' • ').slice(0, 220) + ' has had no status change for over 72 hours.';
+    }
+    if (!rule) continue;
+    const id = 'NTF-SLA-' + rule + '-' + String(lead.id);
+    if (existing.has(id)) continue;
+    notifications.unshift({
+      id,
+      type: 'lead.sla',
+      title,
+      message,
+      targetType: 'lead',
+      targetId: String(lead.id),
+      read: false,
+      createdAt: new Date().toISOString(),
+      meta: { rule, leadStatus: status }
+    });
+    existing.add(id);
+    changed = true;
+  }
+  if (changed) {
+    if (notifications.length > 500) notifications.length = 500;
+    await store.setAdminCollection('notifications', notifications);
+  }
+}
+
 app.get('/api/admin/:collection', requireSession, requireRole('staff', 'admin', 'super_admin'), asyncRoute(async (req, res, next) => {
   const collection = String(req.params.collection || '').toLowerCase();
   if (collection === 'store' || collection === 'export') return next();
   if (!isAdminItemCollection(collection)) return next();
+  if (collection === 'notifications') {
+    try { await ensureLeadReminderNotifications(); } catch (e) { console.warn('[sla] reminder generation failed:', e && e.message ? e.message : e); }
+  }
   let items = await readAdminCollection(collection);
 
   const q = validate.text(req.query.q, 120).toLowerCase();
