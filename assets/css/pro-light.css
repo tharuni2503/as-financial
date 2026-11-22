@@ -1797,11 +1797,11 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
 .popup .pill { margin-bottom: 14px !important; font-size: .69rem; letter-spacing: .1em; padding: 7px 12px; }
 .popup h3 { font-size: clamp(1.5rem, 3.2vw, 1.85rem); color: #10294B; letter-spacing: -.025em; margin-bottom: 6px; line-height: 1.15; }
 .popup > p { font-size: .88rem; line-height: 1.5; color: #5b7086; margin-bottom: 14px; max-width: 44ch; }
-.popup .form-grid { gap: 10px 12px; }
-.popup .field label { font-size: .74rem; font-weight: 700; color: #243f5a; margin-bottom: 5px; letter-spacing: .01em; }
+.popup .form-grid { gap: 8px 12px; }
+.popup .field label { font-size: .74rem; font-weight: 700; color: #243f5a; margin-bottom: 4px; letter-spacing: .01em; }
 .popup .field label .req { color: #c2410c; }
 .popup .field input, .popup .field select, .popup .field textarea {
-  width: 100%; border-radius: 12px; border: 1px solid #dbe4ee; padding: 11px 13px; font-size: .93rem;
+  width: 100%; border-radius: 12px; border: 1px solid #dbe4ee; padding: 10px 12px; font-size: .93rem;
   color: #10294B; background: #f9fbfd;
   transition: border-color .2s, box-shadow .2s, background .2s, transform .2s;
 }
