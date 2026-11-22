@@ -179,9 +179,27 @@ async function issue(email, role, meta) {
   return { token, csrfToken, session };
 }
 
-function read(token) {
+async function read(token) {
   if (!token) return null;
-  const session = sessions.get(token);
+  let session = sessions.get(token);
+  if (!session && persistence && typeof persistence.loadOne === 'function') {
+    try {
+      const loaded = await persistence.loadOne(token);
+      if (loaded) {
+        const exp = typeof loaded.expiresAt === 'number' ? loaded.expiresAt : Date.parse(loaded.expiresAt);
+        if (exp && exp > Date.now()) {
+          session = Object.assign({}, loaded, {
+            expiresAt: exp,
+            createdAt: typeof loaded.createdAt === 'number' ? loaded.createdAt : Date.parse(loaded.createdAt) || Date.now(),
+            lastSeenAt: typeof loaded.lastSeenAt === 'number' ? loaded.lastSeenAt : (Date.parse(loaded.lastSeenAt) || Date.now())
+          });
+          sessions.set(token, session);
+        }
+      }
+    } catch (err) {
+      console.warn('[auth] session load failed:', err && err.message ? err.message : err);
+    }
+  }
   if (!session) return null;
   const now = Date.now();
   if (session.expiresAt <= now) {
@@ -189,7 +207,6 @@ function read(token) {
     persistRemove(token);
     return null;
   }
-  // Sliding refresh: extend expiry if session is active and nearing end/aging
   const last = session.lastSeenAt || session.createdAt || now;
   if (now - last > SESSION_REFRESH_MS || session.expiresAt - now < SESSION_REFRESH_MS) {
     session.lastSeenAt = now;
@@ -202,7 +219,7 @@ function read(token) {
 }
 
 async function rotate(token, meta) {
-  const current = read(token);
+  const current = await read(token);
   if (!current) return null;
   sessions.delete(token);
   await persistRemove(token);

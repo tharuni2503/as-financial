@@ -127,15 +127,19 @@ function enquiryRateLimited(ip) {
   return hits.length > ENQUIRY_LIMIT;
 }
 
-function requireSession(req, res, next) {
-  const session = auth.read(auth.tokenFrom(req));
-  if (!session) {
-    res.status(401).json({ error: 'Please sign in again.' });
-    return;
+async function requireSession(req, res, next) {
+  try {
+    const session = await auth.read(auth.tokenFrom(req));
+    if (!session) {
+      res.status(401).json({ error: 'Please sign in again.' });
+      return;
+    }
+    req.session = session;
+    req.authToken = auth.tokenFrom(req);
+    next();
+  } catch (err) {
+    next(err);
   }
-  req.session = session;
-  req.authToken = auth.tokenFrom(req);
-  next();
 }
 
 function requireCsrf(req, res, next) {
@@ -329,7 +333,7 @@ app.post('/api/logout', requireSession, requireCsrf, asyncRoute(async (req, res)
 }));
 
 app.get('/api/session', asyncRoute(async (req, res) => {
-  const session = auth.read(auth.tokenFrom(req));
+  const session = await auth.read(auth.tokenFrom(req));
   if (!session) {
     res.status(401).json({ error: 'Not signed in.' });
     return;
@@ -400,7 +404,7 @@ function mergeLendersWithPartners(contentLenders, adminPartners, includeInactive
 }
 
 app.get('/api/content', asyncRoute(async (req, res) => {
-  const session = auth.read(auth.tokenFrom(req));
+  const session = await auth.read(auth.tokenFrom(req));
   const wantsAdmin = req.query.scope === 'admin';
   const canViewAdmin = Boolean(session) && roleAtLeast(session.role || 'advisor', 'staff');
   const admin = wantsAdmin && canViewAdmin;
@@ -1492,6 +1496,7 @@ async function boot(options) {
       const sessionPersistence = (store.allSessions && store.saveSession && store.deleteSession)
         ? {
             loadAll: () => store.allSessions(),
+            loadOne: (token) => store.getSession ? store.getSession(token) : Promise.resolve(null),
             save: (token, session) => store.saveSession(token, session),
             remove: (token) => store.deleteSession(token),
             removeExpired: () => store.deleteExpiredSessions ? store.deleteExpiredSessions() : Promise.resolve()
