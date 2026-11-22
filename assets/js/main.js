@@ -1217,6 +1217,8 @@
 (function () {
   const grid = document.getElementById('products-grid');
   if (!grid) return;
+  // Loans page shows concise, always-visible loan facts instead of hover popups.
+  if (document.body.classList.contains('page-loans')) return;
   const cards = Array.prototype.slice.call(grid.querySelectorAll('.pcard'));
   if (!cards.length) return;
 
