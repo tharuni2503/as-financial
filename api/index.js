@@ -14,11 +14,15 @@ module.exports = async function handler(req, res) {
     await readyPromise;
     return server(req, res);
   } catch (error) {
-    console.error('[vercel] handler error:', error && error.message ? error.message : error);
+    const msg = error && error.message ? String(error.message) : 'Server initialization failed.';
+    console.error('[vercel] handler error:', msg);
     if (!res.headersSent) {
       res.statusCode = 500;
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.end(JSON.stringify({ error: 'Server initialization failed.' }));
+      const safe = /ADMIN_PASSWORD|BOOT_FATAL|\[auth\]/i.test(msg)
+        ? 'Server config error: ADMIN_PASSWORD must be set in Vercel Production environment variables. Redeploy after saving.'
+        : 'Server initialization failed.';
+      res.end(JSON.stringify({ error: safe }));
     }
   }
 };
