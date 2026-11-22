@@ -1715,12 +1715,11 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
 .popup .field-hint { font-size: .71rem; color: #6b8196; margin-top: 5px; line-height: 1.45; }
 .popup .form-grid .full { grid-column: 1 / -1; width: 100%; }
 .popup .consent {
-  display: flex; width: 100%; font-size: .72rem; color: #4d6278; line-height: 1.55; gap: 10px; align-items: flex-start;
-  background: #f8fafc; border: 1px solid #e5edf4; border-radius: 14px; padding: 12px 13px; margin-top: 2px;
-  flex-wrap: nowrap;
+  display: block; position: relative; width: 100%; font-size: .72rem; color: #4d6278; line-height: 1.6;
+  background: #f8fafc; border: 1px solid #e5edf4; border-radius: 14px; padding: 12px 13px 12px 42px; margin-top: 2px;
 }
-.popup .consent input[type="checkbox"] { width: 18px; height: 18px; margin-top: 1px; flex: 0 0 18px; accent-color: #b8891f; cursor: pointer; }
-.popup .consent a, .popup .consent span { word-break: break-word; }
+.popup .consent input[type="checkbox"] { position: absolute; left: 13px; top: 14px; width: 18px; height: 18px; margin: 0; accent-color: #b8891f; cursor: pointer; }
+.popup .consent a { color: #10294B; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; word-break: break-word; }
 .popup .consent a { color: #10294B; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .popup .btn-gold.btn-block {
   padding: 14px 20px; font-size: .95rem; font-weight: 700; border-radius: 14px;
