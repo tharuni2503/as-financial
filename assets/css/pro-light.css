@@ -1599,7 +1599,7 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
 @media (min-width: 701px) {
   .page-home .pgrid, .page-loans .pgrid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
     overflow: visible;
     padding-bottom: 0;
@@ -1628,6 +1628,9 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
   .page-home .pgrid-wrap .pgrid-nav .icon, .page-loans .pgrid-wrap .pgrid-nav .icon { width: 16px; height: 16px; }
 }
 
+@media (min-width: 1100px) {
+  .page-home .pgrid, .page-loans .pgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 @media (min-width: 1500px) {
   .page-home .pgrid, .page-loans .pgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
