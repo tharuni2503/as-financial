@@ -119,7 +119,7 @@ async function save() {
     }
     fs.renameSync(TMP_FILE, DB_FILE);
   } catch (error) {
-    if (['EROFS', 'EACCES', 'EPERM', 'READONLY'].includes(error.code) || /read-?only/i.test(String(error.message || ''))) {
+    if (['EROFS', 'EACCES', 'EPERM', 'READONLY', 'ENOENT'].includes(error.code) || /read-?only|cannot create|no such file/i.test(String(error.message || ''))) {
       if (!persistWarningLogged) {
         persistWarningLogged = true;
         console.warn('[store:json] persistence unavailable, running in-memory only:', error.message);
