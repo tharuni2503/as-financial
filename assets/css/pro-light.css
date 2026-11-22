@@ -1747,3 +1747,11 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
   .page-home #products .section-head.split p,
   .page-loans .section-tight .section-head.split p { padding-left: 12px; }
 }
+
+/* ---------- Keep loan card footers neat (no wrapped Apply label) ---------- */
+.page-loans .pcard-foot { flex-wrap: nowrap; gap: 8px; }
+.page-loans .pcard-foot > span { flex: 1; min-width: 0; font-size: .7rem; line-height: 1.25; }
+.page-loans .pcard-foot .btn { flex: none; white-space: nowrap; padding: 7px 12px; }
+@media (max-width: 700px) {
+  .page-loans .pcard-foot .btn { padding: 6px 12px; font-size: .7rem; }
+}
