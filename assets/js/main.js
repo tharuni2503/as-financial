@@ -1374,7 +1374,7 @@
   const btn = document.querySelector('[data-products-more]');
   if (!grid || !btn) return;
 
-  const LIMIT = 8;
+  const LIMIT = 4;
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function sync() {
@@ -1391,7 +1391,7 @@
     btn.textContent = expanded ? 'Show fewer offerings' : 'Show more offerings (' + (total - LIMIT) + ' more)';
   }
 
-  // Show eight offerings by default; the button reveals the remaining ones.
+  // Show first row by default; the button reveals the remaining offerings.
   if (grid.querySelectorAll('.pcard').length > LIMIT) grid.classList.add('is-collapsed');
   sync();
 

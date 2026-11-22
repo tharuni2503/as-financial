@@ -1,6 +1,6 @@
-/* ==========================================================================
-   AS Financial — Professional Light Theme (v2)
-   Brand: navy #10294B · gold #D6A329 · ivory #FFFFFF  (taken from logo + posters)
+﻿/* ==========================================================================
+   AS Financial â€” Professional Light Theme (v2)
+   Brand: navy #10294B Â· gold #D6A329 Â· ivory #FFFFFF  (taken from logo + posters)
    Loaded AFTER styles.css so it re-skins every page without touching markup rules.
    ========================================================================== */
 
@@ -132,7 +132,7 @@ h3, h4 { color: var(--navy); }
   .hero2-points li { font-size: .86rem; }
 }
 
-/* Layered depth scene — replaces the old WebGL wireframe. Pure CSS, subtle parallax. */
+/* Layered depth scene â€” replaces the old WebGL wireframe. Pure CSS, subtle parallax. */
 .depth-scene { position: relative; perspective: 1400px; min-height: 470px; }
 .depth-layer { position: absolute; transition: transform .25s ease-out; will-change: transform; }
 .ds-plate {
@@ -229,7 +229,7 @@ h3, h4 { color: var(--navy); }
 .pgrid::-webkit-scrollbar { height: 8px; }
 .pgrid::-webkit-scrollbar-thumb { background: #d7deea; border-radius: 999px; }
 .pgrid::-webkit-scrollbar-track { background: transparent; }
-.pgrid.is-collapsed .pcard:nth-child(n+9) { display: none; }
+.pgrid.is-collapsed .pcard:nth-child(n+5) { display: none; }
 .more-wrap:has([hidden]) { display: none; }
 .pgrid-wrap { position: relative; }
 .pgrid-nav {
@@ -325,7 +325,7 @@ h3, h4 { color: var(--navy); }
 .pcard-foot .icon { width: 15px; height: 15px; transition: transform .2s ease; }
 .pcard-foot a:hover .icon { transform: translateX(3px); }
 .more-wrap { display: flex; justify-content: center; margin-top: 22px; }
-.pgrid.is-collapsed .pcard:nth-child(n+9) { display: none; }
+.pgrid.is-collapsed .pcard:nth-child(n+5) { display: none; }
 @media (max-width: 1020px) {
   .pcard { flex-basis: clamp(200px, 34vw, 240px); }
 }
@@ -1595,20 +1595,48 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
   .pgrid-dot.is-active { width: 28px; }
 }
 
-/* ---------- Offerings: responsive equal-size grid on desktop, carousel on mobile ---------- */
+/* ---------- Home: horizontal card row, show more below ---------- */
 @media (min-width: 701px) {
-  .page-home .pgrid, .page-loans .pgrid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .page-home .pgrid {
+    display: flex;
+    flex-wrap: wrap;
     gap: 16px;
     overflow: visible;
     padding-bottom: 0;
     scroll-snap-type: none;
   }
-  .page-home .pgrid .pcard, .page-loans .pgrid .pcard { flex: none; width: 100%; min-width: 0; }
-  .page-home .pgrid-wrap .pgrid-nav, .page-home .pgrid-dots,
+  .page-home .pgrid .pcard {
+    flex: 0 0 calc(25% - 12px);
+    width: calc(25% - 12px);
+    min-width: 0;
+  }
+  .page-home .pgrid-wrap .pgrid-nav, .page-home .pgrid-dots { display: none !important; }
+}
+@media (max-width: 1100px) and (min-width: 701px) {
+  .page-home .pgrid .pcard { flex-basis: calc(33.333% - 11px); width: calc(33.333% - 11px); }
+}
+@media (max-width: 900px) and (min-width: 701px) {
+  .page-home .pgrid .pcard { flex-basis: calc(50% - 8px); width: calc(50% - 8px); }
+}
+
+/* ---------- Loans: show all offerings in a grid, no show more ---------- */
+@media (min-width: 701px) {
+  .page-loans .pgrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    overflow: visible;
+    padding-bottom: 0;
+    scroll-snap-type: none;
+  }
+  .page-loans .pgrid .pcard { flex: none; width: 100%; min-width: 0; }
   .page-loans .pgrid-wrap .pgrid-nav, .page-loans .pgrid-dots { display: none !important; }
 }
+@media (min-width: 1100px) {
+  .page-loans .pgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* ---------- Mobile: one card at a time carousel ---------- */
 @media (max-width: 700px) {
   .page-home .pgrid-wrap, .page-loans .pgrid-wrap { position: relative; padding: 0 34px; }
   .page-home .pgrid, .page-loans .pgrid {
@@ -1626,13 +1654,6 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
   .page-home .pgrid-wrap .pgrid-nav-next, .page-loans .pgrid-wrap .pgrid-nav-next { right: 0; }
   .page-home .pgrid-wrap .pgrid-nav:hover:not(:disabled), .page-loans .pgrid-wrap .pgrid-nav:hover:not(:disabled) { transform: translateY(-50%) scale(1.03); }
   .page-home .pgrid-wrap .pgrid-nav .icon, .page-loans .pgrid-wrap .pgrid-nav .icon { width: 16px; height: 16px; }
-}
-
-@media (min-width: 1100px) {
-  .page-home .pgrid, .page-loans .pgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-@media (min-width: 1500px) {
-  .page-home .pgrid, .page-loans .pgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
 
 /* ---------- Compact offering cards on mobile (home + loans) ---------- */
@@ -1755,3 +1776,4 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
 @media (max-width: 700px) {
   .page-loans .pcard-foot .btn { padding: 6px 12px; font-size: .7rem; }
 }
+
