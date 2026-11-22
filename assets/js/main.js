@@ -164,6 +164,77 @@
     setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(8px)'; setTimeout(() => t.remove(), 300); }, 3600);
   };
 
+  /* ---------- shared navbar (one for all pages) ---------- */
+  (function renderSharedNav() {
+    const path = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    const is = (p) => path === p;
+    const onHome = is('index.html') || is('');
+    const nav = '' +
+      '<a class="nav-link" href="index.html"' + (onHome ? ' aria-current="page"' : '') + '>Home</a>' +
+      '<div class="nav-item">' +
+        '<a class="nav-link" href="loans.html"' + (is('loans.html') ? ' aria-current="page"' : '') + '>Loan Products <svg class="icon icon-chevron" aria-hidden="true"><use href="#i-chevron"></use></svg></a>' +
+        '<div class="dropdown dropdown-wide">' +
+          '<span class="dropdown-head">Retail loans</span>' +
+          '<a href="loans.html#home-loan"><svg class="icon" aria-hidden="true"><use href="#i-home"></use></svg><span>Home Loan<small>Purchase, construction &amp; top-up</small></span></a>' +
+          '<a href="loans.html#personal-loan"><svg class="icon" aria-hidden="true"><use href="#i-user"></use></svg><span>Personal Loan<small>For every personal milestone</small></span></a>' +
+          '<a href="loans.html#business-loan"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"></use></svg><span>Business Loan<small>Working capital &amp; expansion</small></span></a>' +
+          '<a href="loans.html#mortgage-loan"><svg class="icon" aria-hidden="true"><use href="#i-key"></use></svg><span>Mortgage / LAP<small>Loan against your property</small></span></a>' +
+          '<a href="loans.html#education-loan"><svg class="icon" aria-hidden="true"><use href="#i-graduation"></use></svg><span>Education Loan<small>India &amp; overseas studies</small></span></a>' +
+          '<a href="loans.html#plot-loan"><svg class="icon" aria-hidden="true"><use href="#i-plot"></use></svg><span>Plot &amp; Land Loan<small>Build your future address</small></span></a>' +
+          '<span class="dropdown-head">More solutions</span>' +
+          '<a href="loans.html#car-loan"><svg class="icon" aria-hidden="true"><use href="#i-car"></use></svg><span>Car Loan<small>New &amp; used vehicles</small></span></a>' +
+          '<a href="loans.html#doctor-loan"><svg class="icon" aria-hidden="true"><use href="#i-stethoscope"></use></svg><span>Doctor Loan<small>Tailored for medical professionals</small></span></a>' +
+          '<a href="loans.html#balance-transfer"><svg class="icon" aria-hidden="true"><use href="#i-transfer"></use></svg><span>Balance Transfer<small>Lower your existing EMI</small></span></a>' +
+          '<a href="loans.html#insurance"><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg><span>Insurance<small>Life, health &amp; general cover</small></span></a>' +
+        '</div>' +
+      '</div>' +
+      '<a class="nav-link" href="index.html#calculator">Calculators</a>' +
+      '<a class="nav-link" href="index.html#why-us">Why AS</a>' +
+      '<a class="nav-link" href="index.html#partners">Partners</a>' +
+      '<a class="nav-link" href="guides.html"' + (is('guides.html') ? ' aria-current="page"' : '') + '>Guides</a>' +
+      '<a class="nav-link" href="about.html"' + (is('about.html') ? ' aria-current="page"' : '') + '>About</a>' +
+      '<a class="nav-link" href="contact.html"' + (is('contact.html') ? ' aria-current="page"' : '') + '>Contact</a>';
+
+    const headerHtml = '<div class="container header-inner">' +
+      '<a class="brand" href="index.html" aria-label="AS Financial Services &amp; Solutions &mdash; home"><img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions &mdash; Your Goals, Our Solutions" width="200" height="51" decoding="async" loading="lazy"></a>' +
+      '<nav class="nav" aria-label="Primary">' + nav + '</nav>' +
+      '<div class="header-actions">' +
+        '<a class="header-phone" href="tel:+919182703079" data-setting="phone"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg><span><small>Talk to an advisor</small><strong>91827 03079</strong></span></a>' +
+        '<button type="button" class="btn btn-gold" data-popup-open="apply-popup">Apply Now <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>' +
+        '<a class="header-call-btn" href="tel:+919182703079" data-setting="phone" aria-label="Call advisor"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg></a>' +
+        '<button type="button" class="menu-toggle" data-menu-open aria-label="Open menu"><svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg></button>' +
+      '</div>' +
+    '</div>';
+
+    const mobileHtml = '<div class="mobile-nav-head">' +
+        '<a class="brand" href="index.html"><img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions &mdash; Your Goals, Our Solutions" width="200" height="51" decoding="async" loading="lazy"></a>' +
+        '<button type="button" class="menu-toggle" data-menu-close aria-label="Close menu"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>' +
+      '</div>' +
+      '<a class="m-link" href="index.html"' + (onHome ? ' aria-current="page"' : '') + '>Home</a>' +
+      '<a class="m-link" href="loans.html"' + (is('loans.html') ? ' aria-current="page"' : '') + '>Loan Products <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a>' +
+      '<a class="m-link" href="index.html#calculator">Calculators</a>' +
+      '<a class="m-link" href="index.html#why-us">Why AS</a>' +
+      '<a class="m-link" href="index.html#partners">Our Partners</a>' +
+      '<a class="m-link" href="guides.html"' + (is('guides.html') ? ' aria-current="page"' : '') + '>Guides</a>' +
+      '<a class="m-link" href="about.html"' + (is('about.html') ? ' aria-current="page"' : '') + '>About Us</a>' +
+      '<a class="m-link" href="contact.html"' + (is('contact.html') ? ' aria-current="page"' : '') + '>Contact</a>' +
+      '<div class="m-cta">' +
+        '<button type="button" class="btn btn-gold btn-block" data-popup-open="apply-popup">Apply for a loan</button>' +
+        '<a class="btn btn-outline btn-block" href="tel:+919182703079" data-setting="phone"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-phone"></use></svg> Call 91827 03079</a>' +
+      '</div>' +
+      '<div class="m-contact">' +
+        '<a href="mailto:asfinancialservicesandsolution@gmail.com" data-setting="email"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-mail"></use></svg> asfinancialservicesandsolution@gmail.com</a>' +
+        '<a href="https://www.google.com/maps/place/AS+FINANCIAL+SERVICES+AND+SOLUTIONS/@17.4063233,78.6029049,17z/data=!4m16!1m9!3m8!1s0x3bcb9f000330811d:0x920b837d9e505c0a!2sAS+FINANCIAL+SERVICES+AND+SOLUTIONS!8m2!3d17.4063233!4d78.6054798!9m1!1b1!16s%2Fg%2F11zy2k0x6g!3m5!1s0x3bcb9f000330811d:0x920b837d9e505c0a!8m2!3d17.4063233!4d78.6054798!16s%2Fg%2F11zy2k0x6g?entry=ttu" data-setting="address" target="_blank" rel="noopener noreferrer"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-pin"></use></svg> <span>Panchavati Colony Road No. 1, Medipalli, Hyderabad</span></a>' +
+      '</div>';
+
+    const hdr = document.querySelector('.site-header');
+    if (hdr) hdr.innerHTML = headerHtml;
+    let mob = document.querySelector('.mobile-nav');
+    if (mob) { mob.innerHTML = mobileHtml; }
+    else { mob = document.createElement('div'); mob.className = 'mobile-nav'; mob.setAttribute('aria-label','Mobile menu'); mob.innerHTML = mobileHtml; if (hdr) hdr.insertAdjacentElement('afterend', mob); }
+    if (typeof applySettings === 'function') applySettings();
+  })();
+
   /* ---------- header ---------- */
   const header = document.querySelector('.site-header');
   if (header) {
