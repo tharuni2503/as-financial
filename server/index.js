@@ -838,34 +838,18 @@ async function ensureLeadReminderNotifications() {
     const created = new Date(lead.createdAt || lead.receivedAt || 0).getTime();
     if (!created) continue;
     const ageHrs = (now - created) / 36e5;
-    let rule = null;
-    let title = '';
-    let message = '';
-    if (status === 'New' && ageHrs >= 24) {
-      rule = 'new-24h';
-      title = 'SLA reminder: New lead not contacted';
-      message = [lead.name, lead.phone, lead.product].filter(Boolean).join(' • ').slice(0, 220) + ' has been waiting over 24 hours.';
-    } else if (status === 'Contacted' && ageHrs >= 72) {
-      rule = 'contacted-72h';
-      title = 'SLA reminder: Follow-up needed';
-      message = [lead.name, lead.phone, lead.product].filter(Boolean).join(' • ').slice(0, 220) + ' has had no status change for over 72 hours.';
+    const followUpDue = lead.followUpDate ? (new Date(String(lead.followUpDate).slice(0,10) + 'T23:59:59').getTime() < now) : false;
+    const rules = [];
+    if (status === 'New' && ageHrs >= 24) rules.push({ rule:'new-24h', title:'SLA reminder: New lead not contacted', message:[lead.name,lead.phone,lead.product].filter(Boolean).join(' • ').slice(0,220)+' has been waiting over 24 hours.' });
+    if (status === 'Contacted' && ageHrs >= 72) rules.push({ rule:'contacted-72h', title:'SLA reminder: Follow-up needed', message:[lead.name,lead.phone,lead.product].filter(Boolean).join(' • ').slice(0,220)+' needs follow-up (72+ hours).' });
+    if (followUpDue) rules.push({ rule:'followup-due', title:'Follow-up due', message:[lead.name,lead.phone,lead.product].filter(Boolean).join(' • ').slice(0,220)+' has a past-due follow-up date ('+String(lead.followUpDate).slice(0,10)+').' });
+    for (const r of rules) {
+      const id = 'NTF-SLA-' + r.rule + '-' + String(lead.id);
+      if (existing.has(id)) continue;
+      notifications.unshift({ id, type:'lead.sla', title:r.title, message:r.message, targetType:'lead', targetId:String(lead.id), read:false, createdAt:new Date().toISOString(), meta:{ rule:r.rule, leadStatus:status } });
+      existing.add(id);
+      changed = true;
     }
-    if (!rule) continue;
-    const id = 'NTF-SLA-' + rule + '-' + String(lead.id);
-    if (existing.has(id)) continue;
-    notifications.unshift({
-      id,
-      type: 'lead.sla',
-      title,
-      message,
-      targetType: 'lead',
-      targetId: String(lead.id),
-      read: false,
-      createdAt: new Date().toISOString(),
-      meta: { rule, leadStatus: status }
-    });
-    existing.add(id);
-    changed = true;
   }
   if (changed) {
     if (notifications.length > 500) notifications.length = 500;

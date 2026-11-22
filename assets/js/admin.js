@@ -730,15 +730,18 @@
       const created = new Date(lead.createdAt || lead.receivedAt || 0).getTime();
       if (!created) return;
       const ageHrs = (now - created) / 36e5;
-      let rule=null, title='', message='';
-      if (status === 'New' && ageHrs >= 24) { rule='new-24h'; title='SLA reminder: New lead not contacted'; message=[lead.name,lead.phone,lead.product].filter(Boolean).join(' • ').slice(0,220)+' has been waiting over 24 hours.'; }
-      else if (status === 'Contacted' && ageHrs >= 72) { rule='contacted-72h'; title='SLA reminder: Follow-up needed'; message=[lead.name,lead.phone,lead.product].filter(Boolean).join(' • ').slice(0,220)+' needs follow-up (72+ hours).'; }
-      if (!rule) return;
-      const id = 'NTF-SLA-' + rule + '-' + String(lead.id);
-      if (existing.has(id) || dismissed.has(id)) return;
-      notifications.unshift({ id, type:'lead.sla', title, message, targetType:'lead', targetId:String(lead.id), read:false, createdAt:new Date().toISOString(), meta:{ rule, leadStatus:status } });
-      existing.add(id);
-      changed = true;
+      const followUpDue = lead.followUpDate ? (new Date(lead.followUpDate + 'T23:59:59').getTime() < now) : false;
+      const rules = [];
+      if (status === 'New' && ageHrs >= 24) rules.push({ rule:'new-24h', title:'SLA reminder: New lead not contacted', message:[lead.name,lead.phone,lead.product].filter(Boolean).join(' • ').slice(0,220)+' has been waiting over 24 hours.' });
+      if (status === 'Contacted' && ageHrs >= 72) rules.push({ rule:'contacted-72h', title:'SLA reminder: Follow-up needed', message:[lead.name,lead.phone,lead.product].filter(Boolean).join(' • ').slice(0,220)+' needs follow-up (72+ hours).' });
+      if (followUpDue) rules.push({ rule:'followup-due', title:'Follow-up due', message:[lead.name,lead.phone,lead.product].filter(Boolean).join(' • ').slice(0,220)+' has a past-due follow-up date ('+lead.followUpDate+').' });
+      rules.forEach(r => {
+        const id = 'NTF-SLA-' + r.rule + '-' + String(lead.id);
+        if (existing.has(id) || dismissed.has(id)) return;
+        notifications.unshift({ id, type:'lead.sla', title: r.title, message: r.message, targetType:'lead', targetId:String(lead.id), read:false, createdAt:new Date().toISOString(), meta:{ rule:r.rule, leadStatus:status } });
+        existing.add(id);
+        changed = true;
+      });
     });
     if (changed) { if (notifications.length > 500) notifications.length = 500; save.notifications(); }
   }
@@ -984,13 +987,15 @@
     const now = Date.now();
     const items = [...leads].filter(l => ['New','Contacted'].includes(l.status)).map(l => {
       const ageH = (now - new Date(l.createdAt||l.receivedAt||0).getTime())/36e5;
-      const overdue = (l.status==='New'&&ageH>=24)||(l.status==='Contacted'&&ageH>=72);
-      return { l, ageH, overdue };
-    }).sort((a,b)=> (b.overdue-a.overdue) || (b.ageH-a.ageH)).slice(0,20);
+      const followUpDue = l.followUpDate ? (new Date(l.followUpDate+'T23:59:59').getTime() < now) : false;
+      const overdue = followUpDue || (l.status==='New'&&ageH>=24)||(l.status==='Contacted'&&ageH>=72);
+      return { l, ageH, overdue, followUpDue };
+    }).sort((a,b)=> (b.overdue-a.overdue) || (b.followUpDue-a.followUpDue) || (b.ageH-a.ageH)).slice(0,20);
     body.innerHTML = items.length ? items.map(x => {
       const l = x.l;
       const sla = x.overdue ? ' <span class="badge b-red">SLA</span>' : '';
-      return '<tr><td><b style="color:var(--navy)">'+esc(l.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(l.product||'')+'</div></td><td><span class="badge badge-'+String(l.status).toLowerCase()+'">'+esc(l.status||'')+'</span>'+sla+'</td><td>'+esc(l.priority||'Medium')+'</td><td>'+esc(fmtShort(l.createdAt))+'</td><td><button type="button" class="a-btn a-btn-light a-btn-sm" data-view-link="leads">Open</button></td></tr>';
+      const due = l.followUpDate ? '<div style="font-size:.72rem;color:'+(x.followUpDue?'var(--red)':'var(--muted)')+'">Due '+esc(fmtShort(l.followUpDate))+'</div>' : '';
+      return '<tr><td><b style="color:var(--navy)">'+esc(l.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(l.product||'')+'</div></td><td><span class="badge badge-'+String(l.status).toLowerCase()+'">'+esc(l.status||'')+'</span>'+sla+'</td><td>'+esc(l.priority||'Medium')+'</td><td>'+esc(fmtShort(l.createdAt))+due+'</td><td><button type="button" class="a-btn a-btn-light a-btn-sm" data-view-link="leads">Open</button></td></tr>';
     }).join('') : '<tr><td colspan="5" class="table-empty">No follow-ups found.</td></tr>';
   }
 
@@ -1102,6 +1107,7 @@
         '<div class="form-row three"><div class="a-field"><label>Status</label><select name="status">' + statusOpts + '</select></div>' +
         '<div class="a-field"><label>Priority</label><select name="priority">' + priorityOpts + '</select></div>' +
         '<div class="a-field"><label>Owner</label><input name="owner" value="' + esc(lead ? lead.owner : 'Admin') + '"></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Next follow-up</label><input name="followUpDate" type="date" value="' + esc(lead && lead.followUpDate ? String(lead.followUpDate).slice(0,10) : '') + '"></div><div class="a-field"><label>Last contacted</label><input name="lastContactedAt" type="date" value="' + esc(lead && lead.lastContactedAt ? String(lead.lastContactedAt).slice(0,10) : '') + '"></div></div>' +
         '<div class="form-row one"><div class="a-field"><label>Enquiry notes</label><textarea name="message" placeholder="What is the customer looking for?">' + esc(lead ? lead.message : '') + '</textarea></div></div>',
       submitLabel: lead ? 'Save changes' : 'Add lead',
       onSubmit: async (data) => {
@@ -1119,12 +1125,25 @@
           status: data.get('status'),
           priority: data.get('priority'),
           owner: String(data.get('owner') || 'Admin'),
+          followUpDate: String(data.get('followUpDate') || '').trim(),
+          lastContactedAt: String(data.get('lastContactedAt') || '').trim(),
           message: String(data.get('message') || '')
         };
         const api = window.ASBackend;
         const canUseApi = api && api.request;
+        const nowIso = new Date().toISOString();
+        const addTimeline = (obj, event, detail) => {
+          obj.timeline = Array.isArray(obj.timeline) ? obj.timeline : [];
+          obj.timeline.unshift({ at: nowIso, event, detail: String(detail || '').slice(0, 240) });
+          if (obj.timeline.length > 50) obj.timeline.length = 50;
+        };
         try {
           if (lead) {
+            const prevStatus = lead.status;
+            payload.timeline = Array.isArray(lead.timeline) ? lead.timeline.slice() : [];
+            if (prevStatus !== payload.status) addTimeline(payload, 'status_changed', 'Status: ' + prevStatus + ' → ' + payload.status);
+            if ((lead.followUpDate || '') !== (payload.followUpDate || '')) addTimeline(payload, 'follow_up_updated', payload.followUpDate ? ('Next follow-up: ' + payload.followUpDate) : 'Follow-up cleared');
+            if ((lead.message || '') !== (payload.message || '') && payload.message) addTimeline(payload, 'note_updated', payload.message);
             if (lead._server && canUseApi) {
               await api.request('api/enquiries/' + lead.id, { method: 'PATCH', body: { status: payload.status, handled: payload.status !== 'New', note: payload.message || '' } }).catch(()=>{});
               Object.assign(lead, payload);
@@ -1136,17 +1155,19 @@
             }
             toast('Lead updated.');
           } else {
+            const itemBase = Object.assign({ id: uid('ASL-'), createdAt: nowIso, notes: [], timeline: [] }, payload);
+            addTimeline(itemBase, 'created', 'Lead created');
             if (canUseApi) {
-              const res = await api.request('api/admin/leads', { method: 'POST', body: payload }).catch(() => null);
-              const item = (res && res.item) ? res.item : Object.assign({ id: uid('ASL-'), createdAt: new Date().toISOString(), notes: [] }, payload);
+              const res = await api.request('api/admin/leads', { method: 'POST', body: itemBase }).catch(() => null);
+              const item = (res && res.item) ? res.item : itemBase;
               leads.unshift(item);
             } else {
-              leads.unshift(Object.assign({ id: uid('ASL-'), createdAt: new Date().toISOString(), notes: [] }, payload));
+              leads.unshift(itemBase);
             }
             toast('Lead added to the pipeline.');
           }
         } catch (e) {
-          if (lead) Object.assign(lead, payload); else leads.unshift(Object.assign({ id: uid('ASL-'), createdAt: new Date().toISOString(), notes: [] }, payload));
+          if (lead) Object.assign(lead, payload); else leads.unshift(Object.assign({ id: uid('ASL-'), createdAt: nowIso, notes: [], timeline: [{ at: nowIso, event: 'created', detail: 'Lead created' }] }, payload));
           toast('Saved locally. Server sync may be pending.', 'error');
         }
         save.leads();
@@ -1187,6 +1208,8 @@
         '<div class="detail-box"><small>Source</small><b>' + esc(lead.source || 'Website') + '</b></div>' +
         '<div class="detail-box"><small>City</small><b>' + esc(lead.city || 'Hyderabad') + '</b></div>' +
         '<div class="detail-box"><small>Employment</small><b>' + esc(lead.employment || '—') + '</b></div>' +
+        '<div class="detail-box"><small>Next follow-up</small><b>' + esc(lead.followUpDate ? fmtShort(lead.followUpDate) : 'Not set') + '</b></div>' +
+        '<div class="detail-box"><small>Last contacted</small><b>' + esc(lead.lastContactedAt ? fmtShort(lead.lastContactedAt) : '—') + '</b></div>' +
       '</div>' +
       '<div class="drawer-section"><h3>Update status</h3><select id="drawer-status" style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:.8rem">' + statusOptions + '</select></div>' +
       '<div class="drawer-section"><h3>Contact</h3>' +
@@ -1202,6 +1225,9 @@
         (lead.notes && lead.notes.length ? lead.notes.map(n => '<div class="note-item">' + esc(n.text) + '<time>' + fmtDate(n.at) + '</time></div>').join('') : '<div class="note-item" style="color:#5b6b7e">No notes yet.</div>') +
       '</div>' +
       '<form class="note-add" id="note-form"><input type="text" id="note-input" placeholder="Add a note…" autocomplete="off"><button class="a-btn-icon" type="submit" aria-label="Save note" style="background:var(--navy);color:#fff"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"></use></svg></button></form></div>' +
+      '<div class="drawer-section"><h3>Timeline</h3><div class="note-list">' +
+        ((Array.isArray(lead.timeline)&&lead.timeline.length) ? lead.timeline.slice(0,8).map(t => '<div class="note-item">' + esc(t.detail || t.event || 'Update') + '<time>' + fmtDate(t.at) + '</time></div>').join('') : '<div class="note-item" style="color:#5b6b7e">No timeline events yet.</div>') +
+      '</div></div>' +
       '<div class="drawer-section"><h3>Meta</h3><div class="detail-grid-2"><div class="detail-box"><small>Priority</small><b>' + esc(lead.priority || 'Medium') + '</b></div><div class="detail-box"><small>Owner</small><b>' + esc(lead.owner || 'Admin') + '</b></div></div></div>';
 
     $('#drawer-foot').innerHTML =
@@ -1209,7 +1235,11 @@
       '<button class="a-btn a-btn-danger" id="drawer-delete" aria-label="Delete lead"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>';
 
     $('#drawer-status').addEventListener('change', (e) => {
+      const prev = lead.status;
       lead.status = e.target.value;
+      lead.timeline = Array.isArray(lead.timeline) ? lead.timeline : [];
+      if (prev !== lead.status) lead.timeline.unshift({ at: new Date().toISOString(), event: 'status_changed', detail: 'Status: ' + prev + ' → ' + lead.status });
+      if (lead.timeline.length > 50) lead.timeline.length = 50;
       if (lead._server && window.ASBackend && window.ASBackend.request) {
         var handled = ['New'].indexOf(lead.status) === -1;
         lead._handled = handled;
@@ -1225,8 +1255,12 @@
       const input = $('#note-input');
       const text = input.value.trim();
       if (!text) return;
+      const at = new Date().toISOString();
       lead.notes = lead.notes || [];
-      lead.notes.unshift({ text, at: new Date().toISOString() });
+      lead.notes.unshift({ text, at });
+      lead.timeline = Array.isArray(lead.timeline) ? lead.timeline : [];
+      lead.timeline.unshift({ at, event: 'note_added', detail: text.slice(0, 240) });
+      if (lead.timeline.length > 50) lead.timeline.length = 50;
       if (lead._server && window.ASBackend && window.ASBackend.request) {
         window.ASBackend.request('api/enquiries/' + lead.id, { method: 'PATCH', body: { note: text } }).catch(function () {});
       }
