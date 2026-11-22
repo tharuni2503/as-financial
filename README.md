@@ -45,7 +45,7 @@ Then open:
 
 ### Admin sign-in
 
-- Default demo credentials: `admin@asfinancial.in` / `AS@2026`
+- Admin login email: `asfinancialservicesandsolution@gmail.com` (password is set via the `ADMIN_PASSWORD` environment variable)
 - Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables before using in production.
 - The password is hashed in memory (scrypt) and sessions use short-lived bearer tokens.
 

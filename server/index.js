@@ -70,8 +70,7 @@ async function ensureBootstrapUser() {
   if (byEmail(ADMIN_EMAIL)) return;
 
   // If there is exactly one super_admin user with a legacy email, migrate it to the
-  // configured email, preserving role/password. This covers old admin@asfinancial.in /
-  // asfinancial@gmail.com installs.
+  // configured email, preserving role/password. Legacy accounts are cleaned up below.
   const adminUsers = users.filter(u => u && u.role === 'super_admin');
   if (adminUsers.length === 1) {
     const legacy = adminUsers[0];
@@ -100,6 +99,17 @@ async function ensureBootstrapUser() {
   auth.setPassword(user, ADMIN_PASSWORD);
   await store.upsertUser(user);
   console.log('[auth] Bootstrapped super_admin user:', ADMIN_EMAIL);
+}
+
+async function removeLegacyAdminUsers() {
+  if (typeof store.listUsers !== 'function' || typeof store.deleteUser !== 'function') return;
+  const users = await store.listUsers();
+  const legacy = users.filter((u) => u && String(u.email || '').toLowerCase() === 'admin@asfinancial.in');
+  for (const u of legacy) {
+    await auth.revokeAllForEmail(u.email);
+    await store.deleteUser(u.id);
+    console.log('[auth] Removed legacy admin user:', u.email);
+  }
 }
 
 function cookieSecure(req) {
@@ -1643,6 +1653,10 @@ async function boot(options) {
           }
         : null;
       await auth.init(sessionPersistence, securityPersistence);
+    }
+
+    if (typeof store.listUsers === 'function') {
+      await removeLegacyAdminUsers();
     }
 
     if (store.getSecurityState) {

@@ -3092,28 +3092,9 @@
     try {
       pendingResetToken = (new URLSearchParams(location.search).get('reset') || '').trim();
     } catch (e) { pendingResetToken = ''; }
+    // Always show the sign-in screen on open. Do not auto-restore a session:
+    // clicking "Admin" must never skip the login page.
     showLogin();
-
-    const api = window.ASBackend;
-    if (!api) return;
-
-    api.available().then((ok) => {
-      if (!ok) return; // backend unavailable: stay on login screen
-      return api.session().then((user) => {
-        if (user && user.email) {
-          if (!isAllowedAdminRole(user)) {
-            denyAccess('Administrator access only.');
-            return;
-          }
-          // Always land on the dashboard when opening Admin; ignore stale hashes
-          // left by a previous visit so the screen never flips between views.
-          try { history.replaceState(null, '', location.pathname); } catch (e) {}
-          enterApp(user, false);
-        }
-      }).catch(() => {
-        // No active session: stay on login screen.
-      });
-    }).catch(() => {});
   }
 
   init();
