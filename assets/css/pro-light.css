@@ -1598,25 +1598,22 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
 /* ---------- Home: horizontal card row, show more below ---------- */
 @media (min-width: 701px) {
   .page-home .pgrid {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
+    align-items: stretch;
     overflow: visible;
     padding-bottom: 0;
     scroll-snap-type: none;
   }
-  .page-home .pgrid .pcard {
-    flex: 0 0 calc(25% - 12px);
-    width: calc(25% - 12px);
-    min-width: 0;
-  }
+  .page-home .pgrid .pcard { min-width: 0; width: 100%; }
   .page-home .pgrid-wrap .pgrid-nav, .page-home .pgrid-dots { display: none !important; }
 }
 @media (max-width: 1100px) and (min-width: 701px) {
-  .page-home .pgrid .pcard { flex-basis: calc(33.333% - 11px); width: calc(33.333% - 11px); }
+  .page-home .pgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 900px) and (min-width: 701px) {
-  .page-home .pgrid .pcard { flex-basis: calc(50% - 8px); width: calc(50% - 8px); }
+  .page-home .pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* ---------- Loans: show all offerings in a grid, no show more ---------- */
