@@ -768,15 +768,13 @@
         submitBtn.disabled = true;
         submitBtn.classList.add('is-loading');
         submitBtn.setAttribute('aria-busy', 'true');
-        submitBtn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span>Saving…';
+        submitBtn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span>Sending...';
       }
 
       const escape = (value) => String(value).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
       const submissionId = 'SUB-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 10).toUpperCase();
       const payload = {
-        name,
-        phone,
-        email,
+        name, phone, email,
         product: data.get('product') || 'General enquiry',
         amount: data.get('amount') || '',
         income: data.get('income') || '',
@@ -790,54 +788,89 @@
         submissionId
       };
 
-      // Send to the backend when one is running; otherwise keep the local copy.
+      const waNumber = (settings.whatsapp || '919182703079').replace(/\D/g, '');
+      const waText = encodeURIComponent(
+        'Hi AS Financial, I would like to apply/enquire.\n' +
+        'Name: ' + name + '\n' +
+        'Mobile: ' + phone + '\n' +
+        (email ? 'Email: ' + email + '\n' : '') +
+        'Loan type: ' + (data.get('product') || 'General enquiry') + '\n' +
+        (data.get('amount') ? 'Amount: ' + data.get('amount') + '\n' : '') +
+        (data.get('city') ? 'City: ' + data.get('city') + '\n' : '') +
+        (data.get('message') ? 'Message: ' + data.get('message') : '')
+      );
+      const waUrl = 'https://wa.me/' + waNumber + '?text=' + waText;
+
       const api = window.ASBackend;
       const delivery = api
         ? api.enquire(payload).then((result) => !!(result && result.ok)).catch(() => false)
         : Promise.resolve(false);
 
+      // Directly send lead details to WhatsApp
+      try { window.open(waUrl, '_blank', 'noopener'); } catch (_) {}
+
       delivery.then((delivered) => {
         trackEvent(delivered ? 'form_submit_success' : 'form_submit_failed', { form: form.id || form.getAttribute('name') || 'lead-form', source: form.dataset.source || 'Website form' });
         if (!delivered) saveLead(payload);
-
         if (submitBtn) {
           submitBtn.disabled = false;
           submitBtn.classList.remove('is-loading');
           submitBtn.removeAttribute('aria-busy');
           submitBtn.innerHTML = originalBtnHtml;
         }
-
+        const first = escape((name || '').split(' ')[0] || 'there');
         if (success) {
-          const first = escape(name.split(' ')[0] || 'there');
-          const msg = settings.whatsapp || '919182703079';
-          const waText = encodeURIComponent(
-            'Hi AS Financial, my name is ' + name + '. I would like help with a ' +
-            (data.get('product') || 'loan') + '. My mobile is ' + phone + '.'
-          );
-          success.innerHTML =
-            '<svg class="icon icon-sm" aria-hidden="true"><use href="#i-check-circle"></use></svg>' +
-            '<span><strong>Thanks, ' + first + '. ' +
-            (delivered ? 'Your enquiry has reached our team.' : 'Your enquiry has been saved.') + '</strong>' +
-            ' For an immediate response, call or message us on ' +
-            '<a href="tel:+' + (settings.phoneRaw || '919182703079') + '">' + settings.phone + '</a>.' +
-            '<a class="success-wa" href="https://wa.me/' + msg + '?text=' + waText + '" target="_blank" rel="noopener">' +
-            '<svg class="icon icon-sm" aria-hidden="true"><use href="#i-whatsapp"></use></svg> Send details on WhatsApp</a>' +
-            (delivered
-              ? '<small class="demo-note">Received ' + new Date().toLocaleString('en-IN') + '. An advisor will call you back on the number you shared.</small>'
-              : '<small class="demo-note">Saved on this device only. If this message repeats, please call or WhatsApp us so nothing is missed.</small>') +
-            '</span>';
+          success.innerHTML = '<svg class="icon icon-sm" aria-hidden="true"><use href="#i-check-circle"></use></svg><span><strong>Thanks, ' + first + '!</strong> ' + (delivered ? 'Your enquiry has reached our team.' : 'Your enquiry has been saved.') + '</span>';
           success.classList.add('show');
-          success.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
         form.reset();
         resetTurnstile(form);
         form.querySelectorAll('.field-error.show').forEach(el => el.classList.remove('show'));
-        asToast(delivered
-          ? 'Enquiry received. We will call you back shortly.'
-          : 'Enquiry saved locally. For immediate help, call or WhatsApp ' + settings.phone + '.');
+        const parentOverlay = form.closest('.popup-overlay');
+        if (parentOverlay) closePopup(parentOverlay);
+        showThankYouPopup({ name: first, delivered: delivered, waUrl: waUrl, phone: settings.phone || '91827 03079', phoneRaw: settings.phoneRaw || '919182703079' });
+        asToast(delivered ? 'Enquiry received. We will call you back shortly.' : 'Enquiry saved locally. For immediate help, call or WhatsApp ' + settings.phone + '.');
       });
     });
   });
+
+  /* ---------- thank you popup ---------- */
+  function ensureThankYouPopup() {
+    let el = document.getElementById('thankyou-popup');
+    if (el) return el;
+    el = document.createElement('div');
+    el.className = 'popup-overlay';
+    el.id = 'thankyou-popup';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-labelledby', 'thankyou-title');
+    el.innerHTML = '<div class="popup thankyou-popup-card">' +
+      '<button type="button" class="popup-close" data-popup-close aria-label="Close"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-close"></use></svg></button>' +
+      '<div class="thankyou-icon"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg></div>' +
+      '<span class="pill pill-gold" style="margin:0 auto 12px"><span class="dot"></span> Enquiry received</span>' +
+      '<h3 id="thankyou-title">Thank you!</h3>' +
+      '<p class="thankyou-msg"></p>' +
+      '<div class="thankyou-actions"></div>' +
+      '<p class="thankyou-note"></p>' +
+    '</div>';
+    document.body.appendChild(el);
+    el.querySelectorAll('[data-popup-close]').forEach(btn => btn.addEventListener('click', () => closePopup(el)));
+    el.addEventListener('click', (e) => { if (e.target === el) closePopup(el); });
+    return el;
+  }
+  function showThankYouPopup(opts) {
+    const el = ensureThankYouPopup();
+    const msg = el.querySelector('.thankyou-msg');
+    const actions = el.querySelector('.thankyou-actions');
+    const note = el.querySelector('.thankyou-note');
+    const name = opts.name || 'there';
+    msg.innerHTML = 'Hi <strong>' + name + '</strong>, ' + (opts.delivered ? 'your enquiry has been sent to our team successfully.' : 'your enquiry has been saved.') + ' Our advisor will contact you shortly.';
+    actions.innerHTML =
+      '<a class="btn btn-gold" href="' + (opts.waUrl || '#') + '" target="_blank" rel="noopener"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-whatsapp"></use></svg> Continue on WhatsApp</a>' +
+      '<a class="btn btn-outline-navy" href="tel:+' + (opts.phoneRaw || '919182703079') + '"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-phone"></use></svg> Call ' + (opts.phone || '91827 03079') + '</a>';
+    note.textContent = opts.delivered ? 'We usually respond within 30 minutes during business hours.' : 'If you need immediate help, please call or WhatsApp us directly.';
+    openPopup('thankyou-popup');
+  }
 
   /* ---------- popup ---------- */
   function openPopup(id) {
