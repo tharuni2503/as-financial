@@ -1517,6 +1517,22 @@ app.patch('/api/users/:id', requireSession, requireRole('super_admin'), requireC
   res.json({ ok: true, user: userPublic(user) });
 }));
 
+app.delete('/api/users/:id', requireSession, requireRole('super_admin'), requireCsrf, asyncRoute(async (req, res) => {
+  const id = String(req.params.id || '');
+  const user = await store.findUserById(id);
+  if (!user) { res.status(404).json({ error: 'User not found.' }); return; }
+  if (req.session && req.session.userId === id) { res.status(400).json({ error: 'You cannot delete your own account.' }); return; }
+  if (user.role === 'super_admin') {
+    const users = await store.listUsers();
+    const supers = users.filter((u) => u && u.role === 'super_admin' && u.active !== false && u.id !== id);
+    if (supers.length === 0) { res.status(400).json({ error: 'At least one super admin is required.' }); return; }
+  }
+  await auth.revokeAllForEmail(user.email);
+  await store.deleteUser(id);
+  audit(req, { type: 'user.deleted', summary: 'User deleted: ' + user.email, targetType: 'user', targetId: id });
+  res.json({ ok: true });
+}));
+
 app.post('/api/users/:id/reset-token', requireSession, requireRole('super_admin'), requireCsrf, asyncRoute(async (req, res) => {
   const user = await store.findUserById(String(req.params.id || ''));
   if (!user) { res.status(404).json({ error: 'User not found.' }); return; }

@@ -636,10 +636,11 @@
     const canManage = currentUser && currentUser.role === 'super_admin';
     tbody.innerHTML = users.map(u => {
       const status = u.active === false ? '<span class="badge">Inactive</span>' : '<span class="badge badge-active">Active</span>';
+      const self = currentUser && String(currentUser.id || '') === String(u.id);
       const actions = canManage
         ? '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
-            '<button class="a-btn a-btn-light a-btn-sm" data-user-action="toggle" data-id="' + esc(u.id) + '" data-active="' + (u.active === false ? '0' : '1') + '">' + (u.active === false ? 'Activate' : 'Deactivate') + '</button>' +
             '<button class="a-btn a-btn-light a-btn-sm" data-user-action="reset-token" data-id="' + esc(u.id) + '">Reset link</button>' +
+            (self ? '<span style="color:var(--muted);font-size:.72rem;align-self:center">You</span>' : '<button class="a-btn a-btn-ghost a-btn-sm danger" data-user-action="delete" data-id="' + esc(u.id) + '">Delete</button>') +
           '</div>'
         : '<span style="color:var(--muted);font-size:.75rem">View only</span>';
       return '<tr><td>' + esc(u.name || '—') + '</td><td>' + esc(u.email || '') + '</td><td>' + esc(roleLabel(u.role)) + '</td><td>' + status + '</td><td>' + actions + '</td></tr>';
@@ -2469,6 +2470,7 @@
           denyAccess('Administrator access only.');
           return;
         }
+        try { history.replaceState(null, '', location.pathname); } catch (e) {}
         enterApp(result || { email: email }, true);
       }).catch((error) => {
         err.textContent = (error && error.message) || 'Sign in failed. Check your details and try again.';
@@ -2617,13 +2619,16 @@
       const id = btn.getAttribute('data-id');
       const api = window.ASBackend;
       const msg = $('#users-msg');
-      if (action === 'toggle') {
-        const isActive = btn.getAttribute('data-active') === '1';
-        showMsg(msg, (isActive ? 'Deactivating…' : 'Activating…'), 'info');
-        api.request('api/users/' + encodeURIComponent(id), { method: 'PATCH', body: { active: !isActive } }).then(() => {
-          showMsg(msg, isActive ? 'User deactivated.' : 'User activated.', 'ok');
-          loadUsers();
-        }).catch((err) => showMsg(msg, (err && err.message) || 'Could not update user.', 'error'));
+      if (action === 'delete') {
+        const row = btn.closest('tr');
+        const email = row ? (row.children[1] && row.children[1].textContent || 'this user') : 'this user';
+        confirmDialog('Delete user?', email + ' will be permanently removed and signed out.', () => {
+          showMsg(msg, 'Deleting user…', 'info');
+          api.request('api/users/' + encodeURIComponent(id), { method: 'DELETE' }).then(() => {
+            showMsg(msg, 'User deleted.', 'ok');
+            loadUsers();
+          }).catch((err) => showMsg(msg, (err && err.message) || 'Could not delete user.', 'error'));
+        });
       } else if (action === 'reset-token') {
         showMsg(msg, 'Generating reset link…', 'info');
         api.request('api/users/' + encodeURIComponent(id) + '/reset-token', { method: 'POST', body: {} }).then((res) => {
@@ -3100,9 +3105,10 @@
             denyAccess('Administrator access only.');
             return;
           }
+          // Always land on the dashboard when opening Admin; ignore stale hashes
+          // left by a previous visit so the screen never flips between views.
+          try { history.replaceState(null, '', location.pathname); } catch (e) {}
           enterApp(user, false);
-          const hash = location.hash.replace('#', '');
-          if (VIEW_TITLES[hash]) setView(hash, true);
         }
       }).catch(() => {
         // No active session: stay on login screen.
