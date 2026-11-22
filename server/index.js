@@ -617,18 +617,17 @@ app.post('/api/track', asyncRoute(async (req, res) => {
   }
   const body = req.body && typeof req.body === 'object' ? req.body : {};
   const type = validate.text(body.type, 40).toLowerCase();
-  const allowed = ['page_view', 'form_start', 'form_submit', 'form_submit_success', 'form_submit_failed'];
+  const allowed = ['page_view', 'form_start', 'form_submit', 'submit_attempt', 'form_submit_success', 'form_submit_failed', 'form_abandon', 'cta_click', 'enquiry_click', 'whatsapp_click', 'phone_click', 'email_click', 'download_click', 'external_link_click'];
   if (!allowed.includes(type)) {
     res.status(400).json({ error: 'Invalid event type.' });
     return;
   }
   const page = validate.text(body.page || req.get('referer') || '/', 200).slice(0, 200);
   const visitorId = validate.text(body.visitorId, 80).slice(0, 80);
-  const meta = body.meta && typeof body.meta === 'object' && !Array.isArray(body.meta) ? {} : {};
   const safeMeta = {};
   if (body.meta && typeof body.meta === 'object' && !Array.isArray(body.meta)) {
-    ['form', 'product', 'source', 'field', 'reason'].forEach((k) => {
-      if (body.meta[k] != null) safeMeta[k] = validate.text(body.meta[k], 120);
+    ['form', 'product', 'source', 'field', 'reason', 'action', 'label', 'href', 'utm_source', 'utm_medium', 'utm_campaign'].forEach((k) => {
+      if (body.meta[k] != null) safeMeta[k] = validate.text(body.meta[k], 160);
     });
   }
   await store.addAnalyticsEvent({
@@ -669,7 +668,7 @@ app.get('/api/admin/analytics', requireSession, requireRole('staff', 'admin', 's
     if (!byDayMap[key]) return;
     if (e.type === 'page_view') byDayMap[key].pageViews += 1;
     if (e.type === 'form_start') byDayMap[key].formStarts += 1;
-    if (e.type === 'form_submit' || e.type === 'form_submit_success') byDayMap[key].formSubmits += 1;
+    if (e.type === 'form_submit' || e.type === 'form_submit_success' || e.type === 'submit_attempt') byDayMap[key].formSubmits += 1;
   });
   const pageMap = {};
   events30.forEach((e) => {
@@ -688,12 +687,17 @@ app.get('/api/admin/analytics', requireSession, requireRole('staff', 'admin', 's
       totalPageViews: count(events, 'page_view'),
       uniqueVisitors: uniq(events.filter((e) => e.type === 'page_view')),
       formStarts: count(events, 'form_start'),
-      formSubmits: count(events, 'form_submit') + count(events, 'form_submit_success'),
+      formSubmits: count(events, 'form_submit') + count(events, 'form_submit_success') + count(events, 'submit_attempt'),
       formSubmitSuccess: count(events, 'form_submit_success'),
+      ctaClicks: count(events, 'cta_click') + count(events, 'enquiry_click'),
+      whatsappClicks: count(events, 'whatsapp_click'),
+      phoneClicks: count(events, 'phone_click'),
+      emailClicks: count(events, 'email_click'),
       last7PageViews: count(events7, 'page_view'),
       last7UniqueVisitors: uniq(events7.filter((e) => e.type === 'page_view')),
       last7FormStarts: count(events7, 'form_start'),
-      last7FormSubmits: count(events7, 'form_submit') + count(events7, 'form_submit_success'),
+      last7FormSubmits: count(events7, 'form_submit') + count(events7, 'form_submit_success') + count(events7, 'submit_attempt'),
+      last7CtaClicks: count(events7, 'cta_click') + count(events7, 'enquiry_click'),
       lastFormAttemptAt: lastFormAttempt ? lastFormAttempt.at : null,
       lastFormAttemptType: lastFormAttempt ? lastFormAttempt.type : null
     },

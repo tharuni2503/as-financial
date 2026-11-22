@@ -43,6 +43,27 @@
     } catch (e) {}
   }
 
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href]');
+    if (a) {
+      const href = String(a.getAttribute('href') || '');
+      const label = (a.getAttribute('aria-label') || a.textContent || '').trim().slice(0, 80);
+      if (href.startsWith('tel:')) { trackEvent('phone_click', { label, href: 'tel' }); return; }
+      if (href.startsWith('mailto:')) { trackEvent('email_click', { label, href: 'mailto' }); return; }
+      if (/wa\.me|whatsapp/i.test(href)) { trackEvent('whatsapp_click', { label, href: 'whatsapp' }); return; }
+      if (a.hasAttribute('download')) { trackEvent('download_click', { label, href: href.slice(0,120) }); return; }
+      try {
+        const url = new URL(href, location.href);
+        if (url.origin !== location.origin && /^https?:/.test(url.protocol)) trackEvent('external_link_click', { label, href: url.origin });
+      } catch (_) {}
+    }
+    const cta = e.target.closest('[data-popup-open],[data-open-apply],.apply-btn,.enquire-btn,[data-track="cta"]');
+    if (cta) {
+      const label = (cta.getAttribute('aria-label') || cta.textContent || '').trim().slice(0, 80);
+      trackEvent('cta_click', { label, action: cta.getAttribute('data-track') || 'cta' });
+    }
+  }, { capture: true });
+
   /* ---------- inject business details ---------- */
   function setAnchorText(el, key) {
     const val = settings[key];
