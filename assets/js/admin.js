@@ -814,15 +814,16 @@
       const recent = Array.isArray(data.recent) ? data.recent : [];
       const recentBody = $('#an-recent-body');
       if (recentBody) recentBody.innerHTML = recent.length ? recent.map(e => {
-        const detail = e.meta && (e.meta.form || e.meta.source || e.meta.product) ? [e.meta.form, e.meta.source, e.meta.product].filter(Boolean).join(' · ') : '-';
         const eventLabel = String(e.type || '').replace(/_/g, ' ');
-        const visitor = e.visitorId ? esc(e.visitorId) : 'Unknown visitor';
+        const rawVisitor = String(e.visitorId || '').trim();
+        const visitor = rawVisitor ? 'Visitor ' + esc(rawVisitor.slice(-6).toUpperCase()) : 'Unknown visitor';
         const page = esc(e.page || '/');
-        return '<tr><td title="' + esc(fmtDate(e.at)) + '">' + esc(timeAgo(e.at)) + '</td><td><span class="badge ' + (eventLabel.includes('page view') ? 'b-blue' : eventLabel.includes('success') ? 'b-green' : eventLabel.includes('fail') ? 'b-red' : 'b-amber') + '">' + esc(eventLabel) + '</span></td><td><b style="color:var(--navy)">' + page + '</b></td><td>' + visitor + '</td><td>' + esc(detail) + '</td></tr>';
-      }).join('') : '<tr><td colspan="5" class="table-empty">No website activity yet.</td></tr>';
+        const badgeCls = eventLabel.includes('page view') ? 'b-blue' : eventLabel.includes('success') ? 'b-green' : eventLabel.includes('fail') ? 'b-red' : 'b-amber';
+        return '<tr><td title="' + esc(fmtDate(e.at)) + '">' + esc(timeAgo(e.at)) + '</td><td title="' + esc(rawVisitor || 'Unknown') + '">' + visitor + '</td><td><b style="color:var(--navy)">' + page + '</b></td><td><span class="badge ' + badgeCls + '">' + esc(eventLabel) + '</span></td></tr>';
+      }).join('') : '<tr><td colspan="4" class="table-empty">No website activity yet.</td></tr>';
     } catch (e) {
       const recentBody = $('#an-recent-body');
-      if (recentBody) recentBody.innerHTML = '<tr><td colspan="5" class="table-empty">Could not load analytics.</td></tr>';
+      if (recentBody) recentBody.innerHTML = '<tr><td colspan="4" class="table-empty">Could not load analytics.</td></tr>';
     }
   }
 
