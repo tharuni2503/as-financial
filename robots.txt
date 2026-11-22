@@ -5,4 +5,4 @@ Disallow: /admin
 
 # Private demo dashboard is excluded from crawling.
 
-Sitemap: https://as-financial-services-psi.vercel.app/sitemap.xml
+Sitemap: https://as-financial.vercel.app/sitemap.xml
