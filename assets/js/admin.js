@@ -833,7 +833,6 @@
       if (funnelCanvas && typeof drawBarChart === 'function') {
         const fLabels = ['Page views', 'Form starts', 'Submitted', 'Not submitted'];
         const fValues = [views, starts, submits, startedNotSubmitted];
-        // drawBarChart takes single series; render simple funnel with it
         drawBarChart(funnelCanvas, fLabels, fValues, '#0d2b4e');
       }
       const funnelNote = $('#ov-funnel-note');
@@ -842,6 +841,31 @@
           ? ('Conversion: ' + rate + '% from form start to submit. ' + startedNotSubmitted + ' enquiry form(s) started but not submitted.')
           : 'No funnel data yet.';
       }
+
+      const top = Array.isArray(data.topPages) ? data.topPages : [];
+      const maxViews = Math.max(...top.map(p => Number(p.views || 0)), 1);
+      const topHost = $('#an-top-pages');
+      if (topHost) topHost.innerHTML = top.length ? top.map(p =>
+        '<div class="pipeline-row"><div class="p-top"><span>' + esc(p.page || '/') + '</span><b>' + Number(p.views || 0) + ' views</b></div><div class="pipeline-track"><span style="width:' + Math.round((Number(p.views || 0) / maxViews) * 100) + '%"></span></div></div>'
+      ).join('') : '<div class="empty-state" style="padding:18px"><p>No page view data yet.</p></div>';
+
+      const recent = Array.isArray(data.recent) ? data.recent : [];
+      const recentBody = $('#an-recent-body');
+      if (recentBody) recentBody.innerHTML = recent.length ? recent.map(e => {
+        const eventLabel = String(e.type || '').replace(/_/g, ' ');
+        const rawVisitor = String(e.visitorId || '').trim();
+        const visitor = rawVisitor ? 'Visitor ' + esc(rawVisitor.slice(-6).toUpperCase()) : 'Unknown visitor';
+        const page = esc(e.page || '/');
+        const badgeCls = eventLabel.includes('page view') ? 'b-blue' : eventLabel.includes('success') ? 'b-green' : eventLabel.includes('fail') ? 'b-red' : 'b-amber';
+        return '<tr><td title="' + esc(fmtDate(e.at)) + '">' + esc(timeAgo(e.at)) + '</td><td title="' + esc(rawVisitor || 'Unknown') + '">' + visitor + '</td><td><b style="color:var(--navy)">' + page + '</b></td><td><span class="badge ' + badgeCls + '">' + esc(eventLabel) + '</span></td></tr>';
+      }).join('') : '<tr><td colspan="4" class="table-empty">No website activity yet.</td></tr>';
+
+      setText('ov-cta-clicks', Number(s.ctaClicks || 0));
+      setText('ov-cta-clicks-7d', Number(s.last7CtaClicks || 0));
+      const contactClicks = Number(s.phoneClicks || 0) + Number(s.whatsappClicks || 0);
+      const last7Contact = Number(s.last7PhoneClicks || 0) + Number(s.last7WhatsappClicks || 0);
+      setText('ov-contact-clicks', contactClicks);
+      setText('ov-contact-clicks-7d', last7Contact);
     } catch (e) {
       const funnelNote = $('#ov-funnel-note');
       if (funnelNote) funnelNote.textContent = 'Could not load analytics.';

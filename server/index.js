@@ -698,6 +698,8 @@ app.get('/api/admin/analytics', requireSession, requireRole('staff', 'admin', 's
       last7FormStarts: count(events7, 'form_start'),
       last7FormSubmits: count(events7, 'form_submit') + count(events7, 'form_submit_success') + count(events7, 'submit_attempt'),
       last7CtaClicks: count(events7, 'cta_click') + count(events7, 'enquiry_click'),
+      last7PhoneClicks: count(events7, 'phone_click'),
+      last7WhatsappClicks: count(events7, 'whatsapp_click'),
       lastFormAttemptAt: lastFormAttempt ? lastFormAttempt.at : null,
       lastFormAttemptType: lastFormAttempt ? lastFormAttempt.type : null
     },
