@@ -1240,13 +1240,24 @@
         (lead.notes && lead.notes.length ? lead.notes.map(n => '<div class="note-item">' + esc(n.text) + '<time>' + fmtDate(n.at) + '</time></div>').join('') : '<div class="note-item" style="color:#5b6b7e">No notes yet.</div>') +
       '</div>' +
       '<form class="note-add" id="note-form"><input type="text" id="note-input" placeholder="Add a note…" autocomplete="off"><button class="a-btn-icon" type="submit" aria-label="Save note" style="background:var(--navy);color:#fff"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"></use></svg></button></form></div>' +
+      '<div class="drawer-section"><h3>Linked records</h3><div class="note-list">' +
+        (() => { const linkedApps = applications.filter(a => a.leadId===lead.id || (a.phone && lead.phone && String(a.phone).replace(/\D/g,'').slice(-10)===String(lead.phone).replace(/\D/g,'').slice(-10)));
+          const linkedCust = customers.filter(c => c.leadId===lead.id || (c.phone && lead.phone && String(c.phone).replace(/\D/g,'').slice(-10)===String(lead.phone).replace(/\D/g,'').slice(-10)));
+          const items = [];
+          linkedApps.slice(0,3).forEach(a => items.push('<div class="note-item">Application: ' + esc(a.applicant||a.name||a.id) + ' <span class="badge badge-'+String(a.stage||'new').toLowerCase().replace(/[^a-z]/g,'')+'">'+esc(a.stage||'New')+'</span></div>'));
+          linkedCust.slice(0,3).forEach(c => items.push('<div class="note-item">Customer: ' + esc(c.name||c.id) + ' <span class="badge badge-'+String(c.status||'new').toLowerCase().replace(/[^a-z]/g,'')+'">'+esc(c.status||'New')+'</span></div>'));
+          return items.length ? items.join('') : '<div class="note-item" style="color:#5b6b7e">No linked applications/customers yet.</div>';
+        })() +
+      '</div></div>' +
       '<div class="drawer-section"><h3>Timeline</h3><div class="note-list">' +
         ((Array.isArray(lead.timeline)&&lead.timeline.length) ? lead.timeline.slice(0,8).map(t => '<div class="note-item">' + esc(t.detail || t.event || 'Update') + '<time>' + fmtDate(t.at) + '</time></div>').join('') : '<div class="note-item" style="color:#5b6b7e">No timeline events yet.</div>') +
       '</div></div>' +
       '<div class="drawer-section"><h3>Meta</h3><div class="detail-grid-2"><div class="detail-box"><small>Priority</small><b>' + esc(lead.priority || 'Medium') + '</b></div><div class="detail-box"><small>Owner</small><b>' + esc(lead.owner || 'Admin') + '</b></div></div></div>';
 
     $('#drawer-foot').innerHTML =
-      '<button class="a-btn a-btn-light" id="drawer-edit" style="flex:1"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg> Edit lead</button>' +
+      '<button class="a-btn a-btn-light" id="drawer-convert-app" style="flex:1">Create application</button>' +
+      '<button class="a-btn a-btn-light" id="drawer-convert-cust" style="flex:1">Create customer</button>' +
+      '<button class="a-btn a-btn-light" id="drawer-edit" aria-label="Edit lead"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
       '<button class="a-btn a-btn-danger" id="drawer-delete" aria-label="Delete lead"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>';
 
     $('#drawer-status').addEventListener('change', (e) => {
@@ -1295,6 +1306,10 @@
         toast('Lead deleted.');
       });
     });
+    const convApp = $('#drawer-convert-app');
+    if (convApp) convApp.addEventListener('click', () => { closeDrawer(); applicationModal(null, { applicant: lead.name, phone: lead.phone, product: lead.product, amount: lead.amount, owner: lead.owner || 'Admin', leadId: lead.id, notes: lead.message || '' }); });
+    const convCust = $('#drawer-convert-cust');
+    if (convCust) convCust.addEventListener('click', () => { closeDrawer(); customerModal(null, { name: lead.name, phone: lead.phone, email: lead.email, city: lead.city, product: lead.product, owner: lead.owner || 'Admin', source: lead.source || 'Lead', notes: lead.message || '', leadId: lead.id }); });
   }
 
   /* ---------------------------------------------------------------- products */
@@ -2032,22 +2047,24 @@
     ).join('');
   }
 
-  function customerModal(id) {
+  function customerModal(id, prefill) {
     const c = id ? customers.find(x => x.id === id) : null;
+    const p = prefill || {};
     const statusOpts = ['New', 'Contacted', 'Qualified', 'Documents', 'Sanctioned', 'Disbursed', 'Inactive'].map(s => '<option ' + ((c ? c.status : 'New') === s ? 'selected' : '') + '>' + s + '</option>').join('');
     openModal({
       title: c ? 'Edit customer' : 'Add customer',
       sub: 'Customer profile and relationship details.',
       body:
-        '<div class="form-row"><div class="a-field"><label>Full name <span class="req">*</span></label><input name="name" required value="' + esc(c ? c.name : '') + '"></div>' +
-        '<div class="a-field"><label>Phone</label><input name="phone" value="' + esc(c ? c.phone : '') + '"></div></div>' +
-        '<div class="form-row"><div class="a-field"><label>Email</label><input name="email" type="email" value="' + esc(c ? c.email : '') + '"></div>' +
-        '<div class="a-field"><label>City</label><input name="city" value="' + esc(c ? c.city : '') + '"></div></div>' +
-        '<div class="form-row"><div class="a-field"><label>Product interest</label><input name="product" value="' + esc(c ? (c.product || c.interest || '') : '') + '" placeholder="e.g. Home Loan"></div>' +
+        '<div class="form-row"><div class="a-field"><label>Full name <span class="req">*</span></label><input name="name" required value="' + esc(c ? c.name : (p.name||'')) + '"></div>' +
+        '<div class="a-field"><label>Phone</label><input name="phone" value="' + esc(c ? c.phone : (p.phone||'')) + '"></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Email</label><input name="email" type="email" value="' + esc(c ? c.email : (p.email||'')) + '"></div>' +
+        '<div class="a-field"><label>City</label><input name="city" value="' + esc(c ? c.city : (p.city||'')) + '"></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Product interest</label><input name="product" value="' + esc(c ? (c.product || c.interest || '') : (p.product||'')) + '" placeholder="e.g. Home Loan"></div>' +
         '<div class="a-field"><label>Status</label><select name="status">' + statusOpts + '</select></div></div>' +
-        '<div class="form-row"><div class="a-field"><label>Assigned to</label><input name="owner" value="' + esc(c ? (c.owner || '') : '') + '"></div>' +
-        '<div class="a-field"><label>Source</label><input name="source" value="' + esc(c ? (c.source || '') : '') + '"></div></div>' +
-        '<div class="form-row one"><div class="a-field"><label>Notes</label><textarea name="notes">' + esc(c ? (c.notes || '') : '') + '</textarea></div></div>',
+        '<div class="form-row"><div class="a-field"><label>Assigned to</label><input name="owner" value="' + esc(c ? (c.owner || '') : (p.owner||'')) + '"></div>' +
+        '<div class="a-field"><label>Source</label><input name="source" value="' + esc(c ? (c.source || '') : (p.source||'')) + '"></div></div>' +
+        '<div class="form-row one"><div class="a-field"><label>Notes</label><textarea name="notes">' + esc(c ? (c.notes || '') : (p.notes||'')) + '</textarea></div></div>' +
+        (p.leadId || (c && c.leadId) ? '<input type="hidden" name="leadId" value="'+esc(c?c.leadId:p.leadId)+'">' : ''),
       submitLabel: c ? 'Save changes' : 'Add customer',
       onSubmit: (data) => {
         const name = String(data.get('name') || '').trim();
@@ -2062,6 +2079,7 @@
           status: String(data.get('status') || 'New'),
           owner: String(data.get('owner') || '').trim(),
           source: String(data.get('source') || '').trim(),
+          leadId: String(data.get('leadId') || c?.leadId || p.leadId || '').trim(),
           notes: String(data.get('notes') || '').trim(),
           updatedAt: now
         };
@@ -2077,6 +2095,11 @@
   function renderApplications() {
     const body = $('#applications-body'); if (!body) return;
     const rows = applications.slice().sort((a,b)=>new Date(b.updatedAt||b.createdAt||0)-new Date(a.updatedAt||a.createdAt||0));
+    const set = (id,v)=>{ const el=$('#'+id); if(el) el.textContent=v; };
+    set('app-total', rows.length);
+    set('app-progress', rows.filter(a=>['New','Documents Pending','Under Review','Submitted to Bank','Approved'].includes(a.stage)).length);
+    set('app-approved', rows.filter(a=>['Sanctioned','Disbursed'].includes(a.stage)).length);
+    set('app-hold', rows.filter(a=>['Rejected','On Hold'].includes(a.stage)).length);
     body.innerHTML = rows.length ? rows.map(a =>
       '<tr>' +
       '<td><b style="color:var(--navy)">'+esc(a.applicant||a.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(a.id||'')+'</div></td>' +
@@ -2090,30 +2113,32 @@
     ).join('') : '<tr><td colspan="7" class="table-empty">No applications yet. Add one to start tracking.</td></tr>';
   }
 
-  function applicationModal(id) {
+  function applicationModal(id, prefill) {
     const a = id ? applications.find(x=>x.id===id) : null;
+    const p = prefill || {};
     const stages = ['New','Documents Pending','Under Review','Submitted to Bank','Approved','Sanctioned','Disbursed','Rejected','On Hold'];
     const stageOpts = stages.map(s=>'<option '+((a?a.stage:'New')===s?'selected':'')+'>'+s+'</option>').join('');
-    const productOpts = products.map(p=>'<option '+(a&&a.product===p.name?'selected':'')+'>'+esc(p.name)+'</option>').join('');
+    const productOpts = products.map(pr=>'<option '+((a?a.product:p.product)===pr.name?'selected':'')+'>'+esc(pr.name)+'</option>').join('');
     openModal({
       title: a ? 'Edit application' : 'Add application',
       sub: 'Track application progress with real records only.',
       body:
-        '<div class="form-row"><div class="a-field"><label>Applicant name <span class="req">*</span></label><input name="applicant" required value="'+esc(a?a.applicant||a.name:'')+'"></div>' +
-        '<div class="a-field"><label>Phone</label><input name="phone" value="'+esc(a?a.phone:'')+'"></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Applicant name <span class="req">*</span></label><input name="applicant" required value="'+esc(a?a.applicant||a.name:(p.applicant||''))+'"></div>' +
+        '<div class="a-field"><label>Phone</label><input name="phone" value="'+esc(a?a.phone:(p.phone||''))+'"></div></div>' +
         '<div class="form-row"><div class="a-field"><label>Product</label><select name="product">'+productOpts+'</select></div>' +
-        '<div class="a-field"><label>Amount (₹)</label><input name="amount" type="number" min="0" step="10000" value="'+esc(a?a.amount:'')+'"></div></div>' +
+        '<div class="a-field"><label>Amount (₹)</label><input name="amount" type="number" min="0" step="10000" value="'+esc(a?a.amount:(p.amount||''))+'"></div></div>' +
         '<div class="form-row"><div class="a-field"><label>Stage</label><select name="stage">'+stageOpts+'</select></div>' +
-        '<div class="a-field"><label>Owner</label><input name="owner" value="'+esc(a?a.owner:'Admin')+'"></div></div>' +
+        '<div class="a-field"><label>Owner</label><input name="owner" value="'+esc(a?a.owner:(p.owner||'Admin'))+'"></div></div>' +
         '<div class="form-row"><div class="a-field"><label>Lender / Bank</label><input name="lender" value="'+esc(a?a.lender:'')+'"></div>' +
         '<div class="a-field"><label>Reference</label><input name="reference" value="'+esc(a?a.reference:'')+'"></div></div>' +
-        '<div class="form-row one"><div class="a-field"><label>Notes</label><textarea name="notes">'+esc(a?a.notes:'')+'</textarea></div></div>',
+        '<div class="form-row one"><div class="a-field"><label>Notes</label><textarea name="notes">'+esc(a?a.notes:(p.notes||''))+'</textarea></div></div>' +
+        (p.leadId || (a && a.leadId) ? '<input type="hidden" name="leadId" value="'+esc(a?a.leadId:p.leadId)+'">' : ''),
       submitLabel: a ? 'Save changes' : 'Add application',
       onSubmit: async (data) => {
         const applicant = String(data.get('applicant')||'').trim();
         if (!applicant) { toast('Applicant name is required.', 'error'); return false; }
         const now = new Date().toISOString();
-        const payload = { applicant, phone:String(data.get('phone')||'').trim(), product:String(data.get('product')||''), amount:Number(data.get('amount'))||0, stage:String(data.get('stage')||'New'), owner:String(data.get('owner')||'Admin').trim(), lender:String(data.get('lender')||'').trim(), reference:String(data.get('reference')||'').trim(), notes:String(data.get('notes')||'').trim(), updatedAt: now };
+        const payload = { applicant, phone:String(data.get('phone')||'').trim(), product:String(data.get('product')||''), amount:Number(data.get('amount'))||0, stage:String(data.get('stage')||'New'), owner:String(data.get('owner')||'Admin').trim(), lender:String(data.get('lender')||'').trim(), reference:String(data.get('reference')||'').trim(), notes:String(data.get('notes')||'').trim(), leadId:String(data.get('leadId')||a?.leadId||p.leadId||'').trim(), updatedAt: now };
         const api = window.ASBackend;
         try {
           if (a) {
