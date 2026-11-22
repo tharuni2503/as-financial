@@ -7,6 +7,7 @@
 
   var TOKEN_KEY = 'as_api_token'; // legacy cleanup only
   var probe = null;
+  var probeAt = 0;
   var csrfToken = '';
 
   function clearLegacyToken() {
@@ -46,8 +47,10 @@
     });
   }
 
-  function available() {
-    if (probe) return probe;
+  function available(force) {
+    var now = Date.now();
+    if (!force && probe && (now - probeAt) < 15000) return probe;
+    probeAt = now;
     probe = request('api/health')
       .then(function (payload) { return !!(payload && payload.ok); })
       .catch(function () { return false; });

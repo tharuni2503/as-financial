@@ -2461,7 +2461,7 @@
       }
       if (submitBtn) { submitBtn.disabled = true; submitBtn.setAttribute('aria-busy', 'true'); }
       err.classList.remove('show');
-      api.available().then((ok) => {
+      api.available(true).then((ok) => {
         if (!ok) throw Object.assign(new Error('Backend is unavailable. Start the server and try again.'), { status: 503 });
         return api.login(email, pass);
       }).then((result) => {
