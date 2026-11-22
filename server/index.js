@@ -535,7 +535,7 @@ app.post('/api/enquiries', asyncRoute(async (req, res) => {
   );
 
   await store.addEnquiry(enquiry);
-  console.log('[enquiry]', enquiry.id, enquiry.name, enquiry.phone, enquiry.product);
+  console.log('[enquiry]', enquiry.id, enquiry.product || 'General');
   audit(req, { type: 'enquiry.created', actorEmail: '', summary: 'Website enquiry received: ' + (enquiry.product || 'General'), targetType: 'enquiry', targetId: enquiry.id, meta: { product: enquiry.product || '', source: enquiry.source || '', city: enquiry.city || '' } });
 
   // Create an in-app notification for staff (best-effort).
@@ -1358,7 +1358,8 @@ app.post('/api/forgot-password', asyncRoute(async (req, res) => {
     console.warn('[auth] Password reset requested in production but email was not delivered (configured=' + emailConfigured + ', reason=' + (mailResult.reason || 'unknown') + ') for', user.email);
   }
   audit(req, { type: 'auth.forgot_password', actorEmail: user.email, summary: 'Password reset requested', targetType: 'user', targetId: user.id, meta: { emailSent, emailConfigured, reason: mailResult.reason || null } });
-  console.log('[auth] Password reset requested for', user.email, 'token expires', rt.expiresAt, 'url', resetUrl, 'emailSent=' + emailSent + ' emailConfigured=' + emailConfigured);
+  if (!IS_PRODUCTION) console.log('[auth] Password reset requested for', user.email, 'expires', rt.expiresAt, 'emailSent=' + emailSent, 'emailConfigured=' + emailConfigured);
+  else console.log('[auth] Password reset requested', 'emailSent=' + emailSent, 'emailConfigured=' + emailConfigured);
   if (!IS_PRODUCTION) {
     res.json(Object.assign({}, generic, { devResetToken: rt.token, devResetUrl: resetPath, resetUrl, expiresAt: rt.expiresAt, emailSent, emailConfigured }));
   } else {
@@ -1622,7 +1623,8 @@ app.post('/api/users/:id/reset-token', requireSession, requireRole('super_admin'
     emailSent = !!(mailResult && mailResult.sent);
   }
   audit(req, { type: 'user.reset_token_generated', summary: 'Reset token generated for ' + user.email, targetType: 'user', targetId: user.id, meta: { emailSent } });
-  console.log('[auth] Reset token generated for', user.email, 'expires', rt.expiresAt, 'emailSent=' + emailSent);
+  if (!IS_PRODUCTION) console.log('[auth] Reset token generated for', user.email, 'expires', rt.expiresAt, 'emailSent=' + emailSent);
+  else console.log('[auth] Reset token generated', 'emailSent=' + emailSent);
   res.json({ ok: true, user: userPublic(user), resetToken: rt.token, resetUrl: resetPath, absoluteResetUrl: resetUrl, expiresAt: rt.expiresAt, emailSent });
 }));
 
