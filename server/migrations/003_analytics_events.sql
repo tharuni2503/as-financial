@@ -1,4 +1,4 @@
-﻿-- Additive analytics events table for first-party website analytics.
+-- Additive analytics events table for first-party website analytics.
 CREATE TABLE IF NOT EXISTS analytics_events (
   id TEXT PRIMARY KEY,
   event_id TEXT,
