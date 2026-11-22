@@ -601,13 +601,23 @@
         </section>
 
         <section class="view" id="view-marketing">
-          <div class="page-head"><div><h2>Marketing & Campaigns</h2><p>Measure campaign traffic, enquiries, and conversions.</p></div></div>
-          <div class="card"><div class="card-body"><div class="empty-state" style="padding:28px"><h3>Coming soon</h3><p>UTM/campaign attribution is not fully instrumented yet. Add UTM capture to tracking events before displaying campaign ROI or cost metrics.</p></div></div></div>
+          <div class="page-head"><div><h2>Marketing & Campaigns</h2><p>Campaign traffic and attribution from first-party UTM data.</p></div></div>
+          <div class="dash-grid equal">
+            <div class="card"><div class="card-head"><div><h3>UTM campaigns</h3><p>Page views by campaign</p></div></div><div class="card-body"><div class="pipeline" id="mk-campaigns"><div class="empty-state" style="padding:18px"><p>No campaign data yet.</p></div></div></div></div>
+            <div class="card"><div class="card-head"><div><h3>Traffic sources</h3><p>Where visitors came from</p></div></div><div class="card-body"><div class="pipeline" id="mk-sources"><div class="empty-state" style="padding:18px"><p>No source data yet.</p></div></div></div></div>
+          </div>
+          <div class="card" style="margin-top:18px"><div class="card-head"><div><h3>Top referrers</h3><p>External referrer domains (30 days)</p></div></div><div class="card-body"><div class="pipeline" id="mk-referrers"><div class="empty-state" style="padding:18px"><p>No referrer data yet.</p></div></div></div></div>
         </section>
 
         <section class="view" id="view-growth">
-          <div class="page-head"><div><h2>Business Growth</h2><p>Compare enquiries, approvals, disbursements, and targets over time.</p></div></div>
-          <div class="card"><div class="card-body"><div class="empty-state" style="padding:28px"><h3>Coming soon</h3><p>Growth charts need verified business records (targets, approvals, disbursements, revenue). Overview currently shows website and enquiry growth from real analytics/lead data.</p></div></div></div>
+          <div class="page-head"><div><h2>Business Growth</h2><p>Real enquiry and conversion trends from available data.</p></div></div>
+          <div class="kpi-grid" style="margin-bottom:18px">
+            <div class="kpi"><div class="kpi-top"><span class="kpi-label">Total enquiries</span></div><div class="kpi-value" id="gr-total">0</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-label">Accepted</span></div><div class="kpi-value" id="gr-accepted">0</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-label">Conversion %</span></div><div class="kpi-value" id="gr-conv">0%</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-label">Last 7d page views</span></div><div class="kpi-value" id="gr-pv7">0</div></div>
+          </div>
+          <div class="card"><div class="card-head"><div><h3>Monthly enquiries</h3><p>Real lead creation trend</p></div></div><div class="card-body"><div class="pipeline" id="gr-monthly"><div class="empty-state" style="padding:18px"><p>No lead data yet.</p></div></div></div></div>
         </section>
 
         <section class="view" id="view-health">

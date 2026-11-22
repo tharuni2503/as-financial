@@ -715,6 +715,8 @@
     else if (view === 'settings') renderSettings();
     else if (view === 'analytics') renderAnalytics();
     else if (view === 'funnel') renderFunnel();
+    else if (view === 'marketing') renderMarketing();
+    else if (view === 'growth') renderGrowth();
     else if (view === 'recovery') renderRecovery();
     else if (view === 'followups') renderFollowups();
     else if (view === 'health') renderHealth();
@@ -948,6 +950,34 @@
     set('fu-starts', starts); set('fu-submits', submits); set('fu-sns', sns); set('fu-abandon', abandon);
     const note = $('#funnel-note');
     if (note) note.textContent = starts > 0 ? ('Conversion: '+(submits>0?((submits/starts)*100).toFixed(1):'0.0')+'% from form start to submit. '+sns+' started but not submitted. '+abandon+' abandon event(s) in last 7 days.') : 'No funnel data yet.';
+  }
+
+  async function renderMarketing() {
+    const api = window.ASBackend; if (!api) return;
+    if (!analyticsData) { try { analyticsData = await api.request('api/admin/analytics'); } catch(e) {} }
+    const d = analyticsData || {};
+    const list = (id, arr, k, v, empty) => { const el=$('#'+id); if(!el) return; const max=Math.max(...arr.map(x=>Number(x[v]||0)),1); el.innerHTML = arr.length ? arr.map(x=>'<div class="pipeline-row"><div class="p-top"><span>'+esc(String(x[k]||'-'))+'</span><b>'+Number(x[v]||0)+'</b></div><div class="pipeline-track"><span style="width:'+Math.round((Number(x[v]||0)/max)*100)+'%"></span></div></div>').join('') : '<div class="empty-state" style="padding:18px"><p>'+esc(empty)+'</p></div>'; };
+    list('mk-campaigns', Array.isArray(d.utmCampaigns)?d.utmCampaigns:[], 'campaign', 'count', 'No campaign data yet.');
+    list('mk-sources', Array.isArray(d.trafficSources)?d.trafficSources:[], 'source', 'count', 'No source data yet.');
+    list('mk-referrers', Array.isArray(d.topReferrers)?d.topReferrers:[], 'referrer', 'count', 'No referrer data yet.');
+  }
+
+  async function renderGrowth() {
+    const api = window.ASBackend; if (api && !analyticsData) { try { analyticsData = await api.request('api/admin/analytics'); } catch(e) {} }
+    const s = (analyticsData && analyticsData.summary) || {};
+    const total = leads.length;
+    const accepted = leads.filter(l=>l.status==='Accepted').length;
+    const set=(id,v)=>{ const el=$('#'+id); if(el) el.textContent=v; };
+    set('gr-total', total);
+    set('gr-accepted', accepted);
+    set('gr-conv', (total?((accepted/total)*100).toFixed(1):'0.0')+'%');
+    set('gr-pv7', Number(s.last7PageViews||0));
+    const byMonth = {};
+    leads.forEach(l=>{ const k=String(l.createdAt||'').slice(0,7); if(!k) return; byMonth[k]=(byMonth[k]||0)+1; });
+    const rows = Object.entries(byMonth).sort((a,b)=>a[0].localeCompare(b[0])).slice(-8).map(([month,count])=>({month,count}));
+    const max=Math.max(...rows.map(r=>r.count),1);
+    const host=$('#gr-monthly');
+    if (host) host.innerHTML = rows.length ? rows.map(r=>'<div class="pipeline-row"><div class="p-top"><span>'+esc(r.month)+'</span><b>'+r.count+'</b></div><div class="pipeline-track"><span style="width:'+Math.round((r.count/max)*100)+'%"></span></div></div>').join('') : '<div class="empty-state" style="padding:18px"><p>No lead data yet.</p></div>';
   }
 
   async function renderAnalytics() {
