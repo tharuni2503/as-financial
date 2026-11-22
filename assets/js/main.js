@@ -1339,14 +1339,18 @@
     prev.disabled = !canScroll || left <= 2;
     next.disabled = !canScroll || left >= max - 2;
     wrap.classList.toggle('can-scroll', canScroll);
-    let active = 0, best = Infinity;
+    const visible = cards.map(card => getComputedStyle(card).display !== 'none');
+    let active = -1, best = Infinity;
     cards.forEach((card, i) => {
+      if (!visible[i]) return;
       const d = Math.abs(card.offsetLeft - grid.offsetLeft - left);
       if (d < best) { best = d; active = i; }
     });
+    if (active < 0) active = visible.indexOf(true);
     Array.from(dots.children).forEach((dot, i) => {
+      dot.style.display = visible[i] ? '' : 'none';
       dot.classList.toggle('is-active', i === active);
-      if (i === active) dot.setAttribute('aria-current', 'true');
+      if (i === active && visible[i]) dot.setAttribute('aria-current', 'true');
       else dot.removeAttribute('aria-current');
     });
   };
@@ -1368,7 +1372,7 @@
   const btn = document.querySelector('[data-products-more]');
   if (!grid || !btn) return;
 
-  const LIMIT = 6;
+  const LIMIT = 4;
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function sync() {
@@ -1382,7 +1386,7 @@
     btn.hidden = false;
     const expanded = !grid.classList.contains('is-collapsed');
     btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-    btn.textContent = expanded ? 'Show fewer offerings' : 'Show all offerings (' + total + ')';
+    btn.textContent = expanded ? 'Show fewer offerings' : 'Show more offerings (' + (total - LIMIT) + ' more)';
   }
 
   // Start collapsed so the first two rows carry the section.
@@ -1397,6 +1401,7 @@
       grid.querySelectorAll('.pcard:not(.in)').forEach((el) => el.classList.add('in'));
     }
     sync();
+    grid.dispatchEvent(new Event('scroll'));
     if (collapsing) {
       const offset = grid.getBoundingClientRect().top + window.scrollY - 130;
       window.scrollTo({ top: Math.max(0, offset), behavior: reduce ? 'auto' : 'smooth' });

@@ -229,8 +229,8 @@ h3, h4 { color: var(--navy); }
 .pgrid::-webkit-scrollbar { height: 8px; }
 .pgrid::-webkit-scrollbar-thumb { background: #d7deea; border-radius: 999px; }
 .pgrid::-webkit-scrollbar-track { background: transparent; }
-.pgrid.is-collapsed .pcard:nth-child(n+7) { display: flex; }
-#products .more-wrap { display: none; }
+.pgrid.is-collapsed .pcard:nth-child(n+5) { display: none; }
+.more-wrap:has([hidden]) { display: none; }
 .pgrid-wrap { position: relative; }
 .pgrid-nav {
   position: absolute;
