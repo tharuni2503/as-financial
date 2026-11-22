@@ -1648,3 +1648,39 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
 @media (min-width: 1500px) {
   .page-home .pgrid, .page-loans .pgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
+
+/* ---------- Compact offering cards on mobile (home + loans) ---------- */
+@media (max-width: 700px) {
+  .page-home .pgrid .pcard,
+  .page-loans .pgrid .pcard { border-radius: 12px; }
+  .page-home .pgrid .pcard-media,
+  .page-loans .pgrid .pcard-media { aspect-ratio: 21 / 9; max-height: 110px; }
+  .page-home .pgrid .pcard-media.icon-only,
+  .page-loans .pgrid .pcard-media.icon-only { min-height: 74px; }
+  .page-home .pgrid .pcard-body,
+  .page-loans .pgrid .pcard-body { padding: 10px 12px 11px; }
+  .page-home .pgrid .pcard-ico,
+  .page-loans .pgrid .pcard-ico { width: 26px; height: 26px; border-radius: 8px; }
+  .page-home .pgrid .pcard-ico .icon,
+  .page-loans .pgrid .pcard-ico .icon { width: 14px; height: 14px; }
+  .page-home .pgrid .pcard h3,
+  .page-loans .pgrid .pcard h3 { font-size: .92rem; line-height: 1.15; }
+  .page-home .pgrid .pcard .tag,
+  .page-loans .pgrid .pcard .tag { font-size: .66rem; margin: 2px 0 5px; }
+  .page-home .pgrid .pcard ul,
+  .page-loans .pgrid .pcard ul { grid-template-columns: 1fr 1fr; gap: 2px 10px; margin-bottom: 7px; }
+  .page-home .pgrid .pcard li,
+  .page-loans .pgrid .pcard li { font-size: .66rem; line-height: 1.25; padding-left: 11px; }
+  .page-home .pgrid .pcard li:nth-child(n+5),
+  .page-loans .pgrid .pcard li:nth-child(n+5) { display: none; }
+  .page-home .pgrid .pcard-foot,
+  .page-loans .pgrid .pcard-foot { padding-top: 7px; font-size: .64rem; gap: 6px; }
+  .page-home .pgrid .pcard-foot .btn,
+  .page-loans .pgrid .pcard-foot .btn { min-height: 30px; padding: 5px 10px; font-size: .68rem; }
+  .page-home .pgrid-dots,
+  .page-loans .pgrid-dots { margin-top: 6px; }
+}
+@media (max-width: 380px) {
+  .page-home .pgrid .pcard-media,
+  .page-loans .pgrid .pcard-media { max-height: 92px; }
+}
