@@ -97,7 +97,7 @@
 }
 @media (max-width: 420px){
   #partners .section-head{ margin-bottom:12px; }
-  #partners .section-head h2{ font-size:1.45rem; }
+  #partners .section-head h1, .section-head h2{ font-size:1.45rem; }
   #partners .lp2-row{ padding:9px 10px; }
   #partners .lp2-actions{ width:100%; }
 }
