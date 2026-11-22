@@ -1784,7 +1784,10 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
   background: linear-gradient(180deg, #fffdfa 0%, #ffffff 38%, #fbfdff 100%);
   box-shadow: 0 36px 80px -30px rgba(16,41,75,.55), 0 0 0 1px rgba(255,255,255,.6) inset;
   padding: 32px 30px 28px;
-  overflow: hidden;
+  max-height: min(90dvh, 760px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 .popup::before {
   content: ''; position: absolute; left: 28px; right: 28px; top: 0; height: 3px;
