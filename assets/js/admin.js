@@ -671,8 +671,12 @@
 
   /* ---------------------------------------------------------------- navigation */
   const VIEW_TITLES = {
-    overview: 'Overview', leads: 'Enquiries', customers: 'Customers', notifications: 'Notifications', reports: 'Reports',
-    products: 'Loan products', partners: 'Bank partners', content: 'Reviews & Products', settings: 'Settings'
+    overview: 'Overview', analytics: 'Website Analytics', funnel: 'Enquiry Funnel', recovery: 'Lead Recovery Centre',
+    leads: 'Enquiries', customers: 'Customers', applications: 'Loan Applications',
+    followups: 'Follow-ups & Reminders', notifications: 'Notifications', marketing: 'Marketing & Campaigns',
+    growth: 'Business Growth', partners: 'Bank partners', reports: 'Reports',
+    health: 'Website Health', audit: 'Admin Activity & Security', content: 'Reviews & Products',
+    products: 'Loan products', settings: 'Settings'
   };
 
   function setView(view, skipHash) {
@@ -703,6 +707,10 @@
     else if (view === 'partners') renderPartners();
     else if (view === 'content') renderContent();
     else if (view === 'settings') renderSettings();
+    else if (view === 'recovery') renderRecovery();
+    else if (view === 'followups') renderFollowups();
+    else if (view === 'health') renderHealth();
+    else if (view === 'audit') renderAudit();
     syncChartRefs();
     requestAnimationFrame(() => requestAnimationFrame(redrawCharts));
   }
@@ -885,6 +893,46 @@
       '<span style="flex:1"><b style="font-size:.78rem;color:' + (t.done ? '#5b6b7e' : '#0d2b4e') + ';text-decoration:' + (t.done ? 'line-through' : 'none') + ';font-weight:600;display:block">' + esc(t.text) + '</b><span style="font-size:.66rem;color:#5b6b7e">' + esc(t.due) + '</span></span>' +
       '</label>'
     ).join('');
+  }
+
+  function renderRecovery() {
+    const body = $('#recovery-body');
+    if (!body) return;
+    const now = Date.now();
+    const items = leads.filter(l => ['New','Contacted'].includes(l.status)).map(l => {
+      const ageHrs = (now - new Date(l.createdAt||0).getTime())/36e5;
+      const reason = l.status === 'New' ? (ageHrs>24?'New lead not contacted >24h':'New lead awaiting contact') : (ageHrs>72?'Contacted but no progress >72h':'Contacted follow-up');
+      return { l, ageHrs, reason };
+    }).sort((a,b)=>b.ageHrs-a.ageHrs).slice(0,20);
+    body.innerHTML = items.length ? items.map(x => '<tr><td><b style="color:var(--navy)">'+esc(x.l.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(x.l.phone||'')+'</div></td><td>'+esc(x.l.status||'')+'</td><td>'+Math.floor(x.ageHrs/24)+'d '+Math.floor(x.ageHrs%24)+'h</td><td>'+esc(x.reason)+'</td></tr>').join('') : '<tr><td colspan="4" class="table-empty">No recovery items detected yet.</td></tr>';
+  }
+
+  function renderFollowups() {
+    const body = $('#followups-body');
+    if (!body) return;
+    const items = [...leads].filter(l => ['New','Contacted'].includes(l.status)).sort((a,b)=>new Date(a.createdAt||0)-new Date(b.createdAt||0)).slice(0,20);
+    body.innerHTML = items.length ? items.map(l => '<tr><td><b style="color:var(--navy)">'+esc(l.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(l.product||'')+'</div></td><td>'+esc(l.status||'')+'</td><td>'+esc(l.priority||'Medium')+'</td><td>'+esc(fmtShort(l.createdAt))+'</td><td><button type="button" class="a-btn a-btn-light a-btn-sm" data-view-link="leads">Open</button></td></tr>').join('') : '<tr><td colspan="5" class="table-empty">No follow-ups found.</td></tr>';
+  }
+
+  async function renderHealth() {
+    const api = window.ASBackend; if (!api) return;
+    const set = (id,v)=>{ const el=$('#'+id); if(el) el.textContent=v; };
+    try {
+      const r = await fetch('/api/health', { credentials:'same-origin' });
+      const d = await r.json().catch(()=>({}));
+      set('health-api-status', r.ok ? 'Healthy' : 'Error');
+      set('health-api-detail', r.ok ? ('HTTP '+r.status+' at '+new Date().toLocaleString()) : ('HTTP '+r.status));
+      set('health-backend', d.backend || 'Unknown');
+    } catch(e) { set('health-api-status','Unavailable'); set('health-api-detail','Could not reach /api/health'); }
+  }
+
+  async function renderAudit() {
+    const api = window.ASBackend; const body = $('#audit-body'); if (!api || !body) return;
+    try {
+      const d = await api.request('api/audit');
+      const items = Array.isArray(d) ? d : (Array.isArray(d.items) ? d.items : Array.isArray(d.logs) ? d.logs : []);
+      body.innerHTML = items.length ? items.slice(0,20).map(a => '<tr><td>'+esc(timeAgo(a.at||a.createdAt))+'</td><td>'+esc(a.actorEmail||a.actor||'-')+'</td><td>'+esc(a.type||a.action||'-')+'</td><td>'+esc(a.summary||a.targetId||'-')+'</td></tr>').join('') : '<tr><td colspan="4" class="table-empty">No audit logs found.</td></tr>';
+    } catch(e) { body.innerHTML = '<tr><td colspan="4" class="table-empty">Could not load audit logs.</td></tr>'; }
   }
 
   /* ---------------------------------------------------------------- leads */
@@ -2441,6 +2489,8 @@
       toast('Settings saved. The public website will reflect these details.');
     });
     $('#settings-reset').addEventListener('click', renderSettings);
+  const healthBtn = $('#health-check-btn'); if (healthBtn) healthBtn.addEventListener('click', renderHealth);
+  const auditBtn = $('#audit-refresh-btn'); if (auditBtn) auditBtn.addEventListener('click', renderAudit);
     ['notif-leads', 'notif-apps', 'notif-weekly', 'notif-whatsapp'].forEach(id => {
       const el = $('#' + id);
       if (el) el.addEventListener('change', () => {

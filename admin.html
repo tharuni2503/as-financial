@@ -127,18 +127,27 @@
       <nav class="sidebar-nav" aria-label="Dashboard">
         <div class="sidebar-label">Main</div>
         <button type="button" class="sidebar-link active" data-view="overview"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg> Overview</button>
+        <button type="button" class="sidebar-link" data-view="analytics"><svg class="icon" aria-hidden="true"><use href="#i-chart"></use></svg> Website Analytics</button>
+        <button type="button" class="sidebar-link" data-view="funnel"><svg class="icon" aria-hidden="true"><use href="#i-filter"></use></svg> Enquiry Funnel</button>
+        <button type="button" class="sidebar-link" data-view="recovery"><svg class="icon" aria-hidden="true"><use href="#i-refresh"></use></svg> Lead Recovery</button>
         <button type="button" class="sidebar-link" data-view="leads"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg> Enquiries <span class="badge-count" id="nav-lead-count">0</span></button>
-        <button type="button" class="sidebar-link" data-view="partners"><svg class="icon" aria-hidden="true"><use href="#i-handshake"></use></svg> Partners</button>
-        <button type="button" class="sidebar-link" data-view="content"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg> Reviews &amp; Products</button>
-        <button type="button" class="sidebar-link" data-view="settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"></use></svg> Settings</button>
+        <button type="button" class="sidebar-link" data-view="customers"><svg class="icon" aria-hidden="true"><use href="#i-user"></use></svg> Customers</button>
+        <button type="button" class="sidebar-link" data-view="applications"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg> Applications</button>
 
-        <details class="sidebar-more" style="margin-top:8px">
-          <summary class="sidebar-label" style="cursor:pointer;list-style:none">More tools</summary>
-          <button type="button" class="sidebar-link" data-view="customers"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg> Customers</button>
-          <button type="button" class="sidebar-link" data-view="notifications"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg> Notifications <span class="badge-count" id="nav-notif-count">0</span></button>
-          <button type="button" class="sidebar-link" data-view="reports"><svg class="icon" aria-hidden="true"><use href="#i-report"></use></svg> Reports</button>
-          <button type="button" class="sidebar-link" data-view="products"><svg class="icon" aria-hidden="true"><use href="#i-box"></use></svg> Loan products</button>
-        </details>
+        <div class="sidebar-label">Operations</div>
+        <button type="button" class="sidebar-link" data-view="followups"><svg class="icon" aria-hidden="true"><use href="#i-calendar"></use></svg> Follow-ups</button>
+        <button type="button" class="sidebar-link" data-view="notifications"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg> Notifications <span class="badge-count" id="nav-notif-count">0</span></button>
+        <button type="button" class="sidebar-link" data-view="marketing"><svg class="icon" aria-hidden="true"><use href="#i-send"></use></svg> Marketing</button>
+        <button type="button" class="sidebar-link" data-view="growth"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg> Business Growth</button>
+        <button type="button" class="sidebar-link" data-view="partners"><svg class="icon" aria-hidden="true"><use href="#i-handshake"></use></svg> Partners</button>
+        <button type="button" class="sidebar-link" data-view="reports"><svg class="icon" aria-hidden="true"><use href="#i-report"></use></svg> Reports</button>
+
+        <div class="sidebar-label">System</div>
+        <button type="button" class="sidebar-link" data-view="health"><svg class="icon" aria-hidden="true"><use href="#i-alert"></use></svg> Website Health</button>
+        <button type="button" class="sidebar-link" data-view="audit"><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg> Audit &amp; Security</button>
+        <button type="button" class="sidebar-link" data-view="content"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg> Reviews &amp; Products</button>
+        <button type="button" class="sidebar-link" data-view="products"><svg class="icon" aria-hidden="true"><use href="#i-box"></use></svg> Loan products</button>
+        <button type="button" class="sidebar-link" data-view="settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"></use></svg> Settings</button>
 
         <a class="sidebar-link" href="index.html" target="_blank" rel="noopener noreferrer"><svg class="icon" aria-hidden="true"><use href="#i-globe"></use></svg> View website <svg class="icon icon-sm" style="margin-left:auto" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a>
       </nav>
@@ -539,6 +548,51 @@
         </section>
 
         <!-- SETTINGS -->
+        <section class="view" id="view-analytics">
+          <div class="page-head"><div><h2>Website Analytics</h2><p>Track visitors, page views, traffic sources, and engagement.</p></div></div>
+          <div class="card"><div class="card-body"><div class="empty-state" style="padding:28px"><h3>Coming soon</h3><p>First-party analytics summary is available on Overview. Detailed traffic-source, device, landing-page, and retention dashboards will be added here using real collected data.</p></div></div></div>
+        </section>
+
+        <section class="view" id="view-funnel">
+          <div class="page-head"><div><h2>Enquiry Funnel</h2><p>Monitor the journey from page view to successful enquiry submission.</p></div></div>
+          <div class="card"><div class="card-body"><div class="empty-state" style="padding:28px"><h3>Coming soon</h3><p>Funnel tracking requires form-step and abandonment events. Current data shows form starts and submissions on Overview; full funnel instrumentation is the next stage.</p></div></div></div>
+        </section>
+
+        <section class="view" id="view-recovery">
+          <div class="page-head"><div><h2>Lead Recovery Centre</h2><p>Find incomplete enquiries, uncontacted leads, and missed follow-ups.</p></div></div>
+          <div class="card"><div class="card-head"><div><h3>Recovery queue</h3><p>Leads that need immediate follow-up</p></div></div><div class="table-wrap"><table class="a-table"><thead><tr><th>Lead</th><th>Status</th><th>Age</th><th>Reason</th></tr></thead><tbody id="recovery-body"><tr><td colspan="4" class="table-empty">No recovery items detected yet.</td></tr></tbody></table></div></div>
+        </section>
+
+        <section class="view" id="view-applications">
+          <div class="page-head"><div><h2>Loan Applications</h2><p>Track application status, documents, and disbursement progress.</p></div></div>
+          <div class="card"><div class="card-body"><div class="empty-state" style="padding:28px"><h3>Coming soon</h3><p>Application tracking is not fully configured yet. Existing enquiry/lead data remains available in Enquiries; application records can be added in the next CRM stage.</p></div></div></div>
+        </section>
+
+        <section class="view" id="view-followups">
+          <div class="page-head"><div><h2>Follow-ups & Reminders</h2><p>Manage follow-up dates, reminders, and overdue actions.</p></div></div>
+          <div class="card"><div class="card-head"><div><h3>Follow-up reminders</h3><p>Upcoming and overdue follow-ups from lead data</p></div></div><div class="table-wrap"><table class="a-table"><thead><tr><th>Lead</th><th>Status</th><th>Priority</th><th>Created</th><th>Action</th></tr></thead><tbody id="followups-body"><tr><td colspan="5" class="table-empty">No follow-ups found.</td></tr></tbody></table></div></div>
+        </section>
+
+        <section class="view" id="view-marketing">
+          <div class="page-head"><div><h2>Marketing & Campaigns</h2><p>Measure campaign traffic, enquiries, and conversions.</p></div></div>
+          <div class="card"><div class="card-body"><div class="empty-state" style="padding:28px"><h3>Coming soon</h3><p>UTM/campaign attribution is not fully instrumented yet. Add UTM capture to tracking events before displaying campaign ROI or cost metrics.</p></div></div></div>
+        </section>
+
+        <section class="view" id="view-growth">
+          <div class="page-head"><div><h2>Business Growth</h2><p>Compare enquiries, approvals, disbursements, and targets over time.</p></div></div>
+          <div class="card"><div class="card-body"><div class="empty-state" style="padding:28px"><h3>Coming soon</h3><p>Growth charts need verified business records (targets, approvals, disbursements, revenue). Overview currently shows website and enquiry growth from real analytics/lead data.</p></div></div></div>
+        </section>
+
+        <section class="view" id="view-health">
+          <div class="page-head"><div><h2>Website Health</h2><p>Monitor uptime, API availability, errors, and delivery failures.</p></div></div>
+          <div class="card"><div class="card-body"><div class="detail-grid-2" style="gap:12px;margin-bottom:0"><div class="detail-box"><small style="display:block;color:var(--muted);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">API health</small><b id="health-api-status">Unknown</b><div style="font-size:.8125rem;color:var(--muted)" id="health-api-detail">Check /api/health</div></div><div class="detail-box"><small style="display:block;color:var(--muted);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Storage backend</small><b id="health-backend">Unknown</b><div style="font-size:.8125rem;color:var(--muted)">From health endpoint</div></div></div><div style="margin-top:16px"><button type="button" class="a-btn a-btn-light" id="health-check-btn">Run health check</button></div></div></div>
+        </section>
+
+        <section class="view" id="view-audit">
+          <div class="page-head"><div><h2>Admin Activity & Security</h2><p>Review audit logs, sessions, and sensitive admin actions.</p></div></div>
+          <div class="card"><div class="card-head"><div><h3>Recent audit activity</h3><p>Latest recorded admin actions</p></div><button type="button" class="a-btn a-btn-light a-btn-sm" id="audit-refresh-btn">Refresh</button></div><div class="table-wrap"><table class="a-table"><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th></tr></thead><tbody id="audit-body"><tr><td colspan="4" class="table-empty">No audit logs loaded.</td></tr></tbody></table></div></div>
+        </section>
+
         <section class="view" id="view-settings">
           <div class="page-head">
             <div><h2>Settings</h2><p>Manage business details, your account, users, and sessions.</p></div>
