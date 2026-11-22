@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/admin.css?v=20261120z61">
+  <link rel="stylesheet" href="assets/css/admin.css?v=20261122z4">
   <link rel="stylesheet" href="assets/css/pro-light.css?v=20261120z61">
 </head>
 <body>
@@ -129,7 +129,6 @@
         <button type="button" class="sidebar-link active" data-view="overview"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg> Dashboard</button>
         <button type="button" class="sidebar-link" data-view="analytics"><svg class="icon" aria-hidden="true"><use href="#i-chart"></use></svg> Web Analytics</button>
         <button type="button" class="sidebar-link" data-view="leads"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg> Enquiries <span class="badge-count" id="nav-lead-count">0</span></button>
-        <button type="button" class="sidebar-link" data-view="notifications"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg> Notifications <span class="badge-count" id="nav-notif-count">0</span></button>
 
         <div class="sidebar-label">Website content</div>
         <button type="button" class="sidebar-link" data-view="partners"><svg class="icon" aria-hidden="true"><use href="#i-handshake"></use></svg> Loan partners</button>
@@ -250,12 +249,13 @@
 
           <div class="dash-grid equal">
             <div class="card">
-              <div class="card-head"><div><h3>Website growth (7 days)</h3><p>Page views, form starts, and submissions</p></div></div>
+              <div class="card-head"><div><h3>Website growth (7 days)</h3><p>Live page views, form starts and submissions</p></div><span class="live-badge"><i></i> LIVE</span></div>
               <div class="card-body">
                 <div class="chart-wrap" style="height:260px"><canvas id="ov-trend-chart"></canvas></div>
                 <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:.75rem;color:var(--muted)">
-                  <span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#2b6cb0;margin-right:6px"></i>Page views</span>
-                  <span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#c9a227;margin-right:6px"></i>Submissions</span>
+                  <span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#10294B;margin-right:6px"></i>Page views</span>
+                  <span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#D6A329;margin-right:6px"></i>Form starts</span>
+                  <span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#2B8C89;margin-right:6px"></i>Submissions</span>
                 </div>
               </div>
             </div>
@@ -283,22 +283,6 @@
               </div>
               <div class="card-body">
                 <div class="pipeline" id="ov-lead-pipeline"><div class="empty-state" style="padding:18px"><p>No enquiry data yet.</p></div></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="dash-grid equal" style="margin-top:18px">
-            <div class="card">
-              <div class="card-head"><div><h3>Top pages</h3><p>Most viewed pages (30 days)</p></div></div>
-              <div class="card-body"><div class="pipeline" id="an-top-pages"><div class="empty-state" style="padding:18px"><p>No page view data yet.</p></div></div></div>
-            </div>
-            <div class="card">
-              <div class="card-head"><div><h3>Recent visitor activity</h3><p>Who entered the site and which page they visited</p></div></div>
-              <div class="table-wrap">
-                <table class="a-table">
-                  <thead><tr><th scope="col">Time</th><th scope="col">Visitor</th><th scope="col">Page entered</th><th scope="col">Event</th></tr></thead>
-                  <tbody id="an-recent-body"><tr><td colspan="4" class="table-empty">No website activity yet.</td></tr></tbody>
-                </table>
               </div>
             </div>
           </div>
@@ -762,7 +746,7 @@
 
   <script src="assets/js/calculators.js?v=20261120z40" defer></script>
   <script src="assets/js/icons.js?v=20261118z22"></script>
-  <script src="assets/js/backend.js?v=20261122z1"></script><script src="assets/js/admin.js?v=20261122z3"></script><script src="assets/js/admin-sync.js?v=20261118z22"></script>
+  <script src="assets/js/backend.js?v=20261122z1"></script><script src="assets/js/admin.js?v=20261122z4"></script><script src="assets/js/admin-sync.js?v=20261118z22"></script>
 </body>
 </html>
 

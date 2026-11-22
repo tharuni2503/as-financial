@@ -267,132 +267,193 @@
     return { ctx, w, h };
   }
 
-  function drawLineChart(canvas, labels, seriesA, seriesB) {
+  function drawLineChart(canvas, labels, seriesA, seriesB, seriesC) {
     const c = setupCanvas(canvas);
     if (!c) return;
     const { ctx, w, h } = c;
-    const pad = { l: 34, r: 12, t: 16, b: 26 };
-    const max = Math.max(...seriesA, ...seriesB, 10) * 1.18;
+    const pad = { l: 38, r: 18, t: 18, b: 28 };
+    const all = [seriesA || [], seriesB || [], seriesC || []].filter(Array.isArray);
+    const max = Math.max(10, ...all.reduce((a, arr) => a.concat(arr.map(v => Number(v) || 0)), [])) * 1.22;
     const iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
-
-    ctx.font = '10px Manrope, sans-serif';
-    ctx.fillStyle = '#94a0ad';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    for (let i = 0; i <= 4; i++) {
-      const y = pad.t + (ih / 4) * i;
-      ctx.beginPath();
-      ctx.moveTo(pad.l, y);
-      ctx.lineTo(w - pad.r, y);
-      ctx.strokeStyle = '#f0ece2';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      const val = Math.round(max - (max / 4) * i);
-      ctx.fillText(val, pad.l - 8, y);
-    }
-
     const x = (i) => pad.l + (iw / (labels.length - 1 || 1)) * i;
-    const y = (v) => pad.t + ih - (v / max) * ih;
+    const y = (v) => pad.t + ih - ((Number(v) || 0) / max) * ih;
 
-    // area under leads
-    const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + ih);
-    grad.addColorStop(0, 'rgba(201,162,39,.22)');
-    grad.addColorStop(1, 'rgba(201,162,39,0)');
-    ctx.beginPath();
-    ctx.moveTo(x(0), y(seriesA[0]));
-    seriesA.forEach((v, i) => {
-      if (i === 0) return;
-      const px = x(i - 1), cx = (x(i - 1) + x(i)) / 2;
-      ctx.bezierCurveTo(cx, y(seriesA[i - 1]), cx, y(v), x(i), y(v));
-    });
-    ctx.lineTo(x(seriesA.length - 1), pad.t + ih);
-    ctx.lineTo(x(0), pad.t + ih);
-    ctx.closePath();
-    ctx.fillStyle = grad;
-    ctx.fill();
+    // soft plot background
+    const bg = ctx.createLinearGradient(0, pad.t, 0, pad.t + ih);
+    bg.addColorStop(0, 'rgba(16,41,75,.035)');
+    bg.addColorStop(1, 'rgba(16,41,75,0)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(pad.l, pad.t, iw, ih);
 
-    // lines
-    const drawSeries = (data, color, withDots) => {
-      ctx.beginPath();
-      data.forEach((v, i) => {
-        if (i === 0) return;
-        const px = x(i - 1), cx = (x(i - 1) + x(i)) / 2;
-        ctx.bezierCurveTo(cx, y(data[i - 1]), cx, y(v), x(i), y(v));
-      });
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2.2;
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
-      ctx.stroke();
-      if (withDots) {
-        data.forEach((v, i) => {
-          ctx.beginPath();
-          ctx.arc(x(i), y(v), 3, 0, Math.PI * 2);
-          ctx.fillStyle = '#fff';
-          ctx.fill();
-          ctx.lineWidth = 2;
-          ctx.strokeStyle = color;
-          ctx.stroke();
-        });
-      }
-    };
-    drawSeries(seriesB, '#0d2b4e', false);
-    drawSeries(seriesA, '#c9a227', true);
-
-    ctx.fillStyle = '#94a0ad';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    labels.forEach((l, i) => ctx.fillText(l, x(i), pad.t + ih + 9));
-  }
-
-  function drawBarChart(canvas, labels, values, color) {
-    const c = setupCanvas(canvas);
-    if (!c) return;
-    const { ctx, w, h } = c;
-    const pad = { l: 34, r: 12, t: 16, b: 26 };
-    const max = Math.max(...values, 10) * 1.2;
-    const iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
     ctx.font = '10px Manrope, sans-serif';
     for (let i = 0; i <= 4; i++) {
       const yy = pad.t + (ih / 4) * i;
       ctx.beginPath();
       ctx.moveTo(pad.l, yy);
       ctx.lineTo(w - pad.r, yy);
-      ctx.strokeStyle = '#f0ece2';
+      ctx.strokeStyle = i === 4 ? '#dfe5ec' : '#eef1f5';
+      ctx.lineWidth = 1;
+      ctx.setLineDash(i === 4 ? [] : [4, 4]);
       ctx.stroke();
+      ctx.setLineDash([]);
       ctx.fillStyle = '#94a0ad';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillText(Math.round(max - (max / 4) * i), pad.l - 8, yy);
     }
+    // vertical guides
+    labels.forEach((_, i) => {
+      ctx.beginPath();
+      ctx.moveTo(x(i), pad.t);
+      ctx.lineTo(x(i), pad.t + ih);
+      ctx.strokeStyle = 'rgba(16,41,75,.045)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    const series = [
+      { data: seriesA || [], color: '#10294B', rgb: '16,41,75', fill: .20 },
+      { data: seriesB || [], color: '#D6A329', rgb: '214,163,41', fill: .14 },
+      { data: seriesC || [], color: '#2B8C89', rgb: '43,140,137', fill: .10 }
+    ].filter(s => s.data.length);
+
+    const path = (data) => {
+      ctx.beginPath();
+      data.forEach((v, i) => {
+        if (i === 0) { ctx.moveTo(x(0), y(v)); return; }
+        const px = x(i - 1), cx = (px + x(i)) / 2;
+        ctx.bezierCurveTo(cx, y(data[i - 1]), cx, y(v), x(i), y(v));
+      });
+    };
+
+    series.forEach((s) => {
+      // area
+      const g = ctx.createLinearGradient(0, pad.t, 0, pad.t + ih);
+      g.addColorStop(0, 'rgba(' + s.rgb + ',' + s.fill + ')');
+      g.addColorStop(1, 'rgba(' + s.rgb + ',0)');
+      path(s.data);
+      ctx.lineTo(x(s.data.length - 1), pad.t + ih);
+      ctx.lineTo(x(0), pad.t + ih);
+      ctx.closePath();
+      ctx.fillStyle = g;
+      ctx.fill();
+    });
+
+    series.forEach((s) => {
+      ctx.save();
+      ctx.shadowColor = 'rgba(' + s.rgb + ',.35)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetY = 3;
+      path(s.data);
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = 2.6;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.restore();
+
+      s.data.forEach((v, i) => {
+        const last = i === s.data.length - 1;
+        ctx.beginPath();
+        ctx.arc(x(i), y(v), last ? 4.5 : 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+        ctx.lineWidth = last ? 2.6 : 2;
+        ctx.strokeStyle = s.color;
+        ctx.stroke();
+        if (last) {
+          ctx.beginPath();
+          ctx.arc(x(i), y(v), 8, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(' + s.rgb + ',.25)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          const val = Math.round(Number(v) || 0);
+          ctx.font = '700 10px Manrope, sans-serif';
+          ctx.fillStyle = s.color;
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(val, Math.min(x(i) + 8, w - pad.r), Math.max(y(v) - 10, pad.t + 10));
+          ctx.font = '10px Manrope, sans-serif';
+        }
+      });
+    });
+
+    ctx.fillStyle = '#94a0ad';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    labels.forEach((l, i) => {
+      ctx.font = (i === labels.length - 1 ? '700 10px' : '10px') + ' Manrope, sans-serif';
+      ctx.fillStyle = i === labels.length - 1 ? '#10294B' : '#94a0ad';
+      ctx.fillText(l, x(i), pad.t + ih + 9);
+    });
+  }
+
+  function drawBarChart(canvas, labels, values, color) {
+    const c = setupCanvas(canvas);
+    if (!c) return;
+    const { ctx, w, h } = c;
+    const pad = { l: 38, r: 14, t: 22, b: 30 };
+    const max = Math.max(...values, 10) * 1.2;
+    const iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
+    const palette = ['#10294B', '#D6A329', '#2B8C89', '#6C5CE7', '#E17055', '#0984E3', '#00B894', '#F39C12'];
+
+    ctx.font = '10px Manrope, sans-serif';
+    for (let i = 0; i <= 4; i++) {
+      const yy = pad.t + (ih / 4) * i;
+      ctx.beginPath();
+      ctx.moveTo(pad.l, yy);
+      ctx.lineTo(w - pad.r, yy);
+      ctx.strokeStyle = i === 4 ? '#dfe5ec' : '#eef1f5';
+      ctx.setLineDash(i === 4 ? [] : [4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#94a0ad';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(Math.round(max - (max / 4) * i), pad.l - 8, yy);
+    }
+
     const slot = iw / values.length;
-    const bw = Math.min(30, slot * 0.52);
+    const bw = Math.min(38, slot * 0.56);
     values.forEach((v, i) => {
-      const bh = (v / max) * ih;
+      const bh = Math.max(2, (v / max) * ih);
       const bx = pad.l + slot * i + (slot - bw) / 2;
       const by = pad.t + ih - bh;
+      const base = color || palette[i % palette.length];
       const g = ctx.createLinearGradient(0, by, 0, by + bh);
-      g.addColorStop(0, color || '#c9a227');
-      g.addColorStop(1, 'rgba(201,162,39,.55)');
+      g.addColorStop(0, base);
+      g.addColorStop(1, hexToRgba(base, .35));
+      ctx.save();
+      ctx.shadowColor = hexToRgba(base, .30);
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 3;
       ctx.fillStyle = g;
-      const r = Math.min(5, bw / 2);
+      const r = Math.min(7, bw / 2);
       ctx.beginPath();
-      if (ctx.roundRect) {
-        ctx.roundRect(bx, by, bw, bh, [r, r, 0, 0]);
-      } else {
-        ctx.rect(bx, by, bw, bh);
-      }
+      if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, [r, r, 0, 0]);
+      else ctx.rect(bx, by, bw, bh);
       ctx.fill();
+      ctx.restore();
+
       ctx.fillStyle = '#69788a';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillText(labels[i], bx + bw / 2, pad.t + ih + 9);
-      ctx.fillStyle = '#0d2b4e';
-      ctx.font = '700 9px Manrope, sans-serif';
+      ctx.font = '10px Manrope, sans-serif';
+      ctx.fillText(labels[i], bx + bw / 2, pad.t + ih + 10);
+      ctx.fillStyle = base;
+      ctx.font = '700 10px Manrope, sans-serif';
       ctx.textBaseline = 'bottom';
-      ctx.fillText(Math.round(v), bx + bw / 2, by - 3);
+      ctx.fillText(Math.round(v), bx + bw / 2, by - 4);
       ctx.font = '10px Manrope, sans-serif';
     });
+  }
+
+  function hexToRgba(hex, alpha) {
+    const s = String(hex || '#10294B').replace('#', '');
+    const full = s.length === 3 ? s.split('').map(ch => ch + ch).join('') : s;
+    const n = parseInt(full, 16);
+    if (!Number.isFinite(n)) return 'rgba(16,41,75,' + alpha + ')';
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + alpha + ')';
   }
 
   function drawDonut(canvas, data) {
@@ -874,9 +935,10 @@
       const daily = Array.isArray(data.daily) ? data.daily : [];
       const labels = daily.map(d => { try { return new Date(d.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' }); } catch(e){ return String(d.date||''); } });
       const viewSeries = daily.map(d => Number(d.pageViews || 0));
+      const startSeries = daily.map(d => Number(d.formStarts || 0));
       const submitSeries = daily.map(d => Number(d.formSubmits || 0));
       const trendCanvas = $('#ov-trend-chart');
-      if (trendCanvas && typeof drawLineChart === 'function') drawLineChart(trendCanvas, labels.length ? labels : ['-'], viewSeries.length ? viewSeries : [0], submitSeries.length ? submitSeries : [0]);
+      if (trendCanvas && typeof drawLineChart === 'function') drawLineChart(trendCanvas, labels.length ? labels : ['-'], viewSeries.length ? viewSeries : [0], startSeries.length ? startSeries : [0], submitSeries.length ? submitSeries : [0]);
 
       const funnelCanvas = $('#ov-funnel-chart');
       if (funnelCanvas && typeof drawBarChart === 'function') {
