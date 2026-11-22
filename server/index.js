@@ -1564,7 +1564,14 @@ app.use((error, req, res, next) => {
   const status = error instanceof validate.HttpError ? error.status : (error.status || 500);
   if (status >= 500) console.error('[error]', error);
   if (req.path.startsWith('/api/')) {
-    res.status(status).json({ error: status >= 500 ? 'Something went wrong. Please try again.' : error.message });
+    if (status >= 500) {
+      const msg = error && error.message ? String(error.message) : 'Server error';
+      const redacted = msg.replace(/(postgres(?:ql)?:\/\/)([^@\s]+)@/gi, '$1***@').replace(/(mongodb(?:\+srv)?:\/\/)([^@\s]+)@/gi, '$1***@').replace(/[A-Za-z0-9_\-]{24,}/g, '[redacted]');
+      console.error('[api-500]', req.method, req.path, msg);
+      res.status(500).json({ error: 'Server error: ' + redacted.slice(0, 180) });
+      return;
+    }
+    res.status(status).json({ error: error.message });
     return;
   }
   res.status(status).type('text/plain').send(status >= 500 ? 'Something went wrong.' : error.message);
