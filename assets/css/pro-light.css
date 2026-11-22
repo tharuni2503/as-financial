@@ -1633,24 +1633,17 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
   .page-loans .pgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
-/* ---------- Mobile: one card at a time carousel ---------- */
+/* ---------- Mobile: responsive grid (no carousel controls) ---------- */
 @media (max-width: 700px) {
-  .page-home .pgrid-wrap, .page-loans .pgrid-wrap { position: relative; padding: 0 34px; }
+  .page-home .pgrid-wrap, .page-loans .pgrid-wrap { position: relative; padding: 0; }
   .page-home .pgrid, .page-loans .pgrid {
-    display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
-    scroll-snap-stop: always; scrollbar-width: none; -ms-overflow-style: none; gap: 12px;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px; overflow: visible; padding-bottom: 0; scroll-snap-type: none;
   }
-  .page-home .pgrid::-webkit-scrollbar, .page-loans .pgrid::-webkit-scrollbar { display: none; }
-  .page-home .pgrid .pcard, .page-loans .pgrid .pcard { flex: 0 0 100%; min-width: 100%; scroll-snap-align: start; }
-  .page-home .pgrid .pcard-media, .page-loans .pgrid .pcard-media { aspect-ratio: 16 / 9; }
-  .page-home .pgrid-wrap .pgrid-nav, .page-loans .pgrid-wrap .pgrid-nav {
-    top: 50%; bottom: auto; transform: translateY(-50%);
-    width: 32px; height: 32px; background: rgba(255,255,255,.96);
-  }
-  .page-home .pgrid-wrap .pgrid-nav-prev, .page-loans .pgrid-wrap .pgrid-nav-prev { left: 0; }
-  .page-home .pgrid-wrap .pgrid-nav-next, .page-loans .pgrid-wrap .pgrid-nav-next { right: 0; }
-  .page-home .pgrid-wrap .pgrid-nav:hover:not(:disabled), .page-loans .pgrid-wrap .pgrid-nav:hover:not(:disabled) { transform: translateY(-50%) scale(1.03); }
-  .page-home .pgrid-wrap .pgrid-nav .icon, .page-loans .pgrid-wrap .pgrid-nav .icon { width: 16px; height: 16px; }
+  .page-home .pgrid .pcard, .page-loans .pgrid .pcard { min-width: 0; width: 100%; }
+  .page-home .pgrid .pcard-media, .page-loans .pgrid .pcard-media { aspect-ratio: 4 / 3; }
+  .page-home .pgrid-wrap .pgrid-nav, .page-home .pgrid-dots,
+  .page-loans .pgrid-wrap .pgrid-nav, .page-loans .pgrid-dots { display: none !important; }
 }
 
 /* ---------- Compact offering cards on mobile (home + loans) ---------- */
@@ -1829,10 +1822,12 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
 .popup .field select { cursor: pointer; appearance: none; background-image: linear-gradient(45deg, transparent 50%, #5f7690 50%), linear-gradient(135deg, #5f7690 50%, transparent 50%); background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px); background-size: 6px 6px, 6px 6px; background-repeat: no-repeat; padding-right: 36px; }
 .popup .field-hint { font-size: .71rem; color: #6b8196; margin-top: 5px; line-height: 1.45; }
 .popup .consent {
-  font-size: .72rem; color: #4d6278; line-height: 1.5; gap: 10px; align-items: flex-start;
+  display: flex; width: 100%; font-size: .72rem; color: #4d6278; line-height: 1.55; gap: 10px; align-items: flex-start;
   background: #f8fafc; border: 1px solid #e5edf4; border-radius: 14px; padding: 12px 13px; margin-top: 2px;
+  flex-wrap: nowrap;
 }
-.popup .consent input[type="checkbox"] { width: 18px; height: 18px; margin-top: 0; flex: none; accent-color: #b8891f; cursor: pointer; }
+.popup .consent input[type="checkbox"] { width: 18px; height: 18px; margin-top: 1px; flex: 0 0 18px; accent-color: #b8891f; cursor: pointer; }
+.popup .consent a, .popup .consent span { word-break: break-word; }
 .popup .consent a { color: #10294B; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .popup .btn-gold.btn-block {
   padding: 14px 20px; font-size: .95rem; font-weight: 700; border-radius: 14px;
@@ -1920,4 +1915,41 @@ input[type="text"], input[type="email"], input[type="tel"], input[type="number"]
   .btn-lg { padding: 12px 18px; font-size: .88rem; }
   .section { padding: 44px 0; }
   .section-head h2 { font-size: clamp(1.5rem, 7vw, 2rem); }
+}
+
+/* ---------- Mobile product grid small screen fallback ---------- */
+@media (max-width: 480px) {
+  .page-home .pgrid, .page-loans .pgrid { grid-template-columns: 1fr; }
+}
+
+/* ---------- Calculator: bigger, readable, mobile-fit ---------- */
+@media (max-width: 700px) {
+  .calc-tabs-card { padding: 16px; border-radius: 16px; }
+  .calc-tabs { gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
+  .calc-tabs::-webkit-scrollbar { display: none; }
+  .calc-tab { flex: 0 0 auto; min-height: 44px; padding: 10px 14px; font-size: .84rem; white-space: nowrap; }
+  .ambak-calc, .ambak-calc-pro, .calc-layout, .calc-card { gap: 16px; }
+  .ambak-field label, .calc-field label, .field-label { font-size: .82rem; margin-bottom: 8px; }
+  .ambak-field input[type="range"], .calc-field input[type="range"] { width: 100%; height: 32px; }
+  .ambak-field input:not([type="range"]), .ambak-field select,
+  .calc-field input:not([type="range"]), .calc-field select { font-size: 16px; min-height: 46px; padding: 10px 12px; }
+  .ambak-result, .calc-result, .result-card, .emi-result { padding: 18px; border-radius: 14px; }
+  .ambak-result .big-num, .calc-result .big-num, .emi-value, .result-value { font-size: clamp(1.6rem, 7vw, 2.2rem); line-height: 1.2; }
+  .ambak-result .result-row, .calc-result .result-row { font-size: .9rem; padding: 8px 0; }
+  .chart-wrap, .ambak-chart, .calc-chart { max-width: 100%; overflow: hidden; }
+  .chart-wrap canvas, .ambak-chart canvas { max-width: 100% !important; height: auto !important; }
+}
+
+/* ---------- Global mobile spacing polish ---------- */
+@media (max-width: 700px) {
+  .section { padding: 52px 0; }
+  .section-head { margin-bottom: 24px; }
+  .section-head p { font-size: .95rem; line-height: 1.65; }
+  .card, .panel, .benefit, .loan-card, .info-card { padding: 18px; }
+  .hero, .page-hero { padding-top: 28px; padding-bottom: 28px; }
+  .cta-band { padding: 40px 0; }
+}
+@media (max-width: 420px) {
+  .section { padding: 44px 0; }
+  .container { width: min(100% - 20px, var(--max, 1200px)); }
 }
