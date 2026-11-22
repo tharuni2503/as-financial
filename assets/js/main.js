@@ -1391,8 +1391,8 @@
     btn.textContent = expanded ? 'Show fewer offerings' : 'Show more offerings (' + (total - LIMIT) + ' more)';
   }
 
-  // Start collapsed so the first two rows carry the section.
-  if (grid.querySelectorAll('.pcard').length > LIMIT) grid.classList.add('is-collapsed');
+  // Show all offerings by default; the button can collapse to the first four.
+  grid.classList.remove('is-collapsed');
   sync();
 
   btn.addEventListener('click', () => {
