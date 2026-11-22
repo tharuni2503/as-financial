@@ -1323,7 +1323,8 @@
   const scrollByAmount = (dir) => {
     const firstCard = grid.querySelector('.pcard');
     const gap = parseFloat(getComputedStyle(grid).gap || '0') || 0;
-    const amount = document.body.classList.contains('page-loans') && firstCard && window.innerWidth <= 700
+    const isCarouselPage = document.body.classList.contains('page-loans') || document.body.classList.contains('page-home');
+    const amount = isCarouselPage && firstCard && window.innerWidth <= 700
       ? Math.round(firstCard.getBoundingClientRect().width + gap)
       : Math.max(240, Math.round(grid.clientWidth * 0.8));
     grid.scrollBy({ left: dir * amount, behavior: 'smooth' });

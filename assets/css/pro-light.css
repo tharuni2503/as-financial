@@ -1611,3 +1611,35 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
 @media (min-width: 1100px) {
   .page-loans .pgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+/* ---------- Home: offerings grid on desktop, review-style carousel on mobile ---------- */
+@media (min-width: 701px) {
+  .page-home .pgrid {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;
+    overflow: visible; padding-bottom: 0; scroll-snap-type: none;
+  }
+  .page-home .pgrid .pcard { flex: none; width: 100%; min-width: 0; }
+  .page-home .pgrid-wrap .pgrid-nav,
+  .page-home .pgrid-dots { display: none !important; }
+}
+@media (min-width: 1100px) {
+  .page-home .pgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .page-home .pgrid-wrap { position: relative; padding: 0 34px; }
+  .page-home .pgrid {
+    display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+    scroll-snap-stop: always; scrollbar-width: none; -ms-overflow-style: none; gap: 12px;
+  }
+  .page-home .pgrid::-webkit-scrollbar { display: none; }
+  .page-home .pgrid .pcard { flex: 0 0 100%; min-width: 100%; scroll-snap-align: start; }
+  .page-home .pgrid .pcard-media { aspect-ratio: 16 / 9; }
+  .page-home .pgrid-wrap .pgrid-nav {
+    top: 50%; bottom: auto; transform: translateY(-50%);
+    width: 32px; height: 32px; background: rgba(255,255,255,.96);
+  }
+  .page-home .pgrid-wrap .pgrid-nav-prev { left: 0; }
+  .page-home .pgrid-wrap .pgrid-nav-next { right: 0; }
+  .page-home .pgrid-wrap .pgrid-nav:hover:not(:disabled) { transform: translateY(-50%) scale(1.03); }
+  .page-home .pgrid-wrap .pgrid-nav .icon { width: 16px; height: 16px; }
+}
