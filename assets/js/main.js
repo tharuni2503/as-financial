@@ -1302,6 +1302,24 @@
   wrap.appendChild(prev);
   wrap.appendChild(next);
 
+  const cards = Array.from(grid.querySelectorAll('.pcard'));
+  const dots = document.createElement('div');
+  dots.className = 'pgrid-dots';
+  dots.setAttribute('role', 'group');
+  dots.setAttribute('aria-label', 'Choose an offering');
+  cards.forEach((card, i) => {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'pgrid-dot' + (i === 0 ? ' is-active' : '');
+    dot.setAttribute('aria-label', 'Go to offering ' + (i + 1));
+    if (i === 0) dot.setAttribute('aria-current', 'true');
+    dot.addEventListener('click', () => {
+      grid.scrollTo({ left: card.offsetLeft - grid.offsetLeft, behavior: 'smooth' });
+    });
+    dots.appendChild(dot);
+  });
+  wrap.appendChild(dots);
+
   const scrollByAmount = (dir) => {
     const firstCard = grid.querySelector('.pcard');
     const gap = parseFloat(getComputedStyle(grid).gap || '0') || 0;
@@ -1320,6 +1338,16 @@
     prev.disabled = !canScroll || left <= 2;
     next.disabled = !canScroll || left >= max - 2;
     wrap.classList.toggle('can-scroll', canScroll);
+    let active = 0, best = Infinity;
+    cards.forEach((card, i) => {
+      const d = Math.abs(card.offsetLeft - grid.offsetLeft - left);
+      if (d < best) { best = d; active = i; }
+    });
+    Array.from(dots.children).forEach((dot, i) => {
+      dot.classList.toggle('is-active', i === active);
+      if (i === active) dot.setAttribute('aria-current', 'true');
+      else dot.removeAttribute('aria-current');
+    });
   };
 
   grid.addEventListener('scroll', update, { passive: true });

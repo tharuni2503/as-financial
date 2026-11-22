@@ -1577,3 +1577,19 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
   .page-loans .pgrid-wrap .pgrid-nav:hover:not(:disabled) { transform: translateY(-50%) scale(1.03); }
   .page-loans .pgrid-wrap .pgrid-nav .icon { width: 16px; height: 16px; }
 }
+
+/* ---------- Shared carousel indicators (web + mobile) ---------- */
+.pgrid-dots { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+.pgrid-dot {
+  width: 10px; height: 10px; padding: 0; border: 0; border-radius: 999px;
+  background: #cdd7e4; cursor: pointer;
+  transition: width .22s ease, background .22s ease, transform .22s ease;
+}
+.pgrid-dot:hover { background: #a9b8cc; transform: scale(1.1); }
+.pgrid-dot.is-active { width: 26px; background: var(--gold, #D6A329); }
+.pgrid-dot:focus-visible { outline: 2px solid var(--navy, #10294B); outline-offset: 3px; }
+@media (max-width: 700px) {
+  .pgrid-dots { margin-top: 6px; gap: 5px; }
+  .pgrid-dot { width: 12px; height: 12px; }
+  .pgrid-dot.is-active { width: 28px; }
+}
