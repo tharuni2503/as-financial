@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -49,7 +49,7 @@
 
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="index.html" aria-label="AS Financial home"><img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions — Your Goals, Our Solutions" width="200" height="51" decoding="async" loading="lazy"></a>
+      <a class="brand" href="index.html" aria-label="AS Financial home"><img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions â€” Your Goals, Our Solutions" width="200" height="51" decoding="async" loading="lazy"></a>
       <nav class="nav" aria-label="Primary">
         <a class="nav-link" href="index.html">Home</a>
         <div class="nav-item">
@@ -69,7 +69,7 @@
             <a href="#insurance"><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg><span>Insurance<small>Life, health &amp; general cover</small></span></a>
           </div>
         </div>
-        <a class="nav-link" href="guides.html#calculators">Calculators</a>
+        <a class="nav-link" href="index.html#calculator">Calculators</a>
         <a class="nav-link" href="index.html#why-us">Why AS</a>
         <a class="nav-link" href="index.html#partners">Partners</a>
         <a class="nav-link" href="guides.html">Guides</a>
@@ -89,12 +89,12 @@
 
   <div class="mobile-nav" aria-label="Mobile menu">
     <div class="mobile-nav-head">
-      <a class="brand" href="index.html"><img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions — Your Goals, Our Solutions" width="200" height="51" decoding="async" loading="lazy"></a>
+      <a class="brand" href="index.html"><img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions â€” Your Goals, Our Solutions" width="200" height="51" decoding="async" loading="lazy"></a>
       <button type="button" class="menu-toggle" data-menu-close aria-label="Close menu"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
     </div>
     <a class="m-link" href="index.html">Home</a>
     <a class="m-link" href="loans.html">Loan Products <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a>
-    <a class="m-link" href="guides.html#calculators">Calculators</a>
+    <a class="m-link" href="index.html#calculator">Calculators</a>
     <a class="m-link" href="index.html#why-us">Why AS</a>
     <a class="m-link" href="index.html#partners">Our Partners</a>
     <a class="m-link" href="about.html">About Us</a>
@@ -111,10 +111,10 @@
         <div class="breadcrumb"><a href="index.html">Home</a><span>/</span><span>Loan products</span></div>
         <div class="eyebrow">All lending solutions</div>
         <h1>Find the loan that fits <span class="serif">your life.</span></h1>
-        <p>Home, personal, business, mortgage, education, plot, vehicle, doctor and gold loans, plus insurance — compared across leading banks and NBFCs by one dedicated advisor.</p>
+        <p>Home, personal, business, mortgage, education, plot, vehicle, doctor and gold loans, plus insurance â€” compared across leading banks and NBFCs by one dedicated advisor.</p>
         <div class="hero-actions">
           <button type="button" class="btn btn-gold" data-popup-open="apply-popup">Check my eligibility <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
-          <a class="btn btn-light" href="#calculator"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-calculator"></use></svg> Calculate my EMI</a>
+          <a class="btn btn-light" href="emi-calculator.html"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-calculator"></use></svg> Calculate my EMI</a>
         </div>
         <div class="quick-jump" aria-label="Jump to a loan type">
           <span class="quick-jump-label">Popular:</span>
@@ -299,234 +299,7 @@
       </div>
     </section>
 
-    <section class="section section-cream" id="calculator">
-      <div class="container">
-        <div class="section-head center reveal">
-          <div class="eyebrow">Plan smarter</div>
-          <h2>What will this <span class="serif">actually cost me?</span></h2>
-          <p>Estimate EMI, affordability, down payment and balance transfer savings with quick, indicative calculators.</p>
-        </div>
-
-        <div class="calc-tabs-card reveal" data-calc-tabs>
-          <div class="calc-tabs" role="tablist" aria-label="Loan calculators">
-            <button type="button" class="calc-tab is-active" role="tab" aria-selected="true" aria-controls="calc-panel-emi" id="calc-tab-emi" data-calc-tab="emi">EMI Calculator</button>
-            <button type="button" class="calc-tab" role="tab" aria-selected="false" aria-controls="calc-panel-afford" id="calc-tab-afford" data-calc-tab="afford" tabindex="-1">Affordability</button>
-            <button type="button" class="calc-tab" role="tab" aria-selected="false" aria-controls="calc-panel-down" id="calc-tab-down" data-calc-tab="down" tabindex="-1">Down-Payment</button>
-            <button type="button" class="calc-tab" role="tab" aria-selected="false" aria-controls="calc-panel-bt" id="calc-tab-bt" data-calc-tab="bt" tabindex="-1">BT Calculator</button>
-          </div>
-
-          <div class="calc-panels">
-            <div class="calc-panel is-active" role="tabpanel" id="calc-panel-emi" aria-labelledby="calc-tab-emi" data-calc-panel="emi">
-              <div class="ambak-calc ambak-calc-pro">
-                <div class="ambak-calc-inputs">
-                  <div class="ambak-field">
-                    <div class="ambak-field-top"><label for="emi-amount">Loan amount</label><output id="emi-amount-out">₹40,00,000</output></div>
-                    <input id="emi-amount" type="range" min="100000" max="50000000" step="50000" value="4000000">
-                    <div class="ambak-scale"><span>₹1L</span><span>₹5Cr</span></div>
-                  </div>
-                  <div class="ambak-field">
-                    <div class="ambak-field-top"><label for="emi-rate">Rate of interest (p.a.)</label><output id="emi-rate-out">8.50%</output></div>
-                    <input id="emi-rate" type="range" min="5" max="20" step="0.05" value="8.5">
-                    <div class="ambak-scale"><span>5%</span><span>20%</span></div>
-                  </div>
-                  <div class="ambak-field">
-                    <div class="ambak-field-top"><label for="emi-tenure">Loan tenure (years)</label><output id="emi-tenure-out">20 years</output></div>
-                    <input id="emi-tenure" type="range" min="1" max="30" step="1" value="20">
-                    <div class="ambak-scale"><span>1 yr</span><span>30 yrs</span></div>
-                  </div>
-                </div>
-                <div class="ambak-calc-result">
-                  <div class="ambak-result-top">
-                    <div>
-                      <div class="ambak-result-label">Monthly EMI</div>
-                      <div class="ambak-emi"><span id="emi-out">₹34,713</span></div>
-                      <p class="ambak-emi-sub">Estimated monthly instalment*</p>
-                    </div>
-                    <div class="ambak-donut-wrap" aria-hidden="true">
-                      <svg class="ambak-donut" viewBox="0 0 120 120" role="img">
-                        <circle cx="60" cy="60" r="52" class="ambak-donut-track"></circle>
-                        <circle id="emi-donut-principal" cx="60" cy="60" r="52" class="ambak-donut-principal"></circle>
-                        <circle id="emi-donut-interest" cx="60" cy="60" r="52" class="ambak-donut-interest"></circle>
-                      </svg>
-                    </div>
-                  </div>
-                  <div class="ambak-legend">
-                    <div class="ambak-legend-item"><span class="ambak-dot principal"></span><span>Principal</span><b id="emi-principal-pct">48%</b></div>
-                    <div class="ambak-legend-item"><span class="ambak-dot interest"></span><span>Interest</span><b id="emi-interest-pct">52%</b></div>
-                  </div>
-                  <div class="ambak-result-grid">
-                    <div><span>Principal amount</span><b id="emi-principal">₹40,00,000</b></div>
-                    <div><span>Total interest</span><b id="emi-interest">₹43,31,103</b></div>
-                    <div class="ambak-total"><span>Total amount payable</span><b id="emi-total">₹83,31,103</b></div>
-                  </div>
-                  <button class="btn btn-gold btn-block" type="button" data-popup-open="apply-popup">Talk to a loan advisor <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
-                </div>
-              </div>
-            </div>
-
-            <div class="calc-panel" role="tabpanel" id="calc-panel-afford" aria-labelledby="calc-tab-afford" data-calc-panel="afford" hidden>
-              <div class="ambak-calc ambak-calc-pro">
-                <div class="ambak-calc-inputs">
-                  <div class="ambak-field">
-                    <div class="ambak-field-top"><label for="aff-income">Monthly net income</label><output id="aff-income-out">₹1,00,000</output></div>
-                    <input id="aff-income" type="range" min="10000" max="1000000" step="5000" value="100000">
-                    <div class="ambak-scale"><span>₹10K</span><span>₹10L</span></div>
-                  </div>
-                  <div class="ambak-field">
-                    <div class="ambak-field-top"><label for="aff-oblig">Existing monthly obligations</label><output id="aff-oblig-out">₹10,000</output></div>
-                    <input id="aff-oblig" type="range" min="0" max="500000" step="1000" value="10000">
-                    <div class="ambak-scale"><span>₹0</span><span>₹5L</span></div>
-                  </div>
-                  <div class="ambak-field">
-                    <div class="ambak-field-top"><label for="aff-rate">Interest rate (p.a.)</label><output id="aff-rate-out">8.50%</output></div>
-                    <input id="aff-rate" type="range" min="5" max="20" step="0.05" value="8.5">
-                    <div class="ambak-scale"><span>5%</span><span>20%</span></div>
-                  </div>
-                  <div class="ambak-field">
-                    <div class="ambak-field-top"><label for="aff-tenure">Loan tenure (years)</label><output id="aff-tenure-out">20 years</output></div>
-                    <input id="aff-tenure" type="range" min="1" max="30" step="1" value="20">
-                    <div class="ambak-scale"><span>1 yr</span><span>30 yrs</span></div>
-                  </div>
-                </div>
-                <div class="ambak-calc-result">
-                  <div class="ambak-result-top">
-                    <div>
-                      <div class="ambak-result-label">Estimated eligible loan amount</div>
-                      <div class="ambak-emi"><span id="aff-loan-out">₹46,10,000</span></div>
-                      <p class="ambak-emi-sub">Based on an assumed FOIR of 50% of net income*</p>
-                    </div>
-                    <div class="ambak-wheel-wrap" aria-hidden="true">
-                      <div class="ambak-wheel" id="aff-wheel"><div class="ambak-wheel-center"><span>Income<br>split</span></div></div>
-                    </div>
-                  </div>
-                  <div class="ambak-legend ambak-legend-3">
-                    <div class="ambak-legend-item"><span class="ambak-dot oblig"></span><span>Obligations</span><b id="aff-oblig-pct">10%</b></div>
-                    <div class="ambak-legend-item"><span class="ambak-dot capacity"></span><span>EMI capacity</span><b id="aff-capacity-pct">40%</b></div>
-                    <div class="ambak-legend-item"><span class="ambak-dot remain"></span><span>Remaining</span><b id="aff-remain-pct">50%</b></div>
-                  </div>
-                  <div class="ambak-result-grid">
-                    <div><span>Estimated EMI capacity</span><b id="aff-emi-out">₹40,000</b></div>
-                    <div><span>Monthly obligations considered</span><b id="aff-oblig-show">₹10,000</b></div>
-                    <div class="ambak-total"><span>Net income considered</span><b id="aff-income-show">₹1,00,000</b></div>
-                  </div>
-                  <button class="btn btn-gold btn-block" type="button" data-popup-open="apply-popup">Check my eligibility <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
-                </div>
-              </div>
-            </div>
-
-            <div class="calc-panel" role="tabpanel" id="calc-panel-down" aria-labelledby="calc-tab-down" data-calc-panel="down" hidden>
-              <div class="ambak-calc ambak-calc-pro">
-                <div class="ambak-calc-inputs">
-                  <div class="ambak-field">
-                    <div class="ambak-field-top"><label for="dp-value">Property value</label><output id="dp-value-out">₹50,00,000</output></div>
-                    <input id="dp-value" type="range" min="500000" max="50000000" step="50000" value="5000000">
-                    <div class="ambak-scale"><span>₹5L</span><span>₹5Cr</span></div>
-                  </div>
-                  <div class="ambak-field">
-                    <div class="ambak-field-top"><label for="dp-amount">Down payment</label><output id="dp-amount-out">₹10,00,000 (20%)</output></div>
-                    <input id="dp-amount" type="range" min="0" max="50000000" step="50000" value="1000000">
-                    <div class="ambak-scale"><span>₹0</span><span>₹5Cr</span></div>
-                  </div>
-                  <div class="ambak-field">
-                    <div class="ambak-field-top"><label for="dp-rate">Interest rate (p.a.)</label><output id="dp-rate-out">8.50%</output></div>
-                    <input id="dp-rate" type="range" min="5" max="20" step="0.05" value="8.5">
-                    <div class="ambak-scale"><span>5%</span><span>20%</span></div>
-                  </div>
-                  <div class="ambak-field">
-                    <div class="ambak-field-top"><label for="dp-tenure">Loan tenure (years)</label><output id="dp-tenure-out">20 years</output></div>
-                    <input id="dp-tenure" type="range" min="1" max="30" step="1" value="20">
-                    <div class="ambak-scale"><span>1 yr</span><span>30 yrs</span></div>
-                  </div>
-                </div>
-                <div class="ambak-calc-result">
-                  <div class="ambak-result-top">
-                    <div>
-                      <div class="ambak-result-label">Estimated loan amount required</div>
-                      <div class="ambak-emi"><span id="dp-loan-out">₹40,00,000</span></div>
-                      <p class="ambak-emi-sub">Property value minus down payment*</p>
-                    </div>
-                    <div class="ambak-donut-wrap" aria-hidden="true">
-                      <svg class="ambak-donut" viewBox="0 0 120 120" role="img">
-                        <circle cx="60" cy="60" r="52" class="ambak-donut-track"></circle>
-                        <circle id="dp-donut-loan" cx="60" cy="60" r="52" class="ambak-donut-principal"></circle>
-                        <circle id="dp-donut-dp" cx="60" cy="60" r="52" class="ambak-donut-interest"></circle>
-                      </svg>
-                    </div>
-                  </div>
-                  <div class="ambak-legend">
-                    <div class="ambak-legend-item"><span class="ambak-dot principal"></span><span>Loan amount</span><b id="dp-loan-pct">80%</b></div>
-                    <div class="ambak-legend-item"><span class="ambak-dot interest"></span><span>Down payment</span><b id="dp-dp-pct">20%</b></div>
-                  </div>
-                  <div class="ambak-result-grid">
-                    <div><span>Down payment</span><b id="dp-amount-show">₹10,00,000 (20%)</b></div>
-                    <div><span>Estimated monthly EMI</span><b id="dp-emi-out">₹34,713</b></div>
-                    <div class="ambak-total"><span>Property value considered</span><b id="dp-value-show">₹50,00,000</b></div>
-                  </div>
-                  <button class="btn btn-gold btn-block" type="button" data-popup-open="apply-popup">Talk to a loan advisor <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
-                </div>
-              </div>
-            </div>
-
-            <div class="calc-panel" role="tabpanel" id="calc-panel-bt" aria-labelledby="calc-tab-bt" data-calc-panel="bt" hidden>
-              <div class="ambak-calc ambak-calc-pro">
-                <div class="ambak-calc-inputs">
-                  <div class="ambak-field">
-                    <div class="ambak-field-top"><label for="bt-balance">Outstanding balance</label><output id="bt-balance-out">₹30,00,000</output></div>
-                    <input id="bt-balance" type="range" min="100000" max="20000000" step="50000" value="3000000">
-                    <div class="ambak-scale"><span>₹1L</span><span>₹2Cr</span></div>
-                  </div>
-                  <div class="ambak-field">
-                    <div class="ambak-field-top"><label for="bt-old">Current interest rate (p.a.)</label><output id="bt-old-out">10.50%</output></div>
-                    <input id="bt-old" type="range" min="6" max="20" step="0.05" value="10.5">
-                    <div class="ambak-scale"><span>6%</span><span>20%</span></div>
-                  </div>
-                  <div class="ambak-field">
-                    <div class="ambak-field-top"><label for="bt-new">New interest rate (p.a.)</label><output id="bt-new-out">8.75%</output></div>
-                    <input id="bt-new" type="range" min="6" max="20" step="0.05" value="8.75">
-                    <div class="ambak-scale"><span>6%</span><span>20%</span></div>
-                  </div>
-                  <div class="ambak-field">
-                    <div class="ambak-field-top"><label for="bt-months">Remaining tenure (months)</label><output id="bt-months-out">180 months</output></div>
-                    <input id="bt-months" type="range" min="12" max="360" step="1" value="180">
-                    <div class="ambak-scale"><span>12</span><span>360</span></div>
-                  </div>
-                </div>
-                <div class="ambak-calc-result">
-                  <div class="ambak-result-top">
-                    <div>
-                      <div class="ambak-result-label">Estimated monthly savings</div>
-                      <div class="ambak-emi"><span id="bt-save-out">₹3,386</span></div>
-                      <p class="ambak-emi-sub">Indicative EMI difference; charges/fees not included*</p>
-                    </div>
-                    <div class="ambak-wheel-wrap" aria-hidden="true">
-                      <div class="ambak-wheel" id="bt-wheel"><div class="ambak-wheel-center"><span>Savings</span></div></div>
-                    </div>
-                  </div>
-                  <div class="ambak-bars">
-                    <div class="ambak-bar-row"><span>Current EMI</span><div class="ambak-bar"><i id="bt-bar-old" style="width:100%"></i></div><b id="bt-old-emi-bar">₹33,214</b></div>
-                    <div class="ambak-bar-row"><span>New EMI</span><div class="ambak-bar alt"><i id="bt-bar-new" style="width:90%"></i></div><b id="bt-new-emi-bar">₹29,828</b></div>
-                  </div>
-                  <div class="ambak-legend">
-                    <div class="ambak-legend-item"><span class="ambak-dot capacity"></span><span>New EMI</span><b id="bt-new-pct">90%</b></div>
-                    <div class="ambak-legend-item"><span class="ambak-dot interest"></span><span>Savings</span><b id="bt-save-pct">10%</b></div>
-                  </div>
-                  <div class="ambak-result-grid">
-                    <div><span>Current EMI</span><b id="bt-old-emi">₹33,214</b></div>
-                    <div><span>New EMI</span><b id="bt-new-emi">₹29,828</b></div>
-                    <div class="ambak-total"><span>Total interest saving (approx.)</span><b id="bt-interest-save">₹6,09,480</b></div>
-                  </div>
-                  <button class="btn btn-gold btn-block" type="button" data-popup-open="apply-popup">Compare BT options <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <p class="ambak-note calc-global-note">*Indicative estimates only. Actual EMI, eligibility, savings, interest rates, charges and terms depend on lender policy and your profile.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="cta-band sec-cta">
+        <section class="cta-band sec-cta">
       <div class="container">
         <div class="cta-card reveal">
           <span class="pill pill-soft"><span class="dot"></span> No obligation. No pressure.</span>
@@ -588,7 +361,7 @@
           <div class="field"><label for="lp-phone">Mobile number <span class="req">*</span></label><input id="lp-phone" name="phone" type="tel" placeholder="10-digit mobile" required inputmode="tel" autocomplete="tel"></div>
           <div class="field"><label for="lp-email">Email</label><input id="lp-email" name="email" type="email" placeholder="you@example.com"></div>
           <div class="field"><label for="lp-product">Loan type</label><select id="lp-product" name="product"><option>Home Loan</option><option>Personal Loan</option><option>Business Loan</option><option>Mortgage / LAP</option><option>Education Loan</option><option>Plot / Land Loan</option><option>Car Loan</option><option>Doctor Loan</option><option>Balance Transfer</option><option>Insurance</option><option>Other</option></select></div>
-          <div class="field"><label for="lp-amount">Loan amount</label><select id="lp-amount" name="amount"><option>Below ₹5 Lakh</option><option>₹5 – 10 Lakh</option><option selected>₹10 – 25 Lakh</option><option>₹25 – 50 Lakh</option><option>₹50 Lakh – 1 Crore</option><option>Above ₹1 Crore</option></select></div>
+          <div class="field"><label for="lp-amount">Loan amount</label><select id="lp-amount" name="amount"><option>Below â‚¹5 Lakh</option><option>â‚¹5 â€“ 10 Lakh</option><option selected>â‚¹10 â€“ 25 Lakh</option><option>â‚¹25 â€“ 50 Lakh</option><option>â‚¹50 Lakh â€“ 1 Crore</option><option>Above â‚¹1 Crore</option></select></div>
           <div class="field"><label for="lp-employment">Employment</label><select id="lp-employment" name="employment"><option>Salaried</option><option>Self-employed</option><option>Business owner</option><option>NRI</option></select></div>
           <div class="field"><label for="lp-city">City</label><input id="lp-city" name="city" type="text" value="Hyderabad"></div>
           <div class="field full"><label for="lp-message">Tell us more</label><input id="lp-message" name="message" type="text" placeholder="Optional"></div>
@@ -605,5 +378,6 @@
   <script src="assets/js/backend.js?v=20261118z22" defer></script><script src="assets/js/main.js?v=20261122z21" defer></script>
 </body>
 </html>
+
 
 
