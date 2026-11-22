@@ -60,12 +60,38 @@ async function migrate() {
   try {
     files = fs.readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
   } catch (e) {
-    files = ['001_init.sql'];
+    files = [];
   }
-  if (!files.length) files = ['001_init.sql'];
-  for (const file of files) {
-    const sql = fs.readFileSync(path.join(dir, file), 'utf8');
-    await getPool().query(sql);
+  if (!files.length) return;
+  const pool = getPool();
+  const client = await pool.connect();
+  // Fixed advisory lock key for migration coordination across instances.
+  const LOCK_KEY = 91427031;
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock($1)', [LOCK_KEY]);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        id SERIAL PRIMARY KEY,
+        filename TEXT NOT NULL UNIQUE,
+        applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    const appliedRes = await client.query('SELECT filename FROM schema_migrations');
+    const applied = new Set(appliedRes.rows.map((r) => r.filename));
+    for (const file of files) {
+      if (applied.has(file)) continue;
+      const sql = fs.readFileSync(path.join(dir, file), 'utf8');
+      await client.query(sql);
+      await client.query('INSERT INTO schema_migrations (filename) VALUES ($1) ON CONFLICT (filename) DO NOTHING', [file]);
+      console.log('[migrate] applied', file);
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch (_) {}
+    throw err;
+  } finally {
+    client.release();
   }
 }
 

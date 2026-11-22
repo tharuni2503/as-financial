@@ -507,6 +507,24 @@ app.post('/api/enquiries', asyncRoute(async (req, res) => {
     return;
   }
 
+  // Server-side duplicate guard: same phone+product within 2 minutes.
+  try {
+    const recent = await store.listEnquiries();
+    const now = Date.now();
+    const dup = (Array.isArray(recent) ? recent : []).find((e) => {
+      if (!e || !e.receivedAt) return false;
+      const age = now - Date.parse(e.receivedAt);
+      if (!(age >= 0 && age < 120000)) return false;
+      const samePhone = String(e.phone || '').replace(/D/g, '') === String(data.phone || '').replace(/D/g, '');
+      const sameProduct = String(e.product || '').toLowerCase() === String(data.product || '').toLowerCase();
+      return samePhone && sameProduct;
+    });
+    if (dup) {
+      res.status(200).json({ ok: true, id: dup.id, duplicate: true });
+      return;
+    }
+  } catch (e) { /* dedupe best-effort */ }
+
   const enquiry = Object.assign(
     {
       id: 'ENQ-' + Date.now().toString(36).toUpperCase(),
@@ -1122,6 +1140,28 @@ app.post('/api/admin/uploads', requireSession, requireRole('staff', 'admin', 'su
   try { buf = Buffer.from(b64, 'base64'); } catch (e) { res.status(400).json({ error: 'Invalid file data.' }); return; }
   if (!buf || !buf.length) { res.status(400).json({ error: 'File is empty.' }); return; }
   if (buf.length > UPLOAD_MAX_BYTES) { res.status(400).json({ error: 'File is too large (max 5 MB).' }); return; }
+  // Basic magic-byte validation to reduce disguised uploads.
+  const sig = buf.subarray(0, 8);
+  const isPdf = sig[0] === 0x25 && sig[1] === 0x50 && sig[2] === 0x44 && sig[3] === 0x46;
+  const isJpeg = sig[0] === 0xFF && sig[1] === 0xD8 && sig[2] === 0xFF;
+  const isPng = sig[0] === 0x89 && sig[1] === 0x50 && sig[2] === 0x4E && sig[3] === 0x47;
+  const isWebp = buf.length > 12 && sig[0] === 0x52 && sig[1] === 0x49 && sig[2] === 0x46 && sig[3] === 0x46 && buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50;
+  const isZip = sig[0] === 0x50 && sig[1] === 0x4B;
+  const isOle = sig[0] === 0xD0 && sig[1] === 0xCF && sig[2] === 0x11 && sig[3] === 0xE0;
+  const isTextLike = !buf.subarray(0, 512).includes(0);
+  const mimeOk = (
+    (contentType === 'application/pdf' && isPdf) ||
+    (contentType === 'image/jpeg' && isJpeg) ||
+    (contentType === 'image/png' && isPng) ||
+    (contentType === 'image/webp' && isWebp) ||
+    (contentType === 'text/plain' && isTextLike) ||
+    (contentType === 'text/csv' && isTextLike) ||
+    (contentType === 'application/msword' && isOle) ||
+    (contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && isZip) ||
+    (contentType === 'application/vnd.ms-excel' && isOle) ||
+    (contentType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && isZip)
+  );
+  if (!mimeOk) { res.status(400).json({ error: 'File content does not match the declared file type.' }); return; }
 
   const id = 'UPL-' + Date.now().toString(36).toUpperCase() + crypto.randomBytes(3).toString('hex').toUpperCase();
   const storedName = id + '-' + filename.replace(/\.[^.]+$/, '') + '.' + ext;
