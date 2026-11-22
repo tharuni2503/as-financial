@@ -1684,3 +1684,28 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
   .page-home .pgrid .pcard-media,
   .page-loans .pgrid .pcard-media { max-height: 92px; }
 }
+
+/* ---------- Loans page: concise loan facts instead of long bullet lists ---------- */
+.page-loans .loan-facts {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  margin: 4px 0 10px;
+}
+.page-loans .loan-facts span {
+  display: block; min-width: 0; padding: 8px 10px;
+  background: var(--cream-2, #faf6ee); border: 1px solid var(--line-soft);
+  border-radius: 10px;
+}
+.page-loans .loan-facts small {
+  display: block; font-size: .6rem; font-weight: 800; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 3px;
+}
+.page-loans .loan-facts b {
+  display: block; font-size: .74rem; color: var(--navy); line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .page-loans .loan-facts { gap: 6px; margin: 2px 0 7px; }
+  .page-loans .loan-facts span { padding: 6px 8px; }
+  .page-loans .loan-facts small { font-size: .55rem; margin-bottom: 2px; }
+  .page-loans .loan-facts b { font-size: .68rem; }
+}
