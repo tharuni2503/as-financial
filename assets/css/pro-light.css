@@ -1807,9 +1807,13 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
   box-shadow: 0 0 0 4px rgba(214,163,41,.12);
 }
 .popup .field-hint { font-size: .72rem; color: #6b7f92; margin-top: 5px; line-height: 1.4; }
-.popup .consent { font-size: .76rem; color: #526476; line-height: 1.55; gap: 10px; align-items: flex-start; }
-.popup .consent input { margin-top: 2px; accent-color: var(--gold-deep, #a9822f); }
-.popup .consent a { color: var(--navy, #10294B); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.popup .consent {
+  font-size: .76rem; color: #4e6276; line-height: 1.6; gap: 10px; align-items: flex-start;
+  background: #f7fafc; border: 1px solid #e3ebf2; border-radius: 12px; padding: 12px 13px;
+}
+.popup .consent input[type="checkbox"] { width: 18px; height: 18px; margin-top: 1px; flex: none; accent-color: var(--gold-deep, #a9822f); cursor: pointer; }
+.popup .consent a { color: var(--navy, #10294B); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.popup .consent:hover { border-color: #cfdbe6; background: #f3f8fc; }
 .popup .btn-gold.btn-block {
   padding: 14px 20px; font-size: .94rem; font-weight: 700; border-radius: 12px;
   box-shadow: 0 12px 24px -12px rgba(214,163,41,.65);

@@ -887,7 +887,23 @@
     el.classList.remove('open');
     document.body.style.overflow = '';
   }
+  // Ensure Apply Now / Request a call / Get a call back CTAs open the same apply popup
+  document.querySelectorAll('a, button').forEach(el => {
+    if (el.closest('#apply-popup')) return;
+    if (el.matches('[data-popup-open]')) return;
+    if (el.type === 'submit' && el.closest('form')) return;
+    const text = (el.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!text) return;
+    const isApply = text.includes('apply now') || text.includes('apply for a loan') || text.includes('apply for loan');
+    const isCall = text.includes('request a call') || text.includes('request call back') || text.includes('request callback') || text.includes('get a call back');
+    if (isApply || isCall) {
+      el.setAttribute('data-popup-open', 'apply-popup');
+      if (el.tagName === 'A') el.setAttribute('href', '#apply-popup');
+    }
+  });
   document.querySelectorAll('[data-popup-open]').forEach(btn => {
+    if (btn.dataset.popupBound === '1') return;
+    btn.dataset.popupBound = '1';
     btn.addEventListener('click', (e) => { e.preventDefault(); openPopup(btn.dataset.popupOpen); });
   });
   document.querySelectorAll('[data-popup-close]').forEach(btn => {
