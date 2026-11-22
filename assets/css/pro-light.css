@@ -1713,6 +1713,7 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
 }
 .popup .field select { cursor: pointer; appearance: none; background-image: linear-gradient(45deg, transparent 50%, #5f7690 50%), linear-gradient(135deg, #5f7690 50%, transparent 50%); background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px); background-size: 6px 6px, 6px 6px; background-repeat: no-repeat; padding-right: 36px; }
 .popup .field-hint { font-size: .71rem; color: #6b8196; margin-top: 5px; line-height: 1.45; }
+.popup .form-grid .full { grid-column: 1 / -1; width: 100%; }
 .popup .consent {
   display: flex; width: 100%; font-size: .72rem; color: #4d6278; line-height: 1.55; gap: 10px; align-items: flex-start;
   background: #f8fafc; border: 1px solid #e5edf4; border-radius: 14px; padding: 12px 13px; margin-top: 2px;
