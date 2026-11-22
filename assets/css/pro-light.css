@@ -1663,7 +1663,7 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
 /* ---------- Apply popup: improved UI & responsiveness ---------- */
 .popup-overlay { padding: 20px; background: rgba(10,29,55,.6); backdrop-filter: blur(10px); }
 .popup {
-  max-width: 500px; width: min(100%, 500px);
+  max-width: 580px; width: min(100%, 580px);
   border-radius: 28px;
   border: 1px solid rgba(214,163,41,.16);
   background: #fff;
