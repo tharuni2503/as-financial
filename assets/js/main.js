@@ -1058,6 +1058,34 @@
   });
 })();
 
+/* ---------- homepage testimonials: one-at-a-time carousel on mobile ---------- */
+(function () {
+  const grid = document.querySelector('.testi-grid[data-testimonials]');
+  const prev = document.querySelector('.testi-nav-prev');
+  const next = document.querySelector('.testi-nav-next');
+  if (!grid || !prev || !next || grid.dataset.carouselReady === '1') return;
+
+  const step = () => Math.max(1, Math.round(grid.clientWidth));
+  const scroll = (dir) => grid.scrollBy({ left: dir * step(), behavior: 'smooth' });
+  prev.addEventListener('click', () => scroll(-1));
+  next.addEventListener('click', () => scroll(1));
+
+  const update = () => {
+    const max = grid.scrollWidth - grid.clientWidth;
+    const canScroll = max > 4;
+    prev.disabled = !canScroll || grid.scrollLeft <= 2;
+    next.disabled = !canScroll || grid.scrollLeft >= max - 2;
+    document.getElementById('testi-carousel')?.classList.toggle('can-scroll', canScroll);
+  };
+  grid.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  if ('ResizeObserver' in window) { try { new ResizeObserver(update).observe(grid); } catch (e) {} }
+  setTimeout(update, 0);
+  setTimeout(update, 300);
+  window.addEventListener('load', update, { once: true });
+  grid.dataset.carouselReady = '1';
+})();
+
 /* ---------- calculator amount chips ---------- */
 (function () {
   document.addEventListener('click', (event) => {

@@ -1412,3 +1412,46 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
   .header-actions .btn-gold .icon.icon-sm { width: 14px; height: 14px; }
   .menu-toggle, .header-call-btn { width: 42px; height: 42px; }
 }
+
+/* ---------- Mobile refinement: reviews carousel, arrow-only products, compact profiles ---------- */
+.testi-carousel { position: relative; }
+.testi-nav { display: none; }
+.pgrid { scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-y; }
+.pgrid::-webkit-scrollbar { display: none; }
+@media (max-width: 700px) {
+  .testi-carousel { padding: 0 34px; }
+  .testi-grid[data-testimonials] {
+    display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+    scrollbar-width: none; -ms-overflow-style: none; gap: 12px;
+  }
+  .testi-grid[data-testimonials]::-webkit-scrollbar { display: none; }
+  .testi-grid[data-testimonials] .testi-card {
+    min-width: 100%; scroll-snap-align: start; padding: 14px;
+  }
+  .testi-quote { font-size: .8rem; line-height: 1.5; margin-bottom: 12px; }
+  .testi-person { padding-top: 10px; }
+  .testi-avatar { width: 34px; height: 34px; font-size: .7rem; }
+  .testi-person strong { font-size: .78rem; }
+  .testi-person span { font-size: .66rem; }
+  .testi-nav {
+    display: inline-flex; position: absolute; top: 50%; transform: translateY(-50%);
+    width: 32px; height: 32px; border-radius: 999px; align-items: center; justify-content: center;
+    border: 1px solid #d7deea; background: rgba(255,255,255,.96); color: var(--navy);
+    box-shadow: 0 6px 16px -10px rgba(16,41,75,.5); cursor: pointer; z-index: 4;
+  }
+  .testi-nav:disabled { opacity: 0; pointer-events: none; }
+  .testi-nav .icon { width: 16px; height: 16px; }
+  .testi-nav-prev { left: 0; }
+  .testi-nav-next { right: 0; }
+  .testi-arrow-left { transform: rotate(180deg); }
+  .testi-carousel:not(.can-scroll) .testi-nav { display: none; }
+}
+@media (max-width: 520px) {
+  .profiles { padding: 14px; margin-top: 14px; }
+  .profiles h3 { font-size: 1.15rem; margin-bottom: 6px; }
+  .profiles p { font-size: .78rem; line-height: 1.5; }
+  .profiles ul { grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+  .profiles li { font-size: .72rem; line-height: 1.25; gap: 6px; }
+  .profiles li .icon { width: 14px; height: 14px; }
+  .profiles .btn { margin-top: 6px !important; padding: 8px 12px; font-size: .78rem; }
+}
