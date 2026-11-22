@@ -47,7 +47,7 @@ const mailer = require('./mailer');
 
 const ROOT = path.join(__dirname, '..');
 const PORT = Number(process.env.PORT || 3000);
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@asfinancial.in').toLowerCase();
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'asfinancialservicesandsolution@gmail.com').toLowerCase();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'AS@2026';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 let BOOT_FATAL = null;
@@ -64,7 +64,26 @@ if (!process.env.ADMIN_PASSWORD) {
 async function ensureBootstrapUser() {
   if (typeof store.listUsers !== 'function') return;
   const users = await store.listUsers();
-  if (users.length > 0) return;
+  const byEmail = (email) => users.find(u => u && String(u.email || '').toLowerCase() === String(email || '').toLowerCase());
+
+  // Configured admin already exists.
+  if (byEmail(ADMIN_EMAIL)) return;
+
+  // If there is exactly one super_admin user with a legacy email, migrate it to the
+  // configured email, preserving role/password. This covers old admin@asfinancial.in /
+  // asfinancial@gmail.com installs.
+  const adminUsers = users.filter(u => u && u.role === 'super_admin');
+  if (adminUsers.length === 1) {
+    const legacy = adminUsers[0];
+    legacy.email = ADMIN_EMAIL;
+    legacy.updatedAt = new Date().toISOString();
+    auth.setPassword(legacy, ADMIN_PASSWORD);
+    await store.upsertUser(legacy);
+    console.log('[auth] Migrated admin email to:', ADMIN_EMAIL);
+    return;
+  }
+
+  // Otherwise create the configured admin (covers multiple pre-existing users).
   const user = {
     id: auth.randomId('USR'),
     email: ADMIN_EMAIL,
