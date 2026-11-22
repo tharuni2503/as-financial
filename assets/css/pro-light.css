@@ -1643,3 +1643,8 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
   .page-home .pgrid-wrap .pgrid-nav:hover:not(:disabled) { transform: translateY(-50%) scale(1.03); }
   .page-home .pgrid-wrap .pgrid-nav .icon { width: 16px; height: 16px; }
 }
+
+/* ---------- Wider screens: show more offerings per row ---------- */
+@media (min-width: 1500px) {
+  .page-home .pgrid, .page-loans .pgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
