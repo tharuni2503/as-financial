@@ -11,7 +11,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 
 const SECTIONS = ['testimonials', 'gallery', 'posts'];
-const ADMIN_COLLECTIONS = ['leads', 'products', 'partners', 'tasks', 'customers', 'documents', 'notifications'];
+const ADMIN_COLLECTIONS = ['leads', 'applications', 'products', 'partners', 'tasks', 'customers', 'documents', 'notifications'];
 const MAX_ENQUIRIES = 2000;
 const MAX_AUDIT = 2000;
 
@@ -74,7 +74,7 @@ function emptyContent() {
 }
 
 function emptyAdmin() {
-  return { leads: [], products: [], partners: [], tasks: [], customers: [], documents: [], notifications: [], settings: {} };
+  return { leads: [], applications: [], products: [], partners: [], tasks: [], customers: [], documents: [], notifications: [], settings: {} };
 }
 
 async function getMetaUpdatedAt() {

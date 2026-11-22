@@ -148,9 +148,9 @@
   }
 
   /* ---------------------------------------------------------------- state */
-  let leads = [], products = [], partners = [], testimonials = [], posts = [], contentImages = {}, gallery = [], tasks = [], customers = [], notifications = [], settings = {};
+  let leads = [], applications = [], products = [], partners = [], testimonials = [], posts = [], contentImages = {}, gallery = [], tasks = [], customers = [], notifications = [], settings = {};
   let analyticsData = null;
-  let apps = []; // applications removed from UI; kept as empty stub to avoid stale refs
+  let apps = applications; // backward compat alias
   let leadPage = 1;
   const PAGE_SIZE = 8;
   const filters = { leadSearch: '', leadProduct: '', leadStatus: '', partnerType: '' };
@@ -172,11 +172,14 @@
     tasks = store.get('as_tasks', []);
     customers = store.get('as_customers', []);
     notifications = store.get('as_notifications', []);
+    applications = store.get('as_applications', []);
     settings = Object.assign({}, DEFAULT_SETTINGS, store.get('as_settings', {}));
     settings.notifications = Object.assign({}, DEFAULT_SETTINGS.notifications, settings.notifications || {});
     if (!Array.isArray(leads)) leads = [];
     if (!Array.isArray(customers)) customers = [];
     if (!Array.isArray(notifications)) notifications = [];
+    if (!Array.isArray(applications)) applications = [];
+    apps = applications;
   }
 
   const save = {
@@ -190,6 +193,7 @@
     tasks: () => store.set('as_tasks', tasks),
     customers: () => store.set('as_customers', customers),
     notifications: () => store.set('as_notifications', notifications),
+    applications: () => store.set('as_applications', applications),
     settings: () => store.set('as_settings', settings)
   };
 
@@ -702,6 +706,7 @@
     if (view === 'overview') renderOverview();
     else if (view === 'leads') renderLeads();
     else if (view === 'customers') renderCustomers();
+    else if (view === 'applications') renderApplications();
     else if (view === 'notifications') renderNotifications();
     else if (view === 'reports') renderReports();
     else if (view === 'products') renderProducts();
@@ -2068,6 +2073,65 @@
     });
   }
 
+  /* ---------------------------------------------------------------- applications */
+  function renderApplications() {
+    const body = $('#applications-body'); if (!body) return;
+    const rows = applications.slice().sort((a,b)=>new Date(b.updatedAt||b.createdAt||0)-new Date(a.updatedAt||a.createdAt||0));
+    body.innerHTML = rows.length ? rows.map(a =>
+      '<tr>' +
+      '<td><b style="color:var(--navy)">'+esc(a.applicant||a.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(a.id||'')+'</div></td>' +
+      '<td>'+esc(a.product||'—')+'</td>' +
+      '<td class="num">'+(a.amount?compact(amountToNumber(a.amount)):'—')+'</td>' +
+      '<td><span class="badge badge-'+String(a.stage||'new').toLowerCase().replace(/[^a-z]/g,'')+'">'+esc(a.stage||'New')+'</span></td>' +
+      '<td>'+esc(a.owner||'—')+'</td>' +
+      '<td title="'+esc(fmtDate(a.updatedAt||a.createdAt))+'">'+esc(fmtShort(a.updatedAt||a.createdAt))+'</td>' +
+      '<td><div class="row-actions"><button class="a-btn-icon" data-action="edit-application" data-id="'+esc(a.id)+'" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="a-btn-icon danger" data-action="delete-application" data-id="'+esc(a.id)+'" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button></div></td>' +
+      '</tr>'
+    ).join('') : '<tr><td colspan="7" class="table-empty">No applications yet. Add one to start tracking.</td></tr>';
+  }
+
+  function applicationModal(id) {
+    const a = id ? applications.find(x=>x.id===id) : null;
+    const stages = ['New','Documents Pending','Under Review','Submitted to Bank','Approved','Sanctioned','Disbursed','Rejected','On Hold'];
+    const stageOpts = stages.map(s=>'<option '+((a?a.stage:'New')===s?'selected':'')+'>'+s+'</option>').join('');
+    const productOpts = products.map(p=>'<option '+(a&&a.product===p.name?'selected':'')+'>'+esc(p.name)+'</option>').join('');
+    openModal({
+      title: a ? 'Edit application' : 'Add application',
+      sub: 'Track application progress with real records only.',
+      body:
+        '<div class="form-row"><div class="a-field"><label>Applicant name <span class="req">*</span></label><input name="applicant" required value="'+esc(a?a.applicant||a.name:'')+'"></div>' +
+        '<div class="a-field"><label>Phone</label><input name="phone" value="'+esc(a?a.phone:'')+'"></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Product</label><select name="product">'+productOpts+'</select></div>' +
+        '<div class="a-field"><label>Amount (₹)</label><input name="amount" type="number" min="0" step="10000" value="'+esc(a?a.amount:'')+'"></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Stage</label><select name="stage">'+stageOpts+'</select></div>' +
+        '<div class="a-field"><label>Owner</label><input name="owner" value="'+esc(a?a.owner:'Admin')+'"></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Lender / Bank</label><input name="lender" value="'+esc(a?a.lender:'')+'"></div>' +
+        '<div class="a-field"><label>Reference</label><input name="reference" value="'+esc(a?a.reference:'')+'"></div></div>' +
+        '<div class="form-row one"><div class="a-field"><label>Notes</label><textarea name="notes">'+esc(a?a.notes:'')+'</textarea></div></div>',
+      submitLabel: a ? 'Save changes' : 'Add application',
+      onSubmit: async (data) => {
+        const applicant = String(data.get('applicant')||'').trim();
+        if (!applicant) { toast('Applicant name is required.', 'error'); return false; }
+        const now = new Date().toISOString();
+        const payload = { applicant, phone:String(data.get('phone')||'').trim(), product:String(data.get('product')||''), amount:Number(data.get('amount'))||0, stage:String(data.get('stage')||'New'), owner:String(data.get('owner')||'Admin').trim(), lender:String(data.get('lender')||'').trim(), reference:String(data.get('reference')||'').trim(), notes:String(data.get('notes')||'').trim(), updatedAt: now };
+        const api = window.ASBackend;
+        try {
+          if (a) {
+            if (api && api.request) { const res = await api.request('api/admin/applications/'+encodeURIComponent(a.id), { method:'PATCH', body: payload }).catch(()=>null); Object.assign(a, (res&&res.item)?res.item:payload); }
+            else Object.assign(a, payload);
+            toast('Application updated.');
+          } else {
+            let item = Object.assign({ id: uid('APP-',4), createdAt: now }, payload);
+            if (api && api.request) { const res = await api.request('api/admin/applications', { method:'POST', body: payload }).catch(()=>null); if (res && res.item) item = res.item; }
+            applications.unshift(item);
+            toast('Application added.');
+          }
+        } catch(e) { if (a) Object.assign(a,payload); else applications.unshift(Object.assign({ id: uid('APP-',4), createdAt: now }, payload)); toast('Saved locally. Server sync may be pending.', 'error'); }
+        save.applications(); apps = applications; renderAll();
+      }
+    });
+  }
+
   /* ---------------------------------------------------------------- notifications */
   function renderNotifications() {
     const host = $('#notifications-list');
@@ -2530,6 +2594,8 @@
     $$('[data-add-lead]').forEach(b => b.addEventListener('click', () => leadModal()));
     const addCustomerBtn = $('#add-customer-btn');
     if (addCustomerBtn) addCustomerBtn.addEventListener('click', () => customerModal());
+    const addAppBtn = $('#add-application-btn');
+    if (addAppBtn) addAppBtn.addEventListener('click', () => applicationModal());
 
     // lead filters
     $('#leads-search').addEventListener('input', debounce((e) => { filters.leadSearch = e.target.value; leadPage = 1; renderLeads(); }, 180));
@@ -2827,6 +2893,16 @@
           save.customers();
           renderAll();
           toast('Customer deleted.');
+        });
+      }
+      if (action === 'edit-application') applicationModal(id);
+      if (action === 'delete-application') {
+        const a = applications.find(x => x.id === id);
+        if (a) confirmDialog('Delete this application?', (a.applicant || 'This application') + ' will be removed.', () => {
+          applications = applications.filter(x => x.id !== id);
+          save.applications(); apps = applications;
+          renderAll();
+          toast('Application deleted.');
         });
       }
       if (action === 'toggle-notification') {

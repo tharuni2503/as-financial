@@ -18,7 +18,7 @@ const TMP_FILE = path.join(DATA_DIR, 'db.tmp.json');
 const BACKUP_FILE = path.join(DATA_DIR, 'db.backup.json');
 
 const SECTIONS = ['testimonials', 'gallery', 'posts'];
-const ADMIN_COLLECTIONS = ['leads', 'products', 'partners', 'tasks', 'customers', 'documents', 'notifications'];
+const ADMIN_COLLECTIONS = ['leads', 'applications', 'products', 'partners', 'tasks', 'customers', 'documents', 'notifications'];
 const MAX_ENQUIRIES = 2000;
 const MAX_AUDIT = 2000;
 const MAX_ANALYTICS_EVENTS = 5000;
@@ -30,7 +30,7 @@ function emptyContent() {
 function emptyAdmin() {
   return {
     leads: [],
-    // applications removed
+    applications: [],
     products: [],
     partners: [],
     tasks: [],

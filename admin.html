@@ -574,8 +574,19 @@
         </section>
 
         <section class="view" id="view-applications">
-          <div class="page-head"><div><h2>Loan Applications</h2><p>Track application status, documents, and disbursement progress.</p></div></div>
-          <div class="card"><div class="card-body"><div class="empty-state" style="padding:28px"><h3>Coming soon</h3><p>Application tracking is not fully configured yet. Existing enquiry/lead data remains available in Enquiries; application records can be added in the next CRM stage.</p></div></div></div>
+          <div class="page-head">
+            <div><h2>Loan Applications</h2><p>Track application status and progress from real records.</p></div>
+            <div class="page-head-actions"><button type="button" class="a-btn a-btn-gold" id="add-application-btn"><svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg> Add application</button></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h3>Applications</h3><p>Additive application pipeline (real data only)</p></div></div>
+            <div class="table-wrap">
+              <table class="a-table">
+                <thead><tr><th>Applicant</th><th>Product</th><th>Amount</th><th>Stage</th><th>Owner</th><th>Updated</th><th>Actions</th></tr></thead>
+                <tbody id="applications-body"><tr><td colspan="7" class="table-empty">No applications yet.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
         </section>
 
         <section class="view" id="view-followups">
