@@ -1218,8 +1218,9 @@ function pwRateLimited(ip, limit, windowMs) {
 
 function validatePassword(pw) {
   const s = String(pw || '');
-  if (s.length < 6) return 'Password must be at least 6 characters.';
+  if (s.length < 10) return 'Password must be at least 10 characters.';
   if (s.length > 200) return 'Password is too long.';
+  if (!/[A-Za-z]/.test(s) || !/[0-9]/.test(s)) return 'Password must include at least one letter and one number.';
   return null;
 }
 
@@ -1611,9 +1612,8 @@ app.use((error, req, res, next) => {
   if (req.path.startsWith('/api/')) {
     if (status >= 500) {
       const msg = error && error.message ? String(error.message) : 'Server error';
-      const redacted = msg.replace(/(postgres(?:ql)?:\/\/)([^@\s]+)@/gi, '$1***@').replace(/(mongodb(?:\+srv)?:\/\/)([^@\s]+)@/gi, '$1***@').replace(/[A-Za-z0-9_\-]{24,}/g, '[redacted]');
       console.error('[api-500]', req.method, req.path, msg);
-      res.status(500).json({ error: 'Server error: ' + redacted.slice(0, 180) });
+      res.status(500).json({ error: 'An unexpected server error occurred. Please try again later.' });
       return;
     }
     res.status(status).json({ error: error.message });

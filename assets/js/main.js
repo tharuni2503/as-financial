@@ -882,7 +882,6 @@
 
       delivery.then((delivered) => {
         trackEvent(delivered ? 'form_submit_success' : 'form_submit_failed', { form: form.id || form.getAttribute('name') || 'lead-form', source: form.dataset.source || 'Website form' });
-        if (!delivered) saveLead(payload);
         if (submitBtn) {
           submitBtn.disabled = false;
           submitBtn.classList.remove('is-loading');
@@ -890,8 +889,18 @@
           submitBtn.innerHTML = originalBtnHtml;
         }
         const first = escape((name || '').split(' ')[0] || 'there');
+        if (!delivered) {
+          saveLead(payload);
+          if (success) {
+            success.innerHTML = '<svg class="icon icon-sm" aria-hidden="true"><use href="#i-alert"></use></svg><span><strong>We could not confirm your enquiry.</strong> Please try again, or call/WhatsApp us directly so we don\'t miss it.</span>';
+            success.classList.add('show');
+          }
+          asToast('Could not confirm enquiry. Please try again or call/WhatsApp us.', 'error');
+          formSubmitted = false;
+          return;
+        }
         if (success) {
-          success.innerHTML = '<svg class="icon icon-sm" aria-hidden="true"><use href="#i-check-circle"></use></svg><span><strong>Thanks, ' + first + '!</strong> ' + (delivered ? 'Your enquiry has reached our team.' : 'Your enquiry has been saved.') + '</span>';
+          success.innerHTML = '<svg class="icon icon-sm" aria-hidden="true"><use href="#i-check-circle"></use></svg><span><strong>Thanks, ' + first + '!</strong> Your enquiry has reached our team.</span>';
           success.classList.add('show');
         }
         form.reset();
@@ -899,8 +908,8 @@
         form.querySelectorAll('.field-error.show').forEach(el => el.classList.remove('show'));
         const parentOverlay = form.closest('.popup-overlay');
         if (parentOverlay) closePopup(parentOverlay);
-        showThankYouPopup({ name: first, delivered: delivered, waUrl: waUrl, phone: settings.phone || '91827 03079', phoneRaw: settings.phoneRaw || '919182703079' });
-        asToast(delivered ? 'Enquiry received. We will call you back shortly.' : 'Enquiry saved locally. For immediate help, call or WhatsApp ' + settings.phone + '.');
+        showThankYouPopup({ name: first, delivered: true, waUrl: waUrl, phone: settings.phone || '91827 03079', phoneRaw: settings.phoneRaw || '919182703079' });
+        asToast('Enquiry received. We will call you back shortly.');
       });
     });
   });
