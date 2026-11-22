@@ -1372,9 +1372,6 @@ body.lb-open { overflow: hidden; }
 .btn { max-width: 100%; white-space: normal; text-align: center; line-height: 1.25; }
 .btn .icon { flex: none; }
 button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2-cta { -webkit-tap-highlight-color: transparent; }
-@media (pointer: coarse) {
-  .pgrid-wrap .pgrid-nav { display: none !important; }
-}
 @media (max-width: 760px) {
   .btn { min-height: 44px; }
   .section-head.split .btn,
@@ -1454,4 +1451,31 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
   .profiles li { font-size: .72rem; line-height: 1.25; gap: 6px; }
   .profiles li .icon { width: 14px; height: 14px; }
   .profiles .btn { margin-top: 6px !important; padding: 8px 12px; font-size: .78rem; }
+}
+
+/* ---------- Final mobile polish: spacing, type and controls ---------- */
+@media (max-width: 760px) {
+  .section, .section-white, .section-cream { padding-left: 0; padding-right: 0; }
+  .hero, .hero2, .page-hero { min-height: auto; padding-top: clamp(28px, 8vw, 48px); padding-bottom: clamp(28px, 8vw, 48px); }
+  .hero h1, .hero2 h1, .page-hero h1 { font-size: clamp(1.85rem, 8vw, 2.45rem); line-height: 1.14; letter-spacing: -.02em; }
+  .hero p, .hero2 p, .page-hero p, .section-head p { font-size: .92rem; line-height: 1.6; }
+  .section-head { gap: 10px; margin-bottom: 22px; }
+  .eyebrow { font-size: .68rem; }
+  .card, .panel, .benefit-card, .problem-card, .step, .blog-card, .testi-card { padding: 16px; border-radius: 14px; }
+  .steps { gap: 12px; }
+  .step-num { width: 38px; height: 38px; font-size: .9rem; }
+  .trust-item { padding: 12px 8px; }
+  .logo-tile { min-height: 58px; }
+  .live-ticker { font-size: .74rem; }
+  .fab, .as-assistant-launcher { width: 48px; height: 48px; }
+  .popup-overlay { padding: 8px; align-items: flex-end; }
+  .popup { max-height: calc(100dvh - 16px); overflow-y: auto; border-radius: 16px 16px 0 0; }
+  .table-wrap, .schedule-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap table { font-size: .8rem; }
+}
+@media (max-width: 480px) {
+  .section-head h2 { font-size: 1.45rem; }
+  .card, .panel, .benefit-card, .problem-card, .step { padding: 14px; }
+  .hero-actions .btn, .cta-actions .btn, .hero2-cta .btn { min-height: 46px; }
+  .pgrid-nav { bottom: 4px; }
 }
