@@ -47,7 +47,7 @@ const mailer = require('./mailer');
 
 const ROOT = path.join(__dirname, '..');
 const PORT = Number(process.env.PORT || 3000);
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'asfinancialservicesandsolution@gmail.com').toLowerCase();
+const ADMIN_EMAIL = 'asfinancialservicesandsolution@gmail.com';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'AS@2026';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 let BOOT_FATAL = null;
