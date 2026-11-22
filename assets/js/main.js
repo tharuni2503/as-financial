@@ -95,6 +95,12 @@
     }
   }, { capture: true });
 
+  const flushAbandon = (reason) => {
+    document.querySelectorAll('[data-lead-form]').forEach(f => { if (typeof f._asTrackAbandon === 'function') f._asTrackAbandon(reason); });
+  };
+  window.addEventListener('pagehide', () => flushAbandon('pagehide'));
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushAbandon('hidden'); });
+
   /* ---------- inject business details ---------- */
   function setAnchorText(el, key) {
     const val = settings[key];
@@ -652,13 +658,50 @@
     if (success) success.setAttribute('aria-live', 'polite');
 
     let formStarted = false;
+    let formSubmitted = false;
+    let startedAt = 0;
+    let abandonSent = false;
+    const touchedFields = new Set();
+    const formName = form.id || form.getAttribute('name') || 'lead-form';
+    const formSource = form.dataset.source || 'Website form';
+    const sendAbandon = (reason) => {
+      if (!formStarted || formSubmitted || abandonSent) return;
+      abandonSent = true;
+      trackEvent('form_abandon', {
+        form: formName,
+        source: formSource,
+        field: Array.from(touchedFields).slice(-1)[0] || '',
+        fieldsTouched: String(touchedFields.size),
+        seconds: startedAt ? String(Math.max(0, Math.round((Date.now() - startedAt) / 1000))) : '0',
+        reason: reason || 'leave'
+      });
+    };
+    form._asTrackAbandon = sendAbandon;
     form.querySelectorAll('input, select, textarea').forEach(control => {
       const evt = (control.type === 'checkbox' || control.tagName === 'SELECT') ? 'change' : 'input';
+      const fieldName = control.name || control.id || control.type || 'field';
+      if (fieldName === 'website') return;
+      control.addEventListener('focus', () => {
+        if (!formStarted) {
+          formStarted = true;
+          startedAt = Date.now();
+          trackEvent('form_start', { form: formName, source: formSource });
+        }
+        if (!touchedFields.has(fieldName)) {
+          touchedFields.add(fieldName);
+          trackEvent('form_step', { form: formName, source: formSource, field: fieldName, step: String(touchedFields.size) });
+        }
+      }, { passive: true });
       control.addEventListener(evt, () => {
         clearFieldError(control);
         if (!formStarted) {
           formStarted = true;
-          trackEvent('form_start', { form: form.id || form.getAttribute('name') || 'lead-form', source: form.dataset.source || 'Website form' });
+          startedAt = Date.now();
+          trackEvent('form_start', { form: formName, source: formSource });
+        }
+        if (!touchedFields.has(fieldName)) {
+          touchedFields.add(fieldName);
+          trackEvent('form_step', { form: formName, source: formSource, field: fieldName, step: String(touchedFields.size) });
         }
       });
     });
@@ -718,7 +761,8 @@
         return;
       }
 
-      trackEvent('form_submit', { form: form.id || form.getAttribute('name') || 'lead-form', source: form.dataset.source || 'Website form' });
+      formSubmitted = true;
+      trackEvent('form_submit', { form: formName, source: formSource, fieldsTouched: String(touchedFields.size), seconds: startedAt ? String(Math.max(0, Math.round((Date.now() - startedAt) / 1000))) : '0' });
       const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
       if (submitBtn) {
         submitBtn.disabled = true;
@@ -806,6 +850,7 @@
   }
   function closePopup(el) {
     if (!el) return;
+    el.querySelectorAll('[data-lead-form]').forEach(f => { if (typeof f._asTrackAbandon === 'function') f._asTrackAbandon('popup_close'); });
     el.classList.remove('open');
     document.body.style.overflow = '';
   }

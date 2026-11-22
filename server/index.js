@@ -617,7 +617,7 @@ app.post('/api/track', asyncRoute(async (req, res) => {
   }
   const body = req.body && typeof req.body === 'object' ? req.body : {};
   const type = validate.text(body.type, 40).toLowerCase();
-  const allowed = ['page_view', 'form_start', 'form_submit', 'submit_attempt', 'form_submit_success', 'form_submit_failed', 'form_abandon', 'cta_click', 'enquiry_click', 'whatsapp_click', 'phone_click', 'email_click', 'download_click', 'external_link_click'];
+  const allowed = ['page_view', 'form_start', 'form_step', 'form_submit', 'submit_attempt', 'form_submit_success', 'form_submit_failed', 'form_abandon', 'cta_click', 'enquiry_click', 'whatsapp_click', 'phone_click', 'email_click', 'download_click', 'external_link_click'];
   if (!allowed.includes(type)) {
     res.status(400).json({ error: 'Invalid event type.' });
     return;
@@ -628,7 +628,7 @@ app.post('/api/track', asyncRoute(async (req, res) => {
   const referrer = validate.text(body.referrer, 200).slice(0, 200);
   const safeMeta = {};
   if (body.meta && typeof body.meta === 'object' && !Array.isArray(body.meta)) {
-    ['form', 'product', 'source', 'field', 'reason', 'action', 'label', 'href', 'utm_source', 'utm_medium', 'utm_campaign'].forEach((k) => {
+    ['form', 'product', 'source', 'field', 'reason', 'action', 'label', 'href', 'utm_source', 'utm_medium', 'utm_campaign', 'step', 'seconds', 'fieldsTouched'].forEach((k) => {
       if (body.meta[k] != null) safeMeta[k] = validate.text(body.meta[k], 160);
     });
   }
@@ -731,6 +731,7 @@ app.get('/api/admin/analytics', requireSession, requireRole('staff', 'admin', 's
       formStarts: count(events, 'form_start'),
       formSubmits: count(events, 'form_submit') + count(events, 'form_submit_success') + count(events, 'submit_attempt'),
       formSubmitSuccess: count(events, 'form_submit_success'),
+      formAbandon: count(events, 'form_abandon'),
       ctaClicks: count(events, 'cta_click') + count(events, 'enquiry_click'),
       whatsappClicks: count(events, 'whatsapp_click'),
       phoneClicks: count(events, 'phone_click'),
@@ -739,6 +740,7 @@ app.get('/api/admin/analytics', requireSession, requireRole('staff', 'admin', 's
       last7UniqueVisitors: uniq(events7.filter((e) => e.type === 'page_view')),
       last7FormStarts: count(events7, 'form_start'),
       last7FormSubmits: count(events7, 'form_submit') + count(events7, 'form_submit_success') + count(events7, 'submit_attempt'),
+      last7FormAbandon: count(events7, 'form_abandon'),
       last7CtaClicks: count(events7, 'cta_click') + count(events7, 'enquiry_click'),
       last7PhoneClicks: count(events7, 'phone_click'),
       last7WhatsappClicks: count(events7, 'whatsapp_click'),

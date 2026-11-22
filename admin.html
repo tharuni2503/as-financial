@@ -562,12 +562,15 @@
 
         <section class="view" id="view-funnel">
           <div class="page-head"><div><h2>Enquiry Funnel</h2><p>Monitor the journey from page view to successful enquiry submission.</p></div></div>
-          <div class="card"><div class="card-body"><div class="empty-state" style="padding:28px"><h3>Coming soon</h3><p>Funnel tracking requires form-step and abandonment events. Current data shows form starts and submissions on Overview; full funnel instrumentation is the next stage.</p></div></div></div>
+          <div class="dash-grid equal">
+            <div class="card"><div class="card-head"><div><h3>Funnel (real data)</h3><p>Based on first-party events</p></div></div><div class="card-body"><div class="pipeline" id="funnel-bars"><div class="empty-state" style="padding:18px"><p>No funnel data yet.</p></div></div><p id="funnel-note" style="margin-top:12px;font-size:.8125rem;color:var(--muted)"></p></div></div>
+            <div class="card"><div class="card-head"><div><h3>Abandonment signals</h3><p>Started but not submitted / abandon events</p></div></div><div class="card-body"><div class="detail-grid-2" style="gap:12px;margin-bottom:0"><div class="detail-box"><small style="display:block;color:var(--muted);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Form starts</small><b id="fu-starts">0</b></div><div class="detail-box"><small style="display:block;color:var(--muted);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Submits</small><b id="fu-submits">0</b></div><div class="detail-box"><small style="display:block;color:var(--muted);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Started not submitted</small><b id="fu-sns">0</b></div><div class="detail-box"><small style="display:block;color:var(--muted);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Abandon events (7d)</small><b id="fu-abandon">0</b></div></div></div></div>
+          </div>
         </section>
 
         <section class="view" id="view-recovery">
           <div class="page-head"><div><h2>Lead Recovery Centre</h2><p>Find incomplete enquiries, uncontacted leads, and missed follow-ups.</p></div></div>
-          <div class="card"><div class="card-head"><div><h3>Recovery queue</h3><p>Leads that need immediate follow-up</p></div></div><div class="table-wrap"><table class="a-table"><thead><tr><th>Lead</th><th>Status</th><th>Age</th><th>Reason</th></tr></thead><tbody id="recovery-body"><tr><td colspan="4" class="table-empty">No recovery items detected yet.</td></tr></tbody></table></div></div>
+          <div class="card"><div class="card-head"><div><h3>Recovery queue</h3><p>Leads that need immediate follow-up</p></div><div id="recovery-note" style="font-size:.8125rem;color:var(--muted)"></div></div><div class="table-wrap"><table class="a-table"><thead><tr><th>Lead</th><th>Status</th><th>Age</th><th>Reason</th></tr></thead><tbody id="recovery-body"><tr><td colspan="4" class="table-empty">No recovery items detected yet.</td></tr></tbody></table></div></div>
         </section>
 
         <section class="view" id="view-applications">

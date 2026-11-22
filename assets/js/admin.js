@@ -709,6 +709,7 @@
     else if (view === 'content') renderContent();
     else if (view === 'settings') renderSettings();
     else if (view === 'analytics') renderAnalytics();
+    else if (view === 'funnel') renderFunnel();
     else if (view === 'recovery') renderRecovery();
     else if (view === 'followups') renderFollowups();
     else if (view === 'health') renderHealth();
@@ -898,6 +899,23 @@
     ).join('');
   }
 
+  async function renderFunnel() {
+    const api = window.ASBackend; if (!api) return;
+    if (!analyticsData) { try { analyticsData = await api.request('api/admin/analytics'); } catch(e) {} }
+    const s = (analyticsData && analyticsData.summary) || {};
+    const views = Number(s.totalPageViews||0), starts = Number(s.formStarts||0), submits = Number(s.formSubmits||0);
+    const sns = Math.max(0, starts - submits);
+    const abandon = Number(s.last7FormAbandon||0);
+    const items = [{label:'Page views', value:views},{label:'Form starts', value:starts},{label:'Submits', value:submits},{label:'Started not submitted', value:sns}];
+    const max = Math.max(...items.map(i=>i.value),1);
+    const host = $('#funnel-bars');
+    if (host) host.innerHTML = items.map(i=>'<div class="pipeline-row"><div class="p-top"><span>'+esc(i.label)+'</span><b>'+i.value+'</b></div><div class="pipeline-track"><span style="width:'+Math.round((i.value/max)*100)+'%"></span></div></div>').join('');
+    const set=(id,v)=>{ const el=$('#'+id); if(el) el.textContent=v; };
+    set('fu-starts', starts); set('fu-submits', submits); set('fu-sns', sns); set('fu-abandon', abandon);
+    const note = $('#funnel-note');
+    if (note) note.textContent = starts > 0 ? ('Conversion: '+(submits>0?((submits/starts)*100).toFixed(1):'0.0')+'% from form start to submit. '+sns+' started but not submitted. '+abandon+' abandon event(s) in last 7 days.') : 'No funnel data yet.';
+  }
+
   async function renderAnalytics() {
     const api = window.ASBackend; if (!api) return;
     if (!analyticsData) { try { analyticsData = await api.request('api/admin/analytics'); } catch(e) {} }
@@ -913,7 +931,7 @@
     renderList('an-utms', Array.isArray(d.utmCampaigns)?d.utmCampaigns:[], 'campaign', 'count', 'No UTM campaign data yet.');
   }
 
-  function renderRecovery() {
+  async function renderRecovery() {
     const body = $('#recovery-body');
     if (!body) return;
     const now = Date.now();
@@ -923,6 +941,15 @@
       return { l, ageHrs, reason };
     }).sort((a,b)=>b.ageHrs-a.ageHrs).slice(0,20);
     body.innerHTML = items.length ? items.map(x => '<tr><td><b style="color:var(--navy)">'+esc(x.l.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(x.l.phone||'')+'</div></td><td>'+esc(x.l.status||'')+'</td><td>'+Math.floor(x.ageHrs/24)+'d '+Math.floor(x.ageHrs%24)+'h</td><td>'+esc(x.reason)+'</td></tr>').join('') : '<tr><td colspan="4" class="table-empty">No recovery items detected yet.</td></tr>';
+    const note = $('#recovery-note');
+    if (note) {
+      const api = window.ASBackend;
+      if (!analyticsData && api) { try { analyticsData = await api.request('api/admin/analytics'); } catch(e) {} }
+      const s = (analyticsData && analyticsData.summary) || {};
+      const abandon = Number(s.last7FormAbandon || 0);
+      const sns = Math.max(0, Number(s.formStarts||0) - Number(s.formSubmits||0));
+      note.textContent = 'Anonymous abandon events (7d): ' + abandon + ' | Started not submitted: ' + sns;
+    }
   }
 
   function renderFollowups() {
