@@ -1012,12 +1012,22 @@
   }
 
   async function renderAudit() {
-    const api = window.ASBackend; const body = $('#audit-body'); if (!api || !body) return;
-    try {
-      const d = await api.request('api/audit');
-      const items = Array.isArray(d) ? d : (Array.isArray(d.items) ? d.items : Array.isArray(d.logs) ? d.logs : []);
-      body.innerHTML = items.length ? items.slice(0,20).map(a => '<tr><td>'+esc(timeAgo(a.at||a.createdAt))+'</td><td>'+esc(a.actorEmail||a.actor||'-')+'</td><td>'+esc(a.type||a.action||'-')+'</td><td>'+esc(a.summary||a.targetId||'-')+'</td></tr>').join('') : '<tr><td colspan="4" class="table-empty">No audit logs found.</td></tr>';
-    } catch(e) { body.innerHTML = '<tr><td colspan="4" class="table-empty">Could not load audit logs.</td></tr>'; }
+    const api = window.ASBackend; const body = $('#audit-body');
+    if (api && body) {
+      try {
+        const d = await api.request('api/audit');
+        const items = Array.isArray(d) ? d : (Array.isArray(d.items) ? d.items : Array.isArray(d.logs) ? d.logs : []);
+        body.innerHTML = items.length ? items.slice(0,30).map(a => '<tr><td title="'+esc(fmtDate(a.at||a.createdAt))+'">'+esc(timeAgo(a.at||a.createdAt))+'</td><td>'+esc(a.actorEmail||a.actor||'-')+'</td><td>'+esc(a.type||a.action||'-')+'</td><td>'+esc(a.summary||a.targetId||'-')+'</td></tr>').join('') : '<tr><td colspan="4" class="table-empty">No audit logs found.</td></tr>';
+      } catch(e) { body.innerHTML = '<tr><td colspan="4" class="table-empty">Could not load audit logs.</td></tr>'; }
+    }
+    const sBody = $('#audit-sessions-body');
+    if (api && sBody) {
+      try {
+        const d = await api.request('api/sessions');
+        const items = Array.isArray(d) ? d : (Array.isArray(d.sessions) ? d.sessions : Array.isArray(d.items) ? d.items : []);
+        sBody.innerHTML = items.length ? items.slice(0,20).map(s => '<tr><td>'+esc(s.email||s.user||'-')+'</td><td>'+esc(s.role||'-')+'</td><td>'+esc(timeAgo(s.lastSeenAt||s.lastSeen||s.createdAt))+'</td><td title="'+esc(s.userAgent||'')+'">'+esc(s.ip||'-')+'</td></tr>').join('') : '<tr><td colspan="4" class="table-empty">No active sessions found.</td></tr>';
+      } catch(e) { sBody.innerHTML = '<tr><td colspan="4" class="table-empty">Could not load sessions.</td></tr>'; }
+    }
   }
 
   /* ---------------------------------------------------------------- leads */
@@ -2104,51 +2114,74 @@
 
   /* ---------------------------------------------------------------- reports */
   function renderReports() {
-    const sanctioned = apps.filter(a => ['Sanctioned', 'Disbursed'].includes(a.stage));
-    const disb = apps.filter(a => a.stage === 'Disbursed');
-    const sanctionedTotal = sanctioned.reduce((s, a) => s + Number(a.amount || 0), 0);
-    const total = disb.reduce((s, a) => s + Number(a.amount || 0), 0);
-    const conversion = leads.length ? Math.round(sanctioned.length / leads.length * 100) : 0;
-    const avg = sanctioned.length ? sanctionedTotal / sanctioned.length : 0;
+    const totalLeads = leads.length;
+    const accepted = leads.filter(l => l.status === 'Accepted').length;
+    const contacted = leads.filter(l => l.status === 'Contacted').length;
+    const newLeads = leads.filter(l => l.status === 'New').length;
+    const declined = leads.filter(l => l.status === 'Declined').length;
     const activePartners = partners.filter(p => p.active).length;
+    const conversion = totalLeads ? Math.round((accepted / totalLeads) * 100) : 0;
+    const contactRate = totalLeads ? Math.round(((contacted + accepted + declined) / totalLeads) * 100) : 0;
 
-    $('#report-disbursed').textContent = compact(total);
-    $('#report-conversion').textContent = conversion + '%';
-    $('#report-ticket').textContent = compact(avg);
-    $('#report-lenders').textContent = activePartners;
+    const set = (id, v) => { const el = $('#'+id); if (el) el.textContent = v; };
+    set('report-disbursed', String(totalLeads));
+    set('report-conversion', conversion + '%');
+    set('report-ticket', String(accepted));
+    set('report-lenders', String(activePartners));
     const rdc=$('#report-disbursed-chip'); if(rdc) rdc.textContent='Live';
     const rcc=$('#report-conversion-chip'); if(rcc) rcc.textContent='Live';
+    // relabel KPI cards if present
+    const labels = $$('#view-reports .kpi-label');
+    if (labels[0]) labels[0].textContent = 'Total enquiries';
+    if (labels[1]) labels[1].textContent = 'Accepted conversion';
+    if (labels[2]) labels[2].textContent = 'Accepted enquiries';
+    if (labels[3]) labels[3].textContent = 'Active lending partners';
 
-    // funnel from actual counts
     const funnel = [
-      ['Enquiries received', leads.length],
-      ['Contacted / Accepted', leads.filter(l => ['Contacted', 'Accepted'].includes(l.status)).length],
-      ['Documents submitted', apps.filter(a => a.stage !== 'Logged').length],
-      ['Sanctioned', sanctioned.length],
-      ['Disbursed', disb.length]
+      ['Enquiries received', totalLeads],
+      ['Contacted', contacted + accepted + declined],
+      ['Accepted', accepted],
+      ['Declined', declined],
     ];
     const maxF = Math.max(...funnel.map(f => f[1]), 1);
-    $('#funnel-list').innerHTML = funnel.map(([label, count]) =>
-      '<div class="pipeline-row"><div class="p-top"><span>' + label + '</span><b>' + count + (funnel[0][1] ? ' · ' + Math.round(count / funnel[0][1] * 100) + '%' : '') + '</b></div><div class="pipeline-track"><span style="width:' + Math.max(4, Math.round(count / maxF * 100)) + '%"></span></div></div>'
+    const funnelHost = $('#funnel-list');
+    if (funnelHost) funnelHost.innerHTML = funnel.map(([label, count]) =>
+      '<div class="pipeline-row"><div class="p-top"><span>' + label + '</span><b>' + count + (totalLeads ? ' • ' + Math.round(count / totalLeads * 100) + '%' : '') + '</b></div><div class="pipeline-track"><span style="width:' + Math.max(4, Math.round(count / maxF * 100)) + '%"></span></div></div>'
     ).join('');
 
-    // lender performance
-    const lenderMap = {};
-    apps.forEach(a => {
-      if (!lenderMap[a.lender]) lenderMap[a.lender] = { count: 0, sanctioned: 0, rates: [], approved: 0 };
-      const x = lenderMap[a.lender];
-      x.count++;
-      x.rates.push(Number(a.rate) || 0);
-      if (['Sanctioned', 'Disbursed'].includes(a.stage)) { x.approved++; x.sanctioned += Number(a.amount || 0); }
-    });
-    const lenderRows = Object.entries(lenderMap).sort((a, b) => b[1].sanctioned - a[1].sanctioned).slice(0, 8);
-    $('#lender-body').innerHTML = lenderRows.length ? lenderRows.map(([name, d]) => {
-      const partner = partners.find(p => p.name === name);
-      const avgRate = d.rates.length ? d.rates.reduce((s, r) => s + r, 0) / d.rates.length : 0;
-      return '<tr><td><div class="cust"><span class="cust-avatar" style="background:var(--cream-2)">' + initials(name) + '</span><b style="font-weight:700">' + esc(name) + '</b></div></td>' +
-        '<td>' + esc(partner ? partner.type : '—') + '</td><td>' + d.count + '</td><td class="num">' + compact(d.sanctioned) + '</td><td>' + avgRate.toFixed(2) + '%</td>' +
-        '<td><span class="badge badge-' + (d.count && d.approved / d.count >= 0.7 ? 'active' : 'inactive') + '">' + (d.count ? Math.round(d.approved / d.count * 100) : 0) + '%</span></td></tr>';
-    }).join('') : '<tr><td colspan="6" class="table-empty">No lender activity yet.</td></tr>';
+    // Product interest breakdown (real lead data)
+    const prodMap = {};
+    leads.forEach(l => { const p = String(l.product || 'Unspecified'); prodMap[p] = (prodMap[p]||0)+1; });
+    const prodRows = Object.entries(prodMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const lenderBody = $('#lender-body');
+    if (lenderBody) lenderBody.innerHTML = prodRows.length ? prodRows.map(([name, count]) => {
+      const acc = leads.filter(l => String(l.product||'Unspecified')===name && l.status==='Accepted').length;
+      return '<tr><td><b style="font-weight:700;color:var(--navy)">' + esc(name) + '</b></td><td>Product</td><td>' + count + '</td><td class="num">' + acc + '</td><td>—</td><td><span class="badge badge-' + (count && acc/count>=0.3?'active':'inactive') + '">' + (count?Math.round(acc/count*100):0) + '%</span></td></tr>';
+    }).join('') : '<tr><td colspan="6" class="table-empty">No lead data yet.</td></tr>';
+    const lenderHead = document.querySelector('#view-reports .card:last-of-type .card-head h3');
+    if (lenderHead) lenderHead.textContent = 'Product interest performance';
+    const lenderSub = document.querySelector('#view-reports .card:last-of-type .card-head p');
+    if (lenderSub) lenderSub.textContent = 'Enquiries and accepted outcomes by product (real lead data)';
+
+    // Charts: replace disbursement/source charts with lead trends if chart funcs exist
+    const disbCanvas = $('#chart-disbursement');
+    const srcCanvas = $('#chart-source');
+    if (disbCanvas && typeof drawLineChart === 'function') {
+      const byMonth = {};
+      leads.forEach(l => { const k = String(l.createdAt||'').slice(0,7); if(!k) return; byMonth[k]=(byMonth[k]||0)+1; });
+      const keys = Object.keys(byMonth).sort().slice(-6);
+      drawLineChart(disbCanvas, keys.length?keys:['—'], keys.length?keys.map(k=>byMonth[k]):[0], keys.length?keys.map(k=>leads.filter(l=>String(l.createdAt||'').startsWith(k)&&l.status==='Accepted').length):[0]);
+      const disbTitle = disbCanvas.closest('.card')?.querySelector('.card-head h3');
+      if (disbTitle) disbTitle.textContent = 'Monthly enquiries';
+      const disbSub = disbCanvas.closest('.card')?.querySelector('.card-head p');
+      if (disbSub) disbSub.textContent = 'Enquiries vs accepted (real data)';
+    }
+    if (srcCanvas && typeof drawBarChart === 'function') {
+      const srcMap = {};
+      leads.forEach(l => { const k = String(l.source||'Unknown'); srcMap[k]=(srcMap[k]||0)+1; });
+      const srcEntries = Object.entries(srcMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+      drawBarChart(srcCanvas, srcEntries.length?srcEntries.map(e=>e[0]):['—'], srcEntries.length?srcEntries.map(e=>e[1]):[0], '#0d2b4e');
+    }
   }
 
   /* ---------------------------------------------------------------- settings */
@@ -2259,11 +2292,24 @@
   }
 
   function exportSummary() {
+    const total = leads.length;
+    const accepted = leads.filter(l => l.status === 'Accepted').length;
+    const contacted = leads.filter(l => l.status === 'Contacted').length;
+    const declined = leads.filter(l => l.status === 'Declined').length;
+    const s = (analyticsData && analyticsData.summary) || {};
     downloadCSV('as-financial-performance.csv', [
       ['Metric', 'Value'],
-      ['Total leads', leads.length],
-      ['Open leads', leads.filter(l => !['Accepted', 'Declined', 'Lost'].includes(l.status)).length],
+      ['Total enquiries', total],
+      ['New enquiries', leads.filter(l => l.status === 'New').length],
+      ['Contacted enquiries', contacted],
+      ['Accepted enquiries', accepted],
+      ['Declined enquiries', declined],
+      ['Accepted conversion %', total ? ((accepted/total)*100).toFixed(1) : '0.0'],
       ['Active partners', partners.filter(p => p.active).length],
+      ['Total page views (analytics)', Number(s.totalPageViews||0)],
+      ['Unique visitors (analytics)', Number(s.uniqueVisitors||0)],
+      ['Form starts (analytics)', Number(s.formStarts||0)],
+      ['Form submits (analytics)', Number(s.formSubmits||0)],
       ['Report generated', new Date().toLocaleString('en-IN')]
     ]);
     toast('Performance report exported.');
@@ -2605,6 +2651,7 @@
     $('#settings-reset').addEventListener('click', renderSettings);
   const healthBtn = $('#health-check-btn'); if (healthBtn) healthBtn.addEventListener('click', renderHealth);
   const auditBtn = $('#audit-refresh-btn'); if (auditBtn) auditBtn.addEventListener('click', renderAudit);
+  const sessBtn = $('#sessions-refresh-btn'); if (sessBtn) sessBtn.addEventListener('click', renderAudit);
     ['notif-leads', 'notif-apps', 'notif-weekly', 'notif-whatsapp'].forEach(id => {
       const el = $('#' + id);
       if (el) el.addEventListener('change', () => {

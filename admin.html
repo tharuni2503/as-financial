@@ -479,15 +479,15 @@
           </div>
 
           <div class="kpi-grid">
-            <div class="kpi"><div class="kpi-top"><span class="kpi-icon green"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg></span><span class="kpi-chip" id="report-disbursed-chip">Live</span></div><div class="kpi-value" id="report-disbursed">&#8377;0</div><div class="kpi-label">Total disbursed</div></div>
-            <div class="kpi"><div class="kpi-top"><span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-percent"></use></svg></span><span class="kpi-chip" id="report-conversion-chip">Live</span></div><div class="kpi-value" id="report-conversion">0%</div><div class="kpi-label">Lead-to-sanction conversion</div></div>
-            <div class="kpi"><div class="kpi-top"><span class="kpi-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-wallet"></use></svg></span></div><div class="kpi-value" id="report-ticket">&#8377;0</div><div class="kpi-label">Average ticket size</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon green"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg></span><span class="kpi-chip" id="report-disbursed-chip">Live</span></div><div class="kpi-value" id="report-disbursed">&#8377;0</div><div class="kpi-label">Total enquiries</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-percent"></use></svg></span><span class="kpi-chip" id="report-conversion-chip">Live</span></div><div class="kpi-value" id="report-conversion">0%</div><div class="kpi-label">Accepted conversion</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-wallet"></use></svg></span></div><div class="kpi-value" id="report-ticket">&#8377;0</div><div class="kpi-label">Accepted enquiries</div></div>
             <div class="kpi"><div class="kpi-top"><span class="kpi-icon purple"><svg class="icon" aria-hidden="true"><use href="#i-handshake"></use></svg></span></div><div class="kpi-value" id="report-lenders">0</div><div class="kpi-label">Active lending partners</div></div>
           </div>
 
           <div class="dash-grid">
             <div class="card">
-              <div class="card-head"><div><h3>Monthly disbursements</h3><p>Value in lakhs</p></div></div>
+              <div class="card-head"><div><h3>Monthly enquiries</h3><p>Enquiries vs accepted (real data)</p></div></div>
               <div class="card-body"><div class="chart-wrap chart-tall"><canvas id="chart-disbursement" role="img" aria-label="Monthly disbursements"></canvas></div></div>
             </div>
             <div class="card">
@@ -505,10 +505,10 @@
           </div>
 
           <div class="card">
-            <div class="card-head"><div><h3>Lender performance</h3><p>Sanctioned volume by partner</p></div></div>
+            <div class="card-head"><div><h3>Product interest performance</h3><p>Enquiries and accepted outcomes by product (real lead data)</p></div></div>
             <div class="table-wrap">
               <table class="a-table">
-                <thead><tr><th scope="col">Lender</th><th scope="col">Type</th><th scope="col">Applications</th><th scope="col">Sanctioned</th><th scope="col">Avg. rate</th><th scope="col">Approval rate</th></tr></thead>
+                <thead><tr><th scope="col">Product</th><th scope="col">Type</th><th scope="col">Enquiries</th><th scope="col">Accepted</th><th scope="col">Note</th><th scope="col">Accept rate</th></tr></thead>
                 <tbody id="lender-body"></tbody>
               </table>
             </div>
@@ -600,7 +600,8 @@
 
         <section class="view" id="view-audit">
           <div class="page-head"><div><h2>Admin Activity & Security</h2><p>Review audit logs, sessions, and sensitive admin actions.</p></div></div>
-          <div class="card"><div class="card-head"><div><h3>Recent audit activity</h3><p>Latest recorded admin actions</p></div><button type="button" class="a-btn a-btn-light a-btn-sm" id="audit-refresh-btn">Refresh</button></div><div class="table-wrap"><table class="a-table"><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th></tr></thead><tbody id="audit-body"><tr><td colspan="4" class="table-empty">No audit logs loaded.</td></tr></tbody></table></div></div>
+          <div class="card" style="margin-bottom:18px"><div class="card-head"><div><h3>Recent audit activity</h3><p>Latest recorded admin actions</p></div><button type="button" class="a-btn a-btn-light a-btn-sm" id="audit-refresh-btn">Refresh</button></div><div class="table-wrap"><table class="a-table"><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th></tr></thead><tbody id="audit-body"><tr><td colspan="4" class="table-empty">No audit logs loaded.</td></tr></tbody></table></div></div>
+          <div class="card"><div class="card-head"><div><h3>Active sessions</h3><p>Current authenticated sessions</p></div><button type="button" class="a-btn a-btn-light a-btn-sm" id="sessions-refresh-btn">Refresh</button></div><div class="table-wrap"><table class="a-table"><thead><tr><th>User</th><th>Role</th><th>Last seen</th><th>IP/UA</th></tr></thead><tbody id="audit-sessions-body"><tr><td colspan="4" class="table-empty">No session data loaded.</td></tr></tbody></table></div></div>
         </section>
 
         <section class="view" id="view-settings">
