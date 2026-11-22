@@ -1169,7 +1169,12 @@ app.post('/api/admin/uploads', requireSession, requireRole('staff', 'admin', 'su
   let storage = 'metadata';
   let url = '';
 
-  // Local/dev disk storage (ephemeral on Vercel). Best-effort.
+  // Local/dev disk storage. Vercel/serverless filesystems are ephemeral; do not silently lose documents in production.
+  const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+  if (IS_PRODUCTION || isServerless) {
+    res.status(503).json({ error: 'Durable document storage is not configured for this deployment. Configure S3/Supabase Storage/Vercel Blob before uploading production documents.' });
+    return;
+  }
   try {
     await ensureUploadDir();
     const outPath = path.join(UPLOAD_DIR, storedName);
@@ -1178,9 +1183,9 @@ app.post('/api/admin/uploads', requireSession, requireRole('staff', 'admin', 'su
     storage = 'local';
     url = '/api/admin/uploads/' + encodeURIComponent(storedName);
   } catch (err) {
-    console.warn('[upload] disk write failed (using metadata only):', err && err.message ? err.message : err);
-    stored = false;
-    storage = 'metadata';
+    console.warn('[upload] disk write failed:', err && err.message ? err.message : err);
+    res.status(503).json({ error: 'File storage failed. Please try again or configure durable storage.' });
+    return;
   }
 
   const now = new Date().toISOString();

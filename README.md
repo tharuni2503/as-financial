@@ -40,7 +40,7 @@ Then open:
 - **Enquiry capture**: website enquiry forms post to `POST /api/enquiries` (stored server-side, rate-limited, with a honeypot). New enquiries also create an in-app notification record (admin store `notifications`) for staff follow-up. When signed in, admin/staff can view, update, and remove enquiries.
 - **CRM/admin data collections**: server-backed collections for `leads`, `applications`, `products`, `partners`, `tasks`, `customers`, `documents`, `notifications`, and `settings` via `GET /api/admin/store` and `PUT /api/admin/store/:name` (RBAC-protected, CSRF-validated, audited).
 - **Granular admin APIs**: per-item CRUD via `GET/POST /api/admin/:collection` and `GET/PATCH/DELETE /api/admin/:collection/:id` with search/filter/pagination (`q`, `status`, `owner`/`assignedTo`, `type`, `limit`, `offset`/`page`) and basic ownership/workflow defaults.
-- **Document uploads**: `POST /api/admin/uploads` (base64 JSON, up to 5 MB; PDF/images/text/office docs) stores files locally under `data/uploads/` when available and serves them via authenticated `GET /api/admin/uploads/:file`; can create/link `documents` records. Use external object storage (S3/Supabase Storage/Vercel Blob) for durable production file hosting.
+- **Document uploads**: `POST /api/admin/uploads` (base64 JSON, up to 5 MB; PDF/images/text/office docs). In production/serverless, uploads are rejected until durable storage (S3/Supabase Storage/Vercel Blob) is configured to prevent silent data loss. Local/dev writes to `data/uploads/` and serves via authenticated `GET /api/admin/uploads/:file`.
 - **Graceful fallback**: if the backend is not running, the site keeps working as a static demo - content falls back to browser `localStorage` and enquiries are saved on the device only.
 
 ### Admin sign-in
@@ -99,6 +99,21 @@ DATABASE_URL=postgres://... node server/migrate-json-to-pg.js path/to/data.json
 
 - Prefer `data/db.json` for a complete migration. Snapshots from `GET /api/admin/export` are sanitized (no password hashes/salts, reset tokens, sessions, or security state) and cannot restore credentials/sessions.
 - Safe to re-run for most entities (upserts / conflict-safe inserts where applicable). Verify with `GET /api/health` (`backend: "postgres"`).
+
+## Production P0 checklist (ops)
+
+Before calling the deployment production-ready, verify:
+
+- **Database**: Set `DATABASE_URL` or `POSTGRES_URL` in Vercel Production and Preview. Production fails fast without it. Use Supabase pooled connection for serverless.
+- **Migrations**: Auto-run on boot with `schema_migrations` history and advisory lock. Confirm all migrations applied in deployed DB.
+- **Backups/recovery**: Enable Supabase backups/PITR; perform a restore drill and document evidence.
+- **Auth**: Set strong `ADMIN_PASSWORD`; confirm `ADMIN_EMAIL` is `asfinancialservicesandsolution@gmail.com`. No demo/default password in production.
+- **Rate limiting**: Shared atomic limits use `rate_limits` table. Verify behavior across Vercel instances.
+- **Secrets**: Configure Turnstile, Resend/SMTP, Google Places, WhatsApp/notification env vars in Vercel; never commit secrets.
+- **Uploads**: Configure durable object storage before enabling production document uploads.
+- **Security checks**: Verify CSRF/RBAC, secure cookies, CSP/headers, no PII in logs/analytics, form consent/privacy text.
+- **E2E verification**: Submit every public form, confirm DB storage/admin visibility, test login/reset, run smoke tests, and check `/api/health`.
+- **Rollback**: Keep previous Vercel deployment ready for instant rollback; document DB migration rollback/compatibility.
 
 ## Notes
 
