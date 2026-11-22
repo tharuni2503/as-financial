@@ -1593,3 +1593,21 @@ button, [role="button"], .btn, .lp2-tab, .calc-tab, .ambak-chip, .lp2-link, .lp2
   .pgrid-dot { width: 12px; height: 12px; }
   .pgrid-dot.is-active { width: 28px; }
 }
+
+/* ---------- Loans: true multi-column grid on desktop, carousel on mobile ---------- */
+@media (min-width: 701px) {
+  .page-loans .pgrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    overflow: visible;
+    padding-bottom: 0;
+    scroll-snap-type: none;
+  }
+  .page-loans .pgrid .pcard { flex: none; width: 100%; min-width: 0; }
+  .page-loans .pgrid-wrap .pgrid-nav,
+  .page-loans .pgrid-dots { display: none !important; }
+}
+@media (min-width: 1100px) {
+  .page-loans .pgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
