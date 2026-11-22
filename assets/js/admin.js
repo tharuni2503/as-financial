@@ -745,9 +745,50 @@
   }
 
   /* ---------------------------------------------------------------- overview */
+  function renderOverviewLeads() {
+    const setText = (id, val) => { const el = $('#' + id); if (el) el.textContent = val; };
+    const badge = (status) => {
+      const s2 = String(status || 'New');
+      const cls = ({ New: 'b-blue', Contacted: 'b-amber', Accepted: 'b-green', Declined: 'b-red' })[s2] || 'b-gray';
+      return '<span class="badge ' + cls + '">' + esc(s2) + '</span>';
+    };
+    const openStatuses = ['New', 'Contacted'];
+    const openLeads = leads.filter(l => openStatuses.includes(l.status)).length;
+    const acceptedLeads = leads.filter(l => l.status === 'Accepted').length;
+    const declinedLeads = leads.filter(l => l.status === 'Declined').length;
+    const newLeads = leads.filter(l => l.status === 'New').length;
+    const pipelineValue = leads.reduce((sum, l) => sum + (typeof amountToNumber === 'function' ? amountToNumber(l.amount) : 0), 0);
+    setText('ov-open-leads', openLeads);
+    setText('ov-accepted-leads', acceptedLeads);
+    setText('ov-pipeline-value', typeof compact === 'function' ? compact(pipelineValue) : String(pipelineValue));
+
+    const pipelineHost = $('#ov-lead-pipeline');
+    if (pipelineHost) {
+      const total = Math.max(leads.length, 1);
+      const rows = [
+        { label: 'New', count: newLeads, color: '#2b6cb0' },
+        { label: 'Contacted', count: leads.filter(l => l.status === 'Contacted').length, color: '#c9a227' },
+        { label: 'Accepted', count: acceptedLeads, color: '#137a5b' },
+        { label: 'Declined', count: declinedLeads, color: '#b3423a' }
+      ];
+      pipelineHost.innerHTML = leads.length ? rows.map(r =>
+        '<div class="pipeline-row"><div class="p-top"><span>' + esc(r.label) + '</span><b>' + r.count + '</b></div><div class="pipeline-track"><span style="width:' + Math.round((r.count / total) * 100) + '%;background:' + r.color + '"></span></div></div>'
+      ).join('') : '<div class="empty-state" style="padding:18px"><p>No enquiry data yet.</p><button type="button" class="a-btn a-btn-light a-btn-sm" data-view-link="leads">Go to enquiries</button></div>';
+    }
+
+    const recentLeadsBody = $('#ov-recent-leads');
+    if (recentLeadsBody) {
+      const recentLeads = [...leads].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 5);
+      recentLeadsBody.innerHTML = recentLeads.length ? recentLeads.map(l =>
+        '<tr><td><b style="color:var(--navy)">' + esc(l.name || 'Unknown') + '</b><div style="font-size:.75rem;color:var(--muted)">' + esc(l.phone || '') + '</div></td><td>' + esc(l.product || '-') + '</td><td>' + badge(l.status) + '</td><td title="' + esc(fmtDate(l.createdAt)) + '">' + esc(timeAgo(l.createdAt)) + '</td></tr>'
+      ).join('') : '<tr><td colspan="4" class="table-empty">No enquiries yet.</td></tr>';
+    }
+  }
+
   async function renderOverview() {
     const api = window.ASBackend;
     const setText = (id, val) => { const el = $('#' + id); if (el) el.textContent = val; };
+    renderOverviewLeads();
     if (!api) return;
     try {
       const data = await api.request('api/admin/analytics');
@@ -756,31 +797,29 @@
       setText('an-views-7d', Number(s.last7PageViews || 0));
       setText('an-unique-visitors', Number(s.uniqueVisitors || 0));
       setText('an-visitors-7d', Number(s.last7UniqueVisitors || 0));
-      setText('an-form-starts', Number(s.formStarts || 0));
-      setText('an-form-starts-7d', Number(s.last7FormStarts || 0));
       setText('an-form-submits', Number(s.formSubmits || 0));
+      setText('ov-form-starts', Number(s.formStarts || 0));
+      setText('ov-form-starts-7d', Number(s.last7FormStarts || 0));
+      setText('an-form-success', Number(s.formSubmitSuccess || 0));
+      const starts = Number(s.formStarts || 0);
+      const submits = Number(s.formSubmits || 0);
+      const rate = starts > 0 ? Math.round((submits / starts) * 100) : 0;
+      setText('ov-conversion-rate', rate + '%');
+      setText('an-conversion-chip', starts > 0 ? rate + '% conv.' : 'Conversion');
       const lastAttempt = s.lastFormAttemptAt ? (timeAgo(s.lastFormAttemptAt) + ' · ' + String(s.lastFormAttemptType || '').replace(/_/g, ' ')) : 'No attempts yet';
       setText('an-last-attempt', lastAttempt);
 
-      const dailyBody = $('#an-daily-body');
-      const daily = Array.isArray(data.daily) ? data.daily : [];
-      if (dailyBody) dailyBody.innerHTML = daily.length ? daily.map(d =>
-        '<tr><td>' + esc(fmtShort(d.date)) + '</td><td class="num">' + Number(d.pageViews || 0) + '</td><td class="num">' + Number(d.formStarts || 0) + '</td><td class="num">' + Number(d.formSubmits || 0) + '</td></tr>'
-      ).join('') : '<tr><td colspan="4" class="table-empty">No analytics data yet.</td></tr>';
-
-      const top = Array.isArray(data.topPages) ? data.topPages : [];
-      const maxViews = Math.max(...top.map(p => Number(p.views || 0)), 1);
-      const topHost = $('#an-top-pages');
-      if (topHost) topHost.innerHTML = top.length ? top.map(p =>
-        '<div class="pipeline-row"><div class="p-top"><span>' + esc(p.page || '/') + '</span><b>' + Number(p.views || 0) + ' views</b></div><div class="pipeline-track"><span style="width:' + Math.round((Number(p.views || 0) / maxViews) * 100) + '%"></span></div></div>'
-      ).join('') : '<div class="empty-state" style="padding:18px"><p>No page view data yet.</p></div>';
+      // Daily/top page cards removed from overview; recent activity below shows who entered pages.
 
       const recent = Array.isArray(data.recent) ? data.recent : [];
       const recentBody = $('#an-recent-body');
       if (recentBody) recentBody.innerHTML = recent.length ? recent.map(e => {
-        const detail = e.meta && (e.meta.form || e.meta.source || e.meta.product) ? [e.meta.form, e.meta.source, e.meta.product].filter(Boolean).join(' · ') : '—';
-        return '<tr><td title="' + esc(fmtDate(e.at)) + '">' + esc(timeAgo(e.at)) + '</td><td>' + esc(String(e.type || '').replace(/_/g, ' ')) + '</td><td>' + esc(e.page || '/') + '</td><td>' + esc(e.visitorId || '—') + '</td><td>' + esc(detail) + '</td></tr>';
-      }).join('') : '<tr><td colspan="5" class="table-empty">No analytics data yet.</td></tr>';
+        const detail = e.meta && (e.meta.form || e.meta.source || e.meta.product) ? [e.meta.form, e.meta.source, e.meta.product].filter(Boolean).join(' · ') : '-';
+        const eventLabel = String(e.type || '').replace(/_/g, ' ');
+        const visitor = e.visitorId ? esc(e.visitorId) : 'Unknown visitor';
+        const page = esc(e.page || '/');
+        return '<tr><td title="' + esc(fmtDate(e.at)) + '">' + esc(timeAgo(e.at)) + '</td><td><span class="badge ' + (eventLabel.includes('page view') ? 'b-blue' : eventLabel.includes('success') ? 'b-green' : eventLabel.includes('fail') ? 'b-red' : 'b-amber') + '">' + esc(eventLabel) + '</span></td><td><b style="color:var(--navy)">' + page + '</b></td><td>' + visitor + '</td><td>' + esc(detail) + '</td></tr>';
+      }).join('') : '<tr><td colspan="5" class="table-empty">No website activity yet.</td></tr>';
     } catch (e) {
       const recentBody = $('#an-recent-body');
       if (recentBody) recentBody.innerHTML = '<tr><td colspan="5" class="table-empty">Could not load analytics.</td></tr>';
@@ -843,6 +882,7 @@
 
     renderPagination('#leads-pagination', list.length, leadPage, (p) => { leadPage = p; renderLeads(); }, PAGE_SIZE);
     updateCounts();
+    if (typeof renderOverviewLeads === 'function') renderOverviewLeads();
   }
 
   function renderPagination(sel, total, page, onChange, pageSize) {
@@ -2222,7 +2262,10 @@
 
     // nav
     $$('.sidebar-link[data-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
-    $$('[data-view-link]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.viewLink)));
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('[data-view-link]');
+      if (link) { e.preventDefault(); setView(link.dataset.viewLink); }
+    });
 
     // mobile sidebar
     $('#admin-burger').addEventListener('click', openSidebar);
