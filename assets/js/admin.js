@@ -809,7 +809,18 @@
       const lastAttempt = s.lastFormAttemptAt ? (timeAgo(s.lastFormAttemptAt) + ' · ' + String(s.lastFormAttemptType || '').replace(/_/g, ' ')) : 'No attempts yet';
       setText('an-last-attempt', lastAttempt);
 
-      // Daily/top page cards removed from overview; recent activity below shows who entered pages.
+      const dailyBody = $('#an-daily-body');
+      const daily = Array.isArray(data.daily) ? data.daily : [];
+      if (dailyBody) dailyBody.innerHTML = daily.length ? daily.map(d =>
+        '<tr><td>' + esc(fmtShort(d.date)) + '</td><td class="num">' + Number(d.pageViews || 0) + '</td><td class="num">' + Number(d.formStarts || 0) + '</td><td class="num">' + Number(d.formSubmits || 0) + '</td></tr>'
+      ).join('') : '<tr><td colspan="4" class="table-empty">No analytics data yet.</td></tr>';
+
+      const top = Array.isArray(data.topPages) ? data.topPages : [];
+      const maxViews = Math.max(...top.map(p => Number(p.views || 0)), 1);
+      const topHost = $('#an-top-pages');
+      if (topHost) topHost.innerHTML = top.length ? top.map(p =>
+        '<div class="pipeline-row"><div class="p-top"><span>' + esc(p.page || '/') + '</span><b>' + Number(p.views || 0) + ' views</b></div><div class="pipeline-track"><span style="width:' + Math.round((Number(p.views || 0) / maxViews) * 100) + '%"></span></div></div>'
+      ).join('') : '<div class="empty-state" style="padding:18px"><p>No page view data yet.</p></div>';
 
       const recent = Array.isArray(data.recent) ? data.recent : [];
       const recentBody = $('#an-recent-body');
