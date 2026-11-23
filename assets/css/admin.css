@@ -1472,3 +1472,12 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .badge{padding:4px 10px;font-size:.7rem;font-weight:800;letter-spacing:.01em;}
 .a-table td .a-btn-sm,.a-table td .a-btn-ghost{white-space:nowrap;}
 @media(max-width:760px){.a-table td,.a-table th{padding:10px 8px;font-size:.78rem;}.badge{font-size:.66rem;padding:3px 8px;}}
+
+/* Settings responsive polish */
+.setting-block{padding:18px;border-bottom:1px solid var(--border,#e6edf5);}
+.setting-block:last-child{border-bottom:0;}
+.setting-block h3{margin:0 0 4px;font-size:1rem;color:var(--navy);}
+.setting-block p{margin:0 0 14px;color:var(--muted);font-size:.82rem;}
+.form-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+.form-row.one{grid-template-columns:1fr;}
+@media(max-width:760px){.form-row,.form-row.one{grid-template-columns:1fr;}.setting-block{padding:14px;}.stage-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;}}
