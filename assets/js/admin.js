@@ -267,12 +267,26 @@
     return { ctx, w, h };
   }
 
+  function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+  function animateChart(canvas, duration, draw){
+    if(!canvas) return;
+    if(canvas._animFrame) cancelAnimationFrame(canvas._animFrame);
+    const start = performance.now();
+    const step = (now) => {
+      const p = Math.min(1, (now - start) / duration);
+      draw(easeOutCubic(p));
+      if(p < 1) canvas._animFrame = requestAnimationFrame(step);
+    };
+    canvas._animFrame = requestAnimationFrame(step);
+  }
   function drawLineChart(canvas, labels, seriesA, seriesB, seriesC) {
+    animateChart(canvas, 900, (p) => {
     const c = setupCanvas(canvas);
     if (!c) return;
+    const sA = (seriesA||[]).map(v=>v*p), sB = (seriesB||[]).map(v=>v*p), sC = (seriesC||[]).map(v=>v*p);
     const { ctx, w, h } = c;
     const pad = { l: 38, r: 18, t: 18, b: 28 };
-    const all = [seriesA || [], seriesB || [], seriesC || []].filter(Array.isArray);
+    const all = [sA, sB, sC].filter(Array.isArray);
     const max = Math.max(10, ...all.reduce((a, arr) => a.concat(arr.map(v => Number(v) || 0)), [])) * 1.22;
     const iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
     const x = (i) => pad.l + (iw / (labels.length - 1 || 1)) * i;
@@ -312,9 +326,9 @@
     });
 
     const series = [
-      { data: seriesA || [], color: '#10294B', rgb: '16,41,75', fill: .20 },
-      { data: seriesB || [], color: '#D6A329', rgb: '214,163,41', fill: .14 },
-      { data: seriesC || [], color: '#2B8C89', rgb: '43,140,137', fill: .10 }
+      { data: sA, color: '#10294B', rgb: '16,41,75', fill: .20 },
+      { data: sB, color: '#D6A329', rgb: '214,163,41', fill: .14 },
+      { data: sC, color: '#2B8C89', rgb: '43,140,137', fill: .10 }
     ].filter(s => s.data.length);
 
     const path = (data) => {
@@ -386,65 +400,69 @@
       ctx.fillStyle = i === labels.length - 1 ? '#10294B' : '#94a0ad';
       ctx.fillText(l, x(i), pad.t + ih + 9);
     });
+    });
   }
 
   function drawBarChart(canvas, labels, values, color) {
-    const c = setupCanvas(canvas);
-    if (!c) return;
-    const { ctx, w, h } = c;
-    const pad = { l: 38, r: 14, t: 22, b: 30 };
-    const max = Math.max(...values, 10) * 1.2;
-    const iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
-    const palette = ['#10294B', '#D6A329', '#2B8C89', '#6C5CE7', '#E17055', '#0984E3', '#00B894', '#F39C12'];
+    animateChart(canvas, 800, (p) => {
+      const c2 = setupCanvas(canvas);
+      if (!c2) return;
+      const { ctx, w, h } = c2;
+      const pad = { l: 38, r: 14, t: 22, b: 30 };
+      const max = Math.max(...values, 10) * 1.2;
+      const iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
+      const palette = ['#10294B', '#D6A329', '#2B8C89', '#6C5CE7', '#E17055', '#0984E3', '#00B894', '#F39C12'];
 
-    ctx.font = '10px Manrope, sans-serif';
-    for (let i = 0; i <= 4; i++) {
-      const yy = pad.t + (ih / 4) * i;
-      ctx.beginPath();
-      ctx.moveTo(pad.l, yy);
-      ctx.lineTo(w - pad.r, yy);
-      ctx.strokeStyle = i === 4 ? '#dfe5ec' : '#eef1f5';
-      ctx.setLineDash(i === 4 ? [] : [4, 4]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = '#94a0ad';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(Math.round(max - (max / 4) * i), pad.l - 8, yy);
-    }
-
-    const slot = iw / values.length;
-    const bw = Math.min(38, slot * 0.56);
-    values.forEach((v, i) => {
-      const bh = Math.max(2, (v / max) * ih);
-      const bx = pad.l + slot * i + (slot - bw) / 2;
-      const by = pad.t + ih - bh;
-      const base = color || palette[i % palette.length];
-      const g = ctx.createLinearGradient(0, by, 0, by + bh);
-      g.addColorStop(0, base);
-      g.addColorStop(1, hexToRgba(base, .35));
-      ctx.save();
-      ctx.shadowColor = hexToRgba(base, .30);
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetY = 3;
-      ctx.fillStyle = g;
-      const r = Math.min(7, bw / 2);
-      ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, [r, r, 0, 0]);
-      else ctx.rect(bx, by, bw, bh);
-      ctx.fill();
-      ctx.restore();
-
-      ctx.fillStyle = '#69788a';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
       ctx.font = '10px Manrope, sans-serif';
-      ctx.fillText(labels[i], bx + bw / 2, pad.t + ih + 10);
-      ctx.fillStyle = base;
-      ctx.font = '700 10px Manrope, sans-serif';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(Math.round(v), bx + bw / 2, by - 4);
-      ctx.font = '10px Manrope, sans-serif';
+      for (let i = 0; i <= 4; i++) {
+        const yy = pad.t + (ih / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(pad.l, yy);
+        ctx.lineTo(w - pad.r, yy);
+        ctx.strokeStyle = i === 4 ? '#dfe5ec' : '#eef1f5';
+        ctx.setLineDash(i === 4 ? [] : [4, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#94a0ad';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(Math.round(max - (max / 4) * i), pad.l - 8, yy);
+      }
+
+      const slot = iw / values.length;
+      const bw = Math.min(38, slot * 0.56);
+      values.forEach((v, i) => {
+        const av = v * p;
+        const bh = Math.max(2, (av / max) * ih);
+        const bx = pad.l + slot * i + (slot - bw) / 2;
+        const by = pad.t + ih - bh;
+        const base = color || palette[i % palette.length];
+        const g = ctx.createLinearGradient(0, by, 0, by + bh);
+        g.addColorStop(0, base);
+        g.addColorStop(1, hexToRgba(base, .35));
+        ctx.save();
+        ctx.shadowColor = hexToRgba(base, .30);
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 3;
+        ctx.fillStyle = g;
+        const r = Math.min(7, bw / 2);
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, [r, r, 0, 0]);
+        else ctx.rect(bx, by, bw, bh);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.fillStyle = '#69788a';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.font = '10px Manrope, sans-serif';
+        ctx.fillText(labels[i], bx + bw / 2, pad.t + ih + 10);
+        ctx.fillStyle = base;
+        ctx.font = '700 10px Manrope, sans-serif';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(Math.round(av), bx + bw / 2, by - 4);
+        ctx.font = '10px Manrope, sans-serif';
+      });
     });
   }
 
@@ -457,31 +475,34 @@
   }
 
   function drawDonut(canvas, data, centerLabel) {
-    const c = setupCanvas(canvas);
-    if (!c) return;
-    const { ctx, w, h } = c;
-    const cx = w / 2, cy = h / 2;
-    const r = Math.min(w, h) / 2 - 14;
-    const total = data.reduce((s, d) => s + d.value, 0) || 1;
-    let start = -Math.PI / 2;
-    ctx.lineWidth = Math.max(14, r * 0.34);
-    data.forEach(d => {
-      const angle = (d.value / total) * Math.PI * 2;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, start, start + angle - 0.035);
-      ctx.strokeStyle = d.color;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-      start += angle;
+    animateChart(canvas, 900, (p) => {
+      const c = setupCanvas(canvas);
+      if (!c) return;
+      const { ctx, w, h } = c;
+      const cx = w / 2, cy = h / 2;
+      const r = Math.min(w, h) / 2 - 14;
+      const total = data.reduce((s, d) => s + d.value, 0) || 1;
+      let start = -Math.PI / 2;
+      ctx.lineWidth = Math.max(14, r * 0.34);
+      data.forEach(d => {
+        const angle = ((d.value / total) * Math.PI * 2) * p;
+        const gap = p > 0.9 ? 0.035 : 0;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, start, start + Math.max(0, angle - gap));
+        ctx.strokeStyle = d.color;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+        start += (d.value / total) * Math.PI * 2;
+      });
+      ctx.fillStyle = '#0d2b4e';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '800 ' + Math.max(13, r * 0.26) + 'px Manrope, sans-serif';
+      ctx.fillText(compact(Math.round(total * p)), cx, cy - 4);
+      ctx.fillStyle = '#94a0ad';
+      ctx.font = '600 9px Manrope, sans-serif';
+      ctx.fillText(String(centerLabel || 'TOTAL').toUpperCase(), cx, cy + 13);
     });
-    ctx.fillStyle = '#0d2b4e';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = '800 ' + Math.max(13, r * 0.26) + 'px Manrope, sans-serif';
-    ctx.fillText(compact(total), cx, cy - 4);
-    ctx.fillStyle = '#94a0ad';
-    ctx.font = '600 9px Manrope, sans-serif';
-    ctx.fillText(String(centerLabel || 'TOTAL').toUpperCase(), cx, cy + 13);
   }
 
   const MIX_COLORS = ['#0d2b4e', '#c9a227', '#2b6cb0', '#137a5b', '#6b4fa0', '#b2651c'];
@@ -837,7 +858,7 @@
   }
 
   function updateCounts() {
-    const open = leads.filter(l => !['Sanctioned', 'Disbursed', 'Lost'].includes(l.status)).length;
+    const open = leads.filter(l => ['New', 'Contacted'].includes(l.status)).length;
     const el = $('#nav-lead-count');
     if (el) el.textContent = open;
     const unread = Array.isArray(notifications) ? notifications.filter(n => n && !n.read).length : 0;
@@ -1167,8 +1188,12 @@
 
   function analyticsBars(canvasId, rows, labelKey, valueKey) {
     const canvas = $(canvasId); if (!canvas || typeof drawBarChart !== 'function') return;
-    const list = Array.isArray(rows) ? rows : [];
-    const labels = list.map(r => { const t = String(r[labelKey] || '-'); return t.length > 11 ? t.slice(0, 10) + '…' : t; });
+    const list = Array.isArray(rows) ? rows.slice(0, 6) : [];
+    const labels = list.map(r => {
+      const t = String(r[labelKey] || '-').replace(/^https?:\/\/[^/]+/i, '');
+      if (t.length <= 14) return t;
+      return '…' + t.slice(-13);
+    });
     const values = list.map(r => Number(r[valueKey] || 0));
     drawBarChart(canvas, labels.length ? labels : ['—'], values.length ? values : [0]);
   }
@@ -1728,10 +1753,10 @@
           '</div>' +
           '<input type="hidden" name="logo" id="partner-logo-value" value="' + logoVal + '">' +
         '</div>' +
-        '<div class="form-row"><div class="a-field"><label>Starting rate (%)</label><input name="rate" type="number" step="0.05" min="0" value="' + esc(p && Number(p.rate) > 0 ? p.rate : '') + '" placeholder="e.g. 8.50"></div>' +
-        '<div class="a-field"><label>Interest rate / range (display)</label><input name="interestRate" value="' + esc(p ? (p.interestRate || '') : '') + '" placeholder="e.g. 8.50% p.a. onwards"></div></div>' +
-        '<div class="form-row"><div class="a-field"><label>Tenure</label><input name="tenure" value="' + esc(p ? (p.tenure || '') : '') + '" placeholder="e.g. Up to 30 years"></div>' +
-        '<div class="a-field"><label>Loan amount</label><input name="amount" value="' + esc(p ? (p.amount || '') : '') + '" placeholder="e.g. ₹5 L – ₹10 Cr+"></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Starting rate (%)</label><input name="rate" type="number" step="0.05" min="0" value="' + esc(p && Number(p.rate) > 0 ? p.rate : '') + '" placeholder="e.g. 8.50"><small class="field-hint">Numeric value for sorting/comparison.</small></div>' +
+        '<div class="a-field"><label>Interest rate / range (display)</label><input name="interestRate" value="' + esc(p ? (p.interestRate || '') : '') + '" placeholder="e.g. 8.50% p.a. onwards"><small class="field-hint">Display text shown to users.</small></div></div>' +
+        '<div class="form-row"><div class="a-field"><label>Tenure</label><input name="tenure" value="' + esc(p ? (p.tenure || '') : '') + '" placeholder="e.g. Up to 30 years"><small class="field-hint">Format: Up to 30 years.</small></div>' +
+        '<div class="a-field"><label>Loan amount</label><input name="amount" value="' + esc(p ? (p.amount || '') : '') + '" placeholder="e.g. ₹5 L – ₹10 Cr+"><small class="field-hint">Format: ₹5 L - ₹5Cr.</small></div></div>' +
         '<div class="form-row"><div class="a-field"><label>Processing / charges</label><input name="fee" value="' + esc(p ? (p.fee || '') : '') + '" placeholder="e.g. As per lender schedule"></div>' +
         '<div class="a-field"><label>Status</label><select name="active"><option value="true" ' + (!p || p.active ? 'selected' : '') + '>Active</option><option value="false" ' + (p && !p.active ? 'selected' : '') + '>Paused</option></select></div></div>' +
         '<div class="a-field"><label>Interest details / notes</label><textarea name="interestDetails" rows="2" placeholder="e.g. Rate varies by profile, product, tenure, CIBIL, and lender policy.">' + esc(p ? (p.interestDetails || '') : '') + '</textarea></div>' +
@@ -2402,7 +2427,7 @@
     const menu = $('#notif-menu');
     if (menu) {
       const unread = items.filter(n => !n.read).length;
-      const head = '<div class="notif-head"><strong>Notifications</strong><span id="notif-menu-count">' + (unread ? (unread + ' unread') : 'No new alerts') + '</span></div>';
+      const head = '<div class="notif-head"><strong>Notifications</strong><div style="display:flex;align-items:center;gap:8px"><span id="notif-menu-count">' + (unread ? (unread + ' unread') : 'No new alerts') + '</span><button type="button" class="icon-btn notif-refresh-btn" aria-label="Refresh notifications" style="width:32px;height:32px;min-width:32px"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-refresh"></use></svg></button></div></div>';
       if (!items.length) {
         menu.innerHTML = head + '<div class="notif-item"><span><b>No notifications</b><span>New alerts will appear here.</span></span></div>';
       } else {
@@ -3044,6 +3069,10 @@
 
     // dropdowns
     $('#notif-btn').addEventListener('click', (e) => { e.stopPropagation(); $('#notif-menu').classList.toggle('open'); $('#profile-menu').classList.remove('open'); });
+    document.addEventListener('click', (e) => {
+      const rb = e.target.closest('#notif-refresh-btn, .notif-refresh-btn');
+      if (rb) { e.preventDefault(); e.stopPropagation(); renderNotifications(); if (typeof toast === 'function') toast('Notifications refreshed.'); }
+    });
     $('#profile-btn').addEventListener('click', (e) => { e.stopPropagation(); $('#profile-menu').classList.toggle('open'); $('#notif-menu').classList.remove('open'); });
     document.addEventListener('click', (e) => {
       if (!e.target.closest('#notif-menu') && !e.target.closest('#notif-btn')) $('#notif-menu').classList.remove('open');

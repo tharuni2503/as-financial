@@ -14,8 +14,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/admin.css?v=20261123g1">
-  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261123f2">
+  <link rel="stylesheet" href="assets/css/admin.css?v=20261123g10">
+  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261123g10">
 </head>
 <body>
   <a class="skip-link" href="#login-screen">Skip to content</a>
@@ -174,7 +174,7 @@
               <span class="notif-dot"></span>
             </button>
             <div class="dropdown-menu notif-menu" id="notif-menu">
-              <div class="notif-head"><strong>Notifications</strong><span id="notif-menu-count">No new alerts</span></div>
+              <div class="notif-head"><strong>Notifications</strong><div style="display:flex;align-items:center;gap:8px"><span id="notif-menu-count">No new alerts</span><button type="button" class="icon-btn" id="notif-refresh-btn" aria-label="Refresh notifications" style="width:32px;height:32px;min-width:32px"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-refresh"></use></svg></button></div></div>
               <div class="notif-item"><span><b>No notifications</b><span>New alerts will appear here.</span></span></div>
             </div>
           </div>
@@ -216,7 +216,7 @@
                 <span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg></span>
                 <span class="kpi-chip flat" id="ov-enquiries-chip">Live</span>
               </div>
-              <div class="kpi-value" id="ov-total-enquiries">0</div>
+              <div class="kpi-value" id="ov-total-enquiries">—</div>
               <div class="kpi-label">Total Enquiries</div>
               <div class="kpi-sub"><b id="ov-enquiries-trend">0%</b> vs last 30 days</div>
             </div>
@@ -225,7 +225,7 @@
                 <span class="kpi-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"></use></svg></span>
                 <span class="kpi-chip flat" id="ov-processed-chip">Live</span>
               </div>
-              <div class="kpi-value" id="ov-loans-processed">0</div>
+              <div class="kpi-value" id="ov-loans-processed">—</div>
               <div class="kpi-label">Loans Processed</div>
               <div class="kpi-sub"><b id="ov-processed-trend">0%</b> vs last 30 days</div>
             </div>
@@ -234,7 +234,7 @@
                 <span class="kpi-icon green"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg></span>
                 <span class="kpi-chip flat" id="ov-disbursed-chip">Live</span>
               </div>
-              <div class="kpi-value" id="ov-total-disbursed">&#8377;0</div>
+              <div class="kpi-value" id="ov-total-disbursed">—</div>
               <div class="kpi-label">Total Disbursed</div>
               <div class="kpi-sub"><b id="ov-disbursed-trend">0%</b> vs last 30 days</div>
             </div>
@@ -514,10 +514,10 @@
           </div>
 
           <div class="kpi-grid" style="margin-bottom:18px">
-            <div class="kpi"><div class="kpi-top"><span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-eye"></use></svg></span><span class="kpi-chip up">All time</span></div><div class="kpi-value" id="anly-views">0</div><div class="kpi-label">Page views</div><div class="kpi-sub"><b id="anly-views7">0</b> last 7 days</div></div>
-            <div class="kpi"><div class="kpi-top"><span class="kpi-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg></span><span class="kpi-chip flat">Visitors</span></div><div class="kpi-value" id="anly-visitors">0</div><div class="kpi-label">Unique visitors</div><div class="kpi-sub"><b id="anly-visitors7">0</b> last 7 days</div></div>
-            <div class="kpi"><div class="kpi-top"><span class="kpi-icon amber"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></span><span class="kpi-chip">Intent</span></div><div class="kpi-value" id="anly-starts">0</div><div class="kpi-label">Form starts</div><div class="kpi-sub"><b id="anly-submits">0</b> submitted</div></div>
-            <div class="kpi"><div class="kpi-top"><span class="kpi-icon purple"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg></span><span class="kpi-chip">Clicks</span></div><div class="kpi-value" id="anly-engagement">0</div><div class="kpi-label">Engagement clicks</div><div class="kpi-sub"><b id="anly-engagement7">0</b> last 7 days</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-eye"></use></svg></span><span class="kpi-chip up">All time</span></div><div class="kpi-value" id="anly-views">—</div><div class="kpi-label">Page views</div><div class="kpi-sub"><b id="anly-views7">0</b> last 7 days</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg></span><span class="kpi-chip flat">Visitors</span></div><div class="kpi-value" id="anly-visitors">—</div><div class="kpi-label">Unique visitors</div><div class="kpi-sub"><b id="anly-visitors7">0</b> last 7 days</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon amber"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></span><span class="kpi-chip">Intent</span></div><div class="kpi-value" id="anly-starts">—</div><div class="kpi-label">Form starts</div><div class="kpi-sub"><b id="anly-submits">0</b> submitted</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon purple"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg></span><span class="kpi-chip">Clicks</span></div><div class="kpi-value" id="anly-engagement">—</div><div class="kpi-label">Engagement clicks</div><div class="kpi-sub"><b id="anly-engagement7">0</b> last 7 days</div></div>
           </div>
 
           <div class="dash-grid equal">
@@ -764,7 +764,7 @@
 
   <script src="assets/js/calculators.js?v=20261120z40" defer></script>
   <script src="assets/js/icons.js?v=20261118z22"></script>
-  <script src="assets/js/backend.js?v=20261122z1"></script><script src="assets/js/admin.js?v=20261123g1"></script><script src="assets/js/admin-sync.js?v=20261123f3"></script>
+  <script src="assets/js/backend.js?v=20261122z1"></script><script src="assets/js/admin.js?v=20261123g10"></script><script src="assets/js/admin-sync.js?v=20261123g2"></script>
 </body>
 </html>
 
