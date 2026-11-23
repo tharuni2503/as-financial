@@ -214,22 +214,14 @@ h3, h4 { color: var(--navy); }
 
 /* ---------- Products: compact cards with hover/tap popup (horizontal) ---------- */
 .pgrid {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 16px;
   align-items: stretch;
-  overflow-x: auto;
-  overflow-y: visible;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: 2px;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
-  padding: 6px 2px 14px;
-  margin: 0 -2px;
-  scrollbar-width: thin;
+  overflow: visible;
+  padding: 6px 0 14px;
+  margin: 0;
 }
-.pgrid::-webkit-scrollbar { height: 8px; }
-.pgrid::-webkit-scrollbar-thumb { background: #d7deea; border-radius: 999px; }
-.pgrid::-webkit-scrollbar-track { background: transparent; }
 .pgrid.is-collapsed .pcard:nth-child(n+5) { display: none; }
 .more-wrap:has([hidden]) { display: none; }
 .pgrid-wrap { position: relative; }
@@ -253,7 +245,8 @@ h3, h4 { color: var(--navy); }
 .pgrid-nav-prev { left: -10px; }
 .pgrid-nav-next { right: -10px; }
 .pgrid-nav .icon { width: 18px; height: 18px; }
-.pgrid-wrap:not(.can-scroll) .pgrid-nav { display: none; }
+.pgrid-wrap:not(.can-scroll) .pgrid-nav,
+.pgrid-wrap:not(.can-scroll) .pgrid-dots { display: none; }
 @media (max-width: 700px) {
   .pgrid-nav { width: 36px; height: 36px; background: rgba(255,255,255,.92); }
   .pgrid-nav-prev { left: 2px; }
@@ -264,9 +257,8 @@ h3, h4 { color: var(--navy); }
   position: relative; background: #fff; border: 1px solid var(--line);
   border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;
   box-shadow: var(--shadow-sm); cursor: pointer;
-  flex: 0 0 clamp(210px, 22vw, 260px);
   min-width: 0;
-  scroll-snap-align: start;
+  width: 100%;
   transition: box-shadow .25s ease, border-color .25s ease;
 }
 .pcard:hover, .pcard:focus-within, .pcard.is-revealed { box-shadow: var(--shadow); border-color: #DCCB9B; }
