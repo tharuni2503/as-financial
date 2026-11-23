@@ -117,3 +117,8 @@
   .lp2-meta { grid-template-columns: 1fr 1fr; gap: 10px 14px; }
   .lp2-meta-item b { white-space: normal; max-width: none; }
 }
+
+/* Force lender search compact rectangle */
+#partners .lp2-search, .lp2-toolbar .lp2-search{height:30px!important;min-height:30px!important;max-height:30px!important;padding:0 10px!important;border-radius:4px!important;box-sizing:border-box!important;}
+#partners .lp2-search input, .lp2-toolbar .lp2-search input{height:100%!important;line-height:1.2!important;font-size:.8rem!important;}
+@media (max-width:820px){#partners .lp2-search, .lp2-toolbar .lp2-search{height:28px!important;min-height:28px!important;max-height:28px!important;}}
