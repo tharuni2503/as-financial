@@ -104,8 +104,10 @@
     if (moreBtn) {
       if (q || matches.length <= pp) {
         moreBtn.hidden = true;
+        moreBtn.setAttribute('aria-expanded', 'false');
       } else {
         moreBtn.hidden = false;
+        moreBtn.setAttribute('aria-expanded', state.expanded ? 'true' : 'false');
         moreBtn.textContent = state.expanded ? 'Show less' : ('Show more lenders (' + (matches.length - pp) + ')');
       }
     }
