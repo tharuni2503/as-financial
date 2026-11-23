@@ -222,7 +222,6 @@ h3, h4 { color: var(--navy); }
   padding: 6px 0 14px;
   margin: 0;
 }
-.pgrid.is-collapsed .pcard:nth-child(n+5) { display: none; }
 @media (max-width: 640px) { .pgrid { gap: 16px; } }
 .more-wrap:has([hidden]) { display: none; }
 .pgrid-wrap { position: relative; }

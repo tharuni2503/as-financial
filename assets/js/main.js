@@ -1569,12 +1569,23 @@
   const btn = document.querySelector('[data-products-more]');
   if (!grid || !btn) return;
 
-  const LIMIT = 4;
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const getLimit = () => {
+    const w = window.innerWidth || document.documentElement.clientWidth || 1200;
+    if (w <= 640) return 2;
+    if (w <= 1024) return 3;
+    return 4;
+  };
 
-  function sync() {
-    const total = grid.querySelectorAll('.pcard').length;
-    if (total <= LIMIT) {
+  function applyLimit() {
+    const limit = getLimit();
+    const cards = Array.prototype.slice.call(grid.querySelectorAll('.pcard'));
+    const total = cards.length;
+    const collapsed = grid.classList.contains('is-collapsed');
+    cards.forEach((card, i) => {
+      card.style.display = (collapsed && i >= limit) ? 'none' : '';
+    });
+    if (total <= limit) {
       grid.classList.remove('is-collapsed');
       btn.hidden = true;
       btn.setAttribute('aria-expanded', 'true');
@@ -1583,27 +1594,27 @@
     btn.hidden = false;
     const expanded = !grid.classList.contains('is-collapsed');
     btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-    btn.textContent = expanded ? 'Show fewer offerings' : 'Show more offerings (' + (total - LIMIT) + ' more)';
+    btn.textContent = expanded ? 'Show fewer offerings' : 'Show more offerings (' + (total - limit) + ' more)';
   }
 
-  // Show first row by default; the button reveals the remaining offerings.
-  if (grid.querySelectorAll('.pcard').length > LIMIT) grid.classList.add('is-collapsed');
-  sync();
+  if (grid.querySelectorAll('.pcard').length > getLimit()) grid.classList.add('is-collapsed');
+  applyLimit();
 
   btn.addEventListener('click', () => {
     const collapsing = !grid.classList.contains('is-collapsed');
     grid.classList.toggle('is-collapsed', collapsing);
     if (!collapsing) {
-      // Cards revealed by the toggle never met the reveal observer.
       grid.querySelectorAll('.pcard:not(.in)').forEach((el) => el.classList.add('in'));
     }
-    sync();
+    applyLimit();
     grid.dispatchEvent(new Event('scroll'));
     if (collapsing) {
       const offset = grid.getBoundingClientRect().top + window.scrollY - 130;
       window.scrollTo({ top: Math.max(0, offset), behavior: reduce ? 'auto' : 'smooth' });
     }
   });
+
+  window.addEventListener('resize', () => { applyLimit(); });
 })();
 
 /* ---------- process steps: scroll progress + active number ---------- */
