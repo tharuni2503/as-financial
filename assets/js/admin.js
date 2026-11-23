@@ -763,6 +763,7 @@
     currentView = view;
     $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
     $$('.sidebar-link[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    $$('.bottom-nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
     $('#topbar-title').textContent = VIEW_TITLES[view];
     if (!skipHash) history.replaceState(null, '', '#' + view);
     closeSidebar();
@@ -868,11 +869,16 @@
   /* ---------------------------------------------------------------- overview */
   function renderOverviewLeads() {
     const setText = (id, val) => { const el = $('#' + id); if (el) el.textContent = val; };
-    const badge = (status) => {
-      const s2 = String(status || 'New');
-      const cls = ({ New: 'b-blue', Contacted: 'b-amber', Accepted: 'b-green', Declined: 'b-red' })[s2] || 'b-gray';
-      return '<span class="badge ' + cls + '">' + esc(s2) + '</span>';
+    const setChip = (id, pct) => {
+      const el = $('#' + id); if (!el) return;
+      const n = Number(pct || 0);
+      el.className = 'kpi-chip ' + (n > 0 ? 'up' : n < 0 ? 'down' : 'flat');
+      el.textContent = (n > 0 ? '↑ ' : n < 0 ? '↓ ' : '') + Math.abs(n) + '%';
     };
+    const pctChange = (curr, prev) => prev > 0 ? Math.round(((curr - prev) / prev) * 100) : (curr > 0 ? 100 : 0);
+    const now = Date.now();
+    const inLast30 = (d) => { const t = new Date(d || 0).getTime(); return t >= now - 30 * 864e5; };
+    const inPrev30 = (d) => { const t = new Date(d || 0).getTime(); return t >= now - 60 * 864e5 && t < now - 30 * 864e5; };
     const openStatuses = ['New', 'Contacted'];
     const openLeads = leads.filter(l => openStatuses.includes(l.status)).length;
     const acceptedLeads = leads.filter(l => l.status === 'Accepted').length;
@@ -882,6 +888,38 @@
     setText('ov-open-leads', openLeads);
     setText('ov-accepted-leads', acceptedLeads);
     setText('ov-pipeline-value', typeof compact === 'function' ? compact(pipelineValue) : String(pipelineValue));
+
+    // New overview KPIs (real data)
+    const totalEnquiries = leads.length;
+    const last30Enq = leads.filter(l => inLast30(l.createdAt)).length;
+    const prev30Enq = leads.filter(l => inPrev30(l.createdAt)).length;
+    setText('ov-total-enquiries', totalEnquiries);
+    setText('ov-enquiries-trend', (pctChange(last30Enq, prev30Enq) >= 0 ? '+' : '') + pctChange(last30Enq, prev30Enq) + '%');
+    setChip('ov-enquiries-chip', pctChange(last30Enq, prev30Enq));
+
+    const processedApps = (applications || []).filter(a => /disburs|approved|sanction|processed|closed/i.test(String(a.stage || a.status || '')));
+    const processedLeads = leads.filter(l => /accepted|disburs|approved|processed/i.test(String(l.status || '')));
+    const loansProcessed = processedApps.length + processedLeads.length;
+    const last30Proc = processedApps.filter(a => inLast30(a.updatedAt || a.createdAt)).length + processedLeads.filter(l => inLast30(l.updatedAt || l.createdAt)).length;
+    const prev30Proc = processedApps.filter(a => inPrev30(a.updatedAt || a.createdAt)).length + processedLeads.filter(l => inPrev30(l.updatedAt || l.createdAt)).length;
+    setText('ov-loans-processed', loansProcessed);
+    setText('ov-processed-trend', (pctChange(last30Proc, prev30Proc) >= 0 ? '+' : '') + pctChange(last30Proc, prev30Proc) + '%');
+    setChip('ov-processed-chip', pctChange(last30Proc, prev30Proc));
+
+    const disbursedAmt = processedApps.reduce((s,a)=> s + (typeof amountToNumber==='function'?amountToNumber(a.amount):Number(a.amount||0)), 0)
+      + leads.filter(l=>/disburs/i.test(String(l.status||''))).reduce((s,l)=> s + (typeof amountToNumber==='function'?amountToNumber(l.amount):0), 0);
+    const last30Disb = processedApps.filter(a=>/disburs/i.test(String(a.stage||a.status||'')) && inLast30(a.updatedAt||a.createdAt)).reduce((s,a)=>s+(typeof amountToNumber==='function'?amountToNumber(a.amount):0),0);
+    const prev30Disb = processedApps.filter(a=>/disburs/i.test(String(a.stage||a.status||'')) && inPrev30(a.updatedAt||a.createdAt)).reduce((s,a)=>s+(typeof amountToNumber==='function'?amountToNumber(a.amount):0),0);
+    setText('ov-total-disbursed', typeof compact === 'function' ? compact(disbursedAmt) : ('₹' + disbursedAmt));
+    setText('ov-disbursed-trend', (pctChange(last30Disb, prev30Disb) >= 0 ? '+' : '') + pctChange(last30Disb, prev30Disb) + '%');
+    setChip('ov-disbursed-chip', pctChange(last30Disb, prev30Disb));
+
+    const rated = (testimonials || []).filter(t => Number(t.rating) > 0);
+    const avgRating = rated.length ? (rated.reduce((s,t)=>s+Number(t.rating||0),0) / rated.length) : 0;
+    setText('ov-customer-rating', rated.length ? avgRating.toFixed(1) : '—');
+    setText('ov-rating-count', rated.length);
+    const ratingChip = $('#ov-rating-chip');
+    if (ratingChip) { ratingChip.className = 'kpi-chip ' + (avgRating >= 4 ? 'up' : avgRating > 0 ? 'flat' : 'flat'); ratingChip.textContent = rated.length ? (avgRating >= 4 ? '★ Good' : '★') : 'Live'; }
 
     const pipelineHost = $('#ov-lead-pipeline');
     if (pipelineHost) {
@@ -915,9 +953,60 @@
         '<span style="font-size:.75rem;color:var(--muted);white-space:nowrap">' + esc(timeAgo(u.time)) + '</span></div>'
       ).join('') : '<div class="empty-state" style="padding:18px"><p>No urgent reminders right now.</p></div>';
     }
+    renderOverviewExtras();
   }
 
-  async function renderOverview() {
+  function renderOverviewExtras() {
+    const catCanvas = $('#ov-loan-categories-chart');
+    if (catCanvas && typeof drawDonut === 'function') {
+      const cats = { Home:0, Car:0, Personal:0, Business:0 };
+      (leads||[]).forEach(l => {
+        const p = String(l.product||'').toLowerCase();
+        if (p.includes('home')) cats.Home++;
+        else if (p.includes('car') || p.includes('vehicle')) cats.Car++;
+        else if (p.includes('personal')) cats.Personal++;
+        else if (p.includes('business')) cats.Business++;
+      });
+      const data = [
+        { label:'Home Loans', value:cats.Home, color:'#10294B' },
+        { label:'Car Loans', value:cats.Car, color:'#D6A329' },
+        { label:'Personal Loans', value:cats.Personal, color:'#2B8C89' },
+        { label:'Business Loans', value:cats.Business, color:'#7B93A8' }
+      ];
+      const total = data.reduce((s,d)=>s+d.value,0);
+      if (total > 0) drawDonut(catCanvas, data, total);
+      else { const ctx=catCanvas.getContext('2d'); if(ctx){ctx.clearRect(0,0,catCanvas.width,catCanvas.height);} }
+      const leg = $('#ov-loan-categories-legend');
+      if (leg) leg.innerHTML = total > 0 ? data.map(d=>'<div class="donut-legend-item"><i style="background:'+d.color+'"></i><span>'+esc(d.label)+'</span><b>'+d.value+'</b></div>').join('') : '<div class="empty-state" style="padding:4px"><p>No data yet.</p></div>';
+    }
+    const lendersHost = $('#ov-top-lenders');
+    if (lendersHost) {
+      const pList = Array.isArray(partners) ? partners : [];
+      const counts = {};
+      (leads||[]).forEach(l => { const k=String(l.lender||l.bank||'').trim(); if(k) counts[k]=(counts[k]||0)+1; });
+      let rows = pList.map(p => ({ name: p.name||'Lender', logo: p.logo||'', count: counts[p.name]||0 }));
+      if (!rows.length) rows = Object.keys(counts).map(k=>({name:k,logo:'',count:counts[k]}));
+      rows.sort((a,b)=>b.count-a.count);
+      const max = Math.max(...rows.map(r=>r.count), 1);
+      const total = (leads||[]).length || 1;
+      lendersHost.innerHTML = rows.length ? rows.slice(0,6).map(r=>{
+        const pct = Math.round((r.count/total)*100);
+        const w = Math.round((r.count/max)*100);
+        const icon = r.logo ? '<img src="'+esc(r.logo)+'" alt="" style="width:28px;height:28px;object-fit:contain;border-radius:6px;background:#fff;border:1px solid #ece6d6;flex:none" loading="lazy">' : '<span style="width:28px;height:28px;border-radius:6px;background:#FBF5E6;color:var(--gold-deep);display:grid;place-items:center;font-size:.65rem;font-weight:800;flex:none">'+esc((r.name||'L').slice(0,1))+'</span>';
+        return '<div style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">'+icon+'<b style="font-size:.8125rem;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(r.name)+'</b></span><span style="font-size:.75rem;color:var(--muted);font-weight:700">'+pct+'%</span></div><div style="height:8px;background:#eef2f7;border-radius:99px;overflow:hidden"><span style="display:block;height:100%;width:'+w+'%;background:linear-gradient(90deg,#10294B,#D6A329);border-radius:99px"></span></div></div>';
+      }).join('') : '<div class="empty-state" style="padding:18px"><p>No lender data yet.</p></div>';
+    }
+    const recentHost = $('#ov-recent-enquiries');
+    if (recentHost) {
+      const recent = (leads||[]).slice().sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,5);
+      const badgeCls = (s) => ({New:'b-blue',Contacted:'b-amber',Accepted:'b-green',Declined:'b-red'}[String(s||'New')]||'b-gray');
+      recentHost.innerHTML = recent.length ? recent.map(l =>
+        '<tr><td><b style="color:var(--navy)">'+esc(l.name||'—')+'</b></td><td>'+esc(l.product||l.loanType||'—')+'</td><td>'+esc(timeAgo(l.createdAt))+'</td><td><span class="badge '+badgeCls(l.status)+'">'+esc(l.status||'New')+'</span></td></tr>'
+      ).join('') : '<tr><td colspan="4" class="table-empty">No enquiries yet.</td></tr>';
+    }
+  }
+
+    async function renderOverview() {
     const api = window.ASBackend;
     const setText = (id, val) => { const el = $('#' + id); if (el) el.textContent = val; };
     renderOverviewLeads();
@@ -928,6 +1017,12 @@
       const s = (data && data.summary) || {};
       const views = Number(s.totalPageViews || 0);
       const visitors = Number(s.uniqueVisitors || 0);
+      const last7 = Number(s.last7UniqueVisitors || s.last7PageViews || 0);
+      const prev7 = Number(s.prev7UniqueVisitors || s.prev7PageViews || 0);
+      const trafficGrowth = prev7 > 0 ? Math.round(((last7 - prev7) / prev7) * 100) : (last7 > 0 ? 100 : 0);
+      setText('ov-traffic-total', visitors || views);
+      const tg = $('#ov-traffic-growth');
+      if (tg) { tg.className = 'kpi-chip ' + (trafficGrowth >= 0 ? 'up' : 'down'); tg.textContent = (trafficGrowth >= 0 ? '↑ ' : '↓ ') + Math.abs(trafficGrowth) + '%'; }
       const starts = Number(s.formStarts || 0);
       const submits = Number(s.formSubmits || 0);
       const startedNotSubmitted = Math.max(0, starts - submits);
@@ -2598,7 +2693,7 @@
     });
 
     // logout
-    ['logout-btn', 'sidebar-logout'].forEach(id => {
+    ['logout-btn', 'sidebar-logout', 'bottom-nav-logout'].forEach(id => {
       const el = $('#' + id);
       if (el) el.addEventListener('click', logout);
     });
@@ -2757,6 +2852,7 @@
 
     // nav
     $$('.sidebar-link[data-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
+    $$('.bottom-nav-item[data-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
     document.addEventListener('click', (e) => {
       const link = e.target.closest('[data-view-link]');
       if (link) { e.preventDefault(); setView(link.dataset.viewLink); }

@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/admin.css?v=20261123f9">
+  <link rel="stylesheet" href="assets/css/admin.css?v=20261123g1">
   <link rel="stylesheet" href="assets/css/pro-light.css?v=20261123f2">
 </head>
 <body>
@@ -213,60 +213,67 @@
           <div class="kpi-grid">
             <div class="kpi">
               <div class="kpi-top">
-                <span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-eye"></use></svg></span>
-                <span class="kpi-chip up">All time</span>
+                <span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg></span>
+                <span class="kpi-chip flat" id="ov-enquiries-chip">Live</span>
               </div>
-              <div class="kpi-value" id="an-total-views">0</div>
-              <div class="kpi-label">Page views</div>
-              <div class="kpi-sub"><b id="an-views-7d">0</b> in last 7 days</div>
+              <div class="kpi-value" id="ov-total-enquiries">0</div>
+              <div class="kpi-label">Total Enquiries</div>
+              <div class="kpi-sub"><b id="ov-enquiries-trend">0%</b> vs last 30 days</div>
             </div>
             <div class="kpi">
               <div class="kpi-top">
-                <span class="kpi-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg></span>
-                <span class="kpi-chip flat">Visitors</span>
+                <span class="kpi-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"></use></svg></span>
+                <span class="kpi-chip flat" id="ov-processed-chip">Live</span>
               </div>
-              <div class="kpi-value" id="an-unique-visitors">0</div>
-              <div class="kpi-label">Unique visitors</div>
-              <div class="kpi-sub"><b id="an-visitors-7d">0</b> in last 7 days</div>
+              <div class="kpi-value" id="ov-loans-processed">0</div>
+              <div class="kpi-label">Loans Processed</div>
+              <div class="kpi-sub"><b id="ov-processed-trend">0%</b> vs last 30 days</div>
             </div>
             <div class="kpi">
               <div class="kpi-top">
-                <span class="kpi-icon amber"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></span>
-                <span class="kpi-chip">Intent</span>
+                <span class="kpi-icon green"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg></span>
+                <span class="kpi-chip flat" id="ov-disbursed-chip">Live</span>
               </div>
-              <div class="kpi-value" id="an-started-not-submitted">0</div>
-              <div class="kpi-label">Started, not submitted</div>
-              <div class="kpi-sub"><b id="an-form-starts">0</b> started &middot; <b id="an-form-submits">0</b> submitted</div>
+              <div class="kpi-value" id="ov-total-disbursed">&#8377;0</div>
+              <div class="kpi-label">Total Disbursed</div>
+              <div class="kpi-sub"><b id="ov-disbursed-trend">0%</b> vs last 30 days</div>
             </div>
             <div class="kpi">
               <div class="kpi-top">
-                <span class="kpi-icon purple"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"></use></svg></span>
-                <span class="kpi-chip">Leads</span>
+                <span class="kpi-icon amber"><svg class="icon" aria-hidden="true"><use href="#i-star"></use></svg></span>
+                <span class="kpi-chip flat" id="ov-rating-chip">Live</span>
               </div>
-              <div class="kpi-value" id="ov-open-leads">0</div>
-              <div class="kpi-label">Open enquiries</div>
-              <div class="kpi-sub"><b id="ov-accepted-leads">0</b> accepted &middot; <b id="ov-pipeline-value">&#8377;0</b> pipeline</div>
+              <div class="kpi-value" id="ov-customer-rating">—</div>
+              <div class="kpi-label">Customer Rating</div>
+              <div class="kpi-sub"><b id="ov-rating-count">0</b> reviews</div>
             </div>
           </div>
 
           <div class="dash-grid equal">
             <div class="card">
-              <div class="card-head"><div><h3>Website growth (7 days)</h3><p>Live page views, form starts and submissions</p></div><span class="live-badge"><i></i> LIVE</span></div>
+              <div class="card-head"><div><h3>Website Traffic</h3><p>Visitor count and growth trend</p></div><span class="live-badge"><i></i> LIVE</span></div>
               <div class="card-body">
-                <div class="chart-wrap" style="height:260px"><canvas id="ov-trend-chart"></canvas></div>
-                <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:.75rem;color:var(--muted)">
-                  <span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#10294B;margin-right:6px"></i>Page views</span>
-                  <span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#D6A329;margin-right:6px"></i>Form starts</span>
-                  <span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#2B8C89;margin-right:6px"></i>Submissions</span>
-                </div>
+                <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px"><b id="ov-traffic-total" style="font-size:1.5rem;color:var(--navy)">0</b><span style="font-size:.8125rem;color:var(--muted)">visitors</span><span id="ov-traffic-growth" class="kpi-chip up" style="margin-left:auto">0%</span></div>
+                <div class="chart-wrap" style="height:240px"><canvas id="ov-trend-chart"></canvas></div>
               </div>
             </div>
             <div class="card">
-              <div class="card-head"><div><h3>Enquiry funnel</h3><p>Visitor intent to enquiry submission</p></div></div>
+              <div class="card-head"><div><h3>Loan Categories</h3><p>Enquiry distribution by loan type</p></div></div>
               <div class="card-body">
-                <div class="chart-wrap" style="height:260px"><canvas id="ov-funnel-chart"></canvas></div>
-                <div id="ov-funnel-note" style="margin-top:12px;font-size:.8125rem;color:var(--muted)">No funnel data yet.</div>
+                <div class="chart-wrap" style="height:220px"><canvas id="ov-loan-categories-chart"></canvas></div>
+                <div class="donut-legend" id="ov-loan-categories-legend"></div>
               </div>
+            </div>
+          </div>
+
+          <div class="dash-grid equal" style="margin-top:18px">
+            <div class="card">
+              <div class="card-head"><div><h3>Top Lenders</h3><p>Partner performance by enquiry share</p></div></div>
+              <div class="card-body"><div id="ov-top-lenders" class="lender-bars"><div class="empty-state" style="padding:18px"><p>No lender data yet.</p></div></div></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><div><h3>Recent Enquiries</h3><p>Latest customer enquiries</p></div><button type="button" class="a-btn a-btn-ghost a-btn-sm" data-view-link="leads">View all</button></div>
+              <div class="card-body" style="padding:0"><div class="table-wrap" style="border:0;border-radius:0"><table class="a-table"><thead><tr><th>Customer</th><th>Loan type</th><th>Date</th><th>Status</th></tr></thead><tbody id="ov-recent-enquiries"><tr><td colspan="4" class="table-empty">No enquiries yet.</td></tr></tbody></table></div></div>
             </div>
           </div>
 
@@ -285,27 +292,6 @@
               </div>
               <div class="card-body">
                 <div class="pipeline" id="ov-lead-pipeline"><div class="empty-state" style="padding:18px"><p>No enquiry data yet.</p></div></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card" style="margin-top:18px">
-            <div class="card-head">
-              <div><h3>Quick actions</h3><p>Common admin tasks</p></div>
-            </div>
-            <div class="card-body">
-              <div class="quick-actions" style="display:grid;gap:12px">
-                <button type="button" class="a-btn a-btn-light" data-view-link="leads" style="justify-content:flex-start"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg> Review new enquiries</button>
-                <button type="button" class="a-btn a-btn-light" data-view-link="content" style="justify-content:flex-start"><svg class="icon" aria-hidden="true"><use href="#i-file-text"></use></svg> Update reviews &amp; products</button>
-                <button type="button" class="a-btn a-btn-light" data-view-link="settings" style="justify-content:flex-start"><svg class="icon" aria-hidden="true"><use href="#i-settings"></use></svg> Check business settings</button>
-                <button type="button" class="a-btn a-btn-light" data-view-link="reports" style="justify-content:flex-start"><svg class="icon" aria-hidden="true"><use href="#i-bar-chart"></use></svg> View reports</button>
-              </div>
-              <div class="hr" style="margin:20px 0"></div>
-              <div class="detail-grid-2" style="gap:12px;margin-bottom:0">
-                <div class="detail-box"><small style="display:block;color:var(--muted);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Form starts</small><b id="ov-form-starts" style="font-size:1.25rem;color:var(--navy)">0</b><div style="font-size:.8125rem;color:var(--muted)"><span id="ov-form-starts-7d">0</span> in last 7 days</div></div>
-                <div class="detail-box"><small style="display:block;color:var(--muted);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Submit success</small><b id="an-form-success" style="font-size:1.25rem;color:var(--navy)">0</b><div style="font-size:.8125rem;color:var(--muted)"><span id="ov-conversion-rate">0%</span> conversion rate</div></div>
-                <div class="detail-box"><small style="display:block;color:var(--muted);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">CTA clicks</small><b id="ov-cta-clicks" style="font-size:1.25rem;color:var(--navy)">0</b><div style="font-size:.8125rem;color:var(--muted)"><span id="ov-cta-clicks-7d">0</span> in last 7 days</div></div>
-                <div class="detail-box"><small style="display:block;color:var(--muted);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Phone/WhatsApp clicks</small><b id="ov-contact-clicks" style="font-size:1.25rem;color:var(--navy)">0</b><div style="font-size:.8125rem;color:var(--muted)"><span id="ov-contact-clicks-7d">0</span> in last 7 days</div></div>
               </div>
             </div>
           </div>
@@ -744,6 +730,13 @@
     </div>
 
     <!-- Lead drawer -->
+    <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile navigation">
+      <button type="button" class="bottom-nav-item active" data-view="overview" aria-label="Dashboard"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg><span>Dashboard</span></button>
+      <button type="button" class="bottom-nav-item" data-view="analytics" aria-label="Analytics"><svg class="icon" aria-hidden="true"><use href="#i-chart"></use></svg><span>Analytics</span></button>
+      <button type="button" class="bottom-nav-item" data-view="leads" aria-label="Enquiries"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg><span>Enquiries</span></button>
+      <button type="button" class="bottom-nav-item" data-view="settings" aria-label="Settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"></use></svg><span>Settings</span></button>
+      <button type="button" class="bottom-nav-item bottom-nav-logout" id="bottom-nav-logout" aria-label="Logout"><svg class="icon" aria-hidden="true"><use href="#i-logout"></use></svg><span>Logout</span></button>
+    </nav>
     <div class="drawer-overlay" id="drawer-overlay"></div>
     <aside class="drawer" id="lead-drawer" aria-label="Lead details">
       <div class="drawer-head">
@@ -771,7 +764,7 @@
 
   <script src="assets/js/calculators.js?v=20261120z40" defer></script>
   <script src="assets/js/icons.js?v=20261118z22"></script>
-  <script src="assets/js/backend.js?v=20261122z1"></script><script src="assets/js/admin.js?v=20261123f4"></script><script src="assets/js/admin-sync.js?v=20261123f3"></script>
+  <script src="assets/js/backend.js?v=20261122z1"></script><script src="assets/js/admin.js?v=20261123g1"></script><script src="assets/js/admin-sync.js?v=20261123f3"></script>
 </body>
 </html>
 
