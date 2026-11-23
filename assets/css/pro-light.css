@@ -2339,3 +2339,42 @@ pre, code { white-space: pre-wrap; word-break: break-word; }
 .footer-bottom a:hover{color:#f0cf7a;}
 @media (max-width:940px){.site-footer{padding-top:36px;}.footer-compact{gap:22px 24px;}}
 @media (max-width:560px){.site-footer{padding-top:30px;}.footer-compact{gap:20px;padding-bottom:22px;}.footer-brand-name{font-size:1.08rem;}.footer-compact-brand p{font-size:.82rem;}.footer-compact-contact a,.footer-compact-contact .footer-hours{font-size:.8rem;}.footer-bottom{padding:14px 0 18px;}}
+
+/* Global responsive hardening */
+html,body{max-width:100%;overflow-x:hidden;}
+img,video,canvas,svg{max-width:100%;}
+.container{width:min(100%,var(--container,1200px));}
+.section{padding:clamp(48px,6vw,80px) 0;}
+.section-head h2{font-size:clamp(1.8rem,4.2vw,3rem);line-height:1.15;}
+.section-head p{font-size:clamp(.95rem,1.8vw,1.05rem);}
+.btn{max-width:100%;}
+.hero2-grid,.grid-2,.grid-3,.grid-4,.footer-compact,.contact-grid,.about-grid{min-width:0;}
+.hero2-grid>*,.grid-2>*,.grid-3>*,.grid-4>*,.footer-compact>*,.contact-grid>*,.about-grid>*{min-width:0;}
+@media (max-width:1024px){
+  .grid-4{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .grid-3{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .hero2-grid{grid-template-columns:1fr;gap:28px;}
+}
+@media (max-width:768px){
+  .container{padding-inline:20px;}
+  .grid-2,.grid-3,.grid-4,.contact-grid,.about-grid,.footer-compact{grid-template-columns:1fr;}
+  .section-head.split{flex-direction:column;align-items:flex-start;gap:12px;}
+  .hero2-cta{flex-wrap:wrap;}
+  .hero2-cta .btn{flex:1 1 180px;}
+  .trust-strip .container,.trust-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+  .stats-row,.kpi-grid,.quick-actions{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media (max-width:560px){
+  .container{padding-inline:16px;}
+  .section{padding:44px 0;}
+  .btn{width:100%;justify-content:center;}
+  .hero2-cta .btn{width:100%;}
+  .trust-strip .container,.trust-items,.stats-row,.kpi-grid,.quick-actions{grid-template-columns:1fr;}
+  .form-grid{grid-template-columns:1fr;}
+  .form-grid .field,.form-grid .field.full{grid-column:auto;}
+  .popup{width:min(100vw - 24px,560px);padding:20px 16px;}
+}
+@media (max-width:380px){
+  .container{padding-inline:14px;}
+  h1{font-size:clamp(1.8rem,8vw,2.2rem);}
+}
