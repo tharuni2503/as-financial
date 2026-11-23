@@ -119,6 +119,6 @@
 }
 
 /* Force lender search compact rectangle */
-#partners .lp2-search, .lp2-toolbar .lp2-search{height:30px!important;min-height:30px!important;max-height:30px!important;padding:0 10px!important;border-radius:4px!important;box-sizing:border-box!important;}
+#partners .lp2-search, .lp2-toolbar .lp2-search{height:30px!important;min-height:30px!important;max-height:30px!important;padding:0 10px!important;border-radius:4px!important;box-sizing:border-box!important;flex:1 1 220px!important;width:min(100%,340px)!important;max-width:340px!important;min-width:140px!important;}
 #partners .lp2-search input, .lp2-toolbar .lp2-search input{height:100%!important;line-height:1.2!important;font-size:.8rem!important;}
-@media (max-width:820px){#partners .lp2-search, .lp2-toolbar .lp2-search{height:28px!important;min-height:28px!important;max-height:28px!important;}}
+@media (max-width:820px){#partners .lp2-search, .lp2-toolbar .lp2-search{height:28px!important;min-height:28px!important;max-height:28px!important;width:100%!important;max-width:100%!important;flex:1 1 auto!important;}}
