@@ -988,19 +988,32 @@
   }
 
   /* ---------- popup ---------- */
+  let popupLastFocus = null;
+  function popupFocusables(el) {
+    return Array.prototype.slice.call(el.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+      .filter(n => n.offsetParent !== null || el === n.ownerDocument.activeElement);
+  }
   function openPopup(id) {
     const el = document.getElementById(id);
     if (!el) return;
+    popupLastFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     el.classList.add('open');
+    el.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
-    const first = el.querySelector('input, select, textarea');
-    if (first) setTimeout(() => first.focus(), 120);
+    const focusables = popupFocusables(el);
+    const first = focusables.find(n => n.matches('input, select, textarea')) || focusables[0];
+    if (first) setTimeout(() => { try { first.focus(); } catch (_) {} }, 120);
   }
   function closePopup(el) {
     if (!el) return;
     el.querySelectorAll('[data-lead-form]').forEach(f => { if (typeof f._asTrackAbandon === 'function') f._asTrackAbandon('popup_close'); });
     el.classList.remove('open');
-    document.body.style.overflow = '';
+    el.setAttribute('aria-hidden', 'true');
+    if (!document.querySelector('.popup-overlay.open')) document.body.style.overflow = '';
+    if (popupLastFocus && document.contains(popupLastFocus)) {
+      try { popupLastFocus.focus(); } catch (_) {}
+    }
+    popupLastFocus = null;
   }
   // Ensure Apply Now / Request a call / Get a call back CTAs open the same apply popup
   document.querySelectorAll('a, button').forEach(el => {
@@ -1028,7 +1041,25 @@
     overlay.addEventListener('click', (e) => { if (e.target === overlay) closePopup(overlay); });
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') document.querySelectorAll('.popup-overlay.open').forEach(closePopup);
+    const open = Array.prototype.slice.call(document.querySelectorAll('.popup-overlay.open'));
+    if (!open.length) return;
+    const top = open[open.length - 1];
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closePopup(top);
+      return;
+    }
+    if (e.key === 'Tab') {
+      const focusables = popupFocusables(top);
+      if (!focusables.length) { e.preventDefault(); return; }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first || !top.contains(document.activeElement)) { e.preventDefault(); last.focus(); }
+      } else if (document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    }
   });
 
   /* ---------- year ---------- */

@@ -1467,3 +1467,8 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .a-field label { display:block; margin-bottom:6px; font-weight:700; font-size:.78rem; color:var(--navy); }
 .a-field input, .a-field select, .a-field textarea { width:100%; min-height:44px; }
 .field-hint { display:block; margin-top:5px; font-size:.72rem; color:var(--muted); line-height:1.35; }
+
+/* Badge/controls clarity */
+.badge{padding:4px 10px;font-size:.7rem;font-weight:800;letter-spacing:.01em;}
+.a-table td .a-btn-sm,.a-table td .a-btn-ghost{white-space:nowrap;}
+@media(max-width:760px){.a-table td,.a-table th{padding:10px 8px;font-size:.78rem;}.badge{font-size:.66rem;padding:3px 8px;}}
