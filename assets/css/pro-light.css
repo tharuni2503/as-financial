@@ -653,11 +653,12 @@ img { border-radius: inherit; }
 .hero2, .page-hero, .section-cream, .section-white, .section-soft { scroll-margin-top: calc(var(--header-h) + 16px); }
 
 /* Reveal / stagger */
-.reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1); will-change: opacity, transform; }
+.reveal { opacity: 0; transform: translateY(20px); transition: opacity .65s cubic-bezier(.2,.65,.2,1), transform .65s cubic-bezier(.2,.65,.2,1); will-change: opacity, transform; }
 .reveal.in { opacity: 1; transform: none; }
-.problem-grid .reveal:nth-child(2), .pgrid .reveal:nth-child(2), .steps .reveal:nth-child(2), .benefits-grid .reveal:nth-child(2), .blog-grid .reveal:nth-child(2), .testi-grid .reveal:nth-child(2) { transition-delay: .06s; }
-.problem-grid .reveal:nth-child(3), .pgrid .reveal:nth-child(3), .steps .reveal:nth-child(3), .benefits-grid .reveal:nth-child(3), .blog-grid .reveal:nth-child(3), .testi-grid .reveal:nth-child(3) { transition-delay: .12s; }
-.problem-grid .reveal:nth-child(4), .pgrid .reveal:nth-child(4), .steps .reveal:nth-child(4), .benefits-grid .reveal:nth-child(4) { transition-delay: .18s; }
+.problem-grid .reveal:nth-child(2), .pgrid .reveal:nth-child(2), .steps .reveal:nth-child(2), .benefits-grid .reveal:nth-child(2), .blog-grid .reveal:nth-child(2), .testi-grid .reveal:nth-child(2), .process-flow .reveal:nth-child(2) { transition-delay: .07s; }
+.problem-grid .reveal:nth-child(3), .pgrid .reveal:nth-child(3), .steps .reveal:nth-child(3), .benefits-grid .reveal:nth-child(3), .blog-grid .reveal:nth-child(3), .testi-grid .reveal:nth-child(3), .process-flow .reveal:nth-child(3) { transition-delay: .14s; }
+.problem-grid .reveal:nth-child(4), .pgrid .reveal:nth-child(4), .steps .reveal:nth-child(4), .benefits-grid .reveal:nth-child(4), .process-flow .reveal:nth-child(4) { transition-delay: .21s; }
+.process-flow .reveal:nth-child(5), .steps .reveal:nth-child(5) { transition-delay: .28s; }
 
 /* Subtle image treatment */
 .split-media img, .visit-photo img, .pcard-media img, .hero3d-main img { transition: transform .8s ease; }
@@ -2193,7 +2194,6 @@ pre, code { white-space: pre-wrap; word-break: break-word; }
 }
 
 /* Process steps scroll animation enhancement */
-.steps .reveal:nth-child(5) { transition-delay: .24s; }
 .sec-process .step { transition: transform .45s ease, box-shadow .45s ease, opacity .45s ease; }
 .sec-process .step.in { transform: translateY(0); }
 .sec-process .step:hover { transform: translateY(-4px); box-shadow: 0 14px 30px -20px rgba(16,41,75,.25); }
