@@ -546,7 +546,7 @@ table.table, .data-table { min-width: 560px; }
 .mini-stat { background: #fff; border: 1px solid var(--line); border-radius: 11px; padding: 14px 16px; }
 .mini-stat span { font-size: .68rem; color: var(--muted); display: block; }
 .mini-stat b { font-size: 1.25rem; color: var(--navy); letter-spacing: -.03em; }
-@media (max-width: 560px) { .mini-stats { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .mini-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; } .mini-stat { padding: 10px 12px; } .mini-stat b { font-size: 1.1rem; } .mini-stat span { font-size: .68rem; } }
 
 .product-cell { display: flex; align-items: center; gap: 10px; }
 .product-cell .p-ic { width: 32px; height: 32px; border-radius: 8px; background: var(--cream); color: var(--gold-deep); display: grid; place-items: center; flex: none; }
@@ -760,7 +760,7 @@ table.table, .data-table { min-width: 560px; }
   .modal-head, .modal-body, .modal-foot { padding-left: 16px; padding-right: 16px; }
   .chart-wrap.chart-tall { height: 240px; }
   .chart-wrap.chart-medium { height: 180px; }
-  .mini-stats { grid-template-columns: 1fr; }
+  .mini-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .partner-grid-admin { grid-template-columns: 1fr 1fr; padding: 14px; }
 }
 @media (max-width: 560px) {
