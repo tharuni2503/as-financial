@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
   <link rel="stylesheet" href="assets/css/admin.css?v=20261122z6">
-  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261122z40">
+  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261123f">
 </head>
 <body>
   <a class="skip-link" href="#login-screen">Skip to content</a>
@@ -60,7 +60,7 @@
             </div>
           </div>
           <div class="login-row">
-            <label><input type="checkbox" checked> Keep me signed in</label>
+            <label><input type="checkbox" id="login-remember" checked> Keep me signed in</label>
             <button type="button" class="link-btn" id="forgot-password-btn" style="background:none;border:0;color:var(--gold-deep);font-weight:700;padding:0">Forgot password?</button>
           </div>
           <button class="a-btn a-btn-primary" style="padding:11px 16px;font-size:.85rem" type="submit">Sign in to dashboard <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
@@ -89,15 +89,15 @@
       <div class="login-panel-alt hidden" id="reset-panel" style="margin-top:14px">
         <div class="card" style="padding:16px">
           <h3 style="margin:0 0 6px;font-size:1rem">Set a new password</h3>
-          <p style="margin:0 0 12px;color:var(--muted);font-size:.82rem">Choose a new password for your account (at least 6 characters).</p>
+          <p style="margin:0 0 12px;color:var(--muted);font-size:.82rem">Choose a new password (at least 10 characters, including a letter and a number).</p>
           <form id="reset-form" class="login-form" autocomplete="off">
             <div class="login-field">
               <label for="reset-password">New password</label>
-              <div class="login-input"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg><input type="password" id="reset-password" name="password" required minlength="6" autocomplete="new-password" placeholder="New password"></div>
+              <div class="login-input"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg><input type="password" id="reset-password" name="password" required minlength="10" autocomplete="new-password" placeholder="New password"></div>
             </div>
             <div class="login-field">
               <label for="reset-password-confirm">Confirm new password</label>
-              <div class="login-input"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg><input type="password" id="reset-password-confirm" name="confirm" required minlength="6" autocomplete="new-password" placeholder="Confirm new password"></div>
+              <div class="login-input"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg><input type="password" id="reset-password-confirm" name="confirm" required minlength="10" autocomplete="new-password" placeholder="Confirm new password"></div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="a-btn a-btn-primary" type="submit" style="padding:10px 14px;font-size:.82rem">Update password</button>
@@ -688,8 +688,8 @@
                 <form id="change-password-form" style="margin-top:14px;display:grid;gap:10px;max-width:520px">
                   <h4 style="margin:0;font-size:.9rem;color:var(--navy)">Change password</h4>
                   <div class="a-field"><label for="cp-current">Current password</label><input id="cp-current" name="currentPassword" type="password" autocomplete="current-password" required></div>
-                  <div class="a-field"><label for="cp-new">New password</label><input id="cp-new" name="newPassword" type="password" autocomplete="new-password" minlength="6" required></div>
-                  <div class="a-field"><label for="cp-confirm">Confirm new password</label><input id="cp-confirm" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" required></div>
+                  <div class="a-field"><label for="cp-new">New password</label><input id="cp-new" name="newPassword" type="password" autocomplete="new-password" minlength="10" required></div>
+                  <div class="a-field"><label for="cp-confirm">Confirm new password</label><input id="cp-confirm" name="confirmPassword" type="password" autocomplete="new-password" minlength="10" required></div>
                   <div id="change-password-msg" class="demo-note" style="display:none;margin:0"></div>
                   <div><button type="submit" class="a-btn a-btn-primary a-btn-sm">Update password</button></div>
                 </form>
@@ -714,7 +714,7 @@
                   </div>
                   <div class="form-row">
                     <div class="a-field"><label for="nu-role">Role</label><select id="nu-role" name="role"><option value="staff">Staff</option><option value="admin">Admin</option></select></div>
-                    <div class="a-field"><label for="nu-password">Password</label><input id="nu-password" name="password" type="password" minlength="6" required placeholder="At least 6 characters"></div>
+                    <div class="a-field"><label for="nu-password">Password</label><input id="nu-password" name="password" type="password" minlength="10" required placeholder="At least 10 characters"></div>
                   </div>
                   <div><button type="submit" class="a-btn a-btn-primary a-btn-sm">Create user</button></div>
                 </form>
@@ -769,7 +769,7 @@
 
   <script src="assets/js/calculators.js?v=20261120z40" defer></script>
   <script src="assets/js/icons.js?v=20261118z22"></script>
-  <script src="assets/js/backend.js?v=20261122z1"></script><script src="assets/js/admin.js?v=20261122z5"></script><script src="assets/js/admin-sync.js?v=20261118z22"></script>
+  <script src="assets/js/backend.js?v=20261122z1"></script><script src="assets/js/admin.js?v=20261123f2"></script><script src="assets/js/admin-sync.js?v=20261123f3"></script>
 </body>
 </html>
 

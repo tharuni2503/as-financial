@@ -47,7 +47,7 @@ const mailer = require('./mailer');
 
 const ROOT = path.join(__dirname, '..');
 const PORT = Number(process.env.PORT || 3000);
-const ADMIN_EMAIL = 'asfinancialservicesandsolution@gmail.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'asfinancialservicesandsolution@gmail.com';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'AS@2026';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 let BOOT_FATAL = null;
@@ -129,6 +129,9 @@ app.use((req, res, next) => {
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
+  if (/^\/admin(?:\.html)?(?:\/|$)/i.test(req.path || '')) {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  }
   res.setHeader('Content-Security-Policy', [
     "default-src 'self'",
     "base-uri 'self'",
@@ -494,10 +497,42 @@ app.put('/api/content/:section', requireSession, requireRole('staff', 'admin', '
   res.json({ ok: true, section, count, updatedAt: stats.updatedAt });
 }));
 
+async function verifyTurnstile(token, ip) {
+  const secret = String(process.env.TURNSTILE_SECRET_KEY || '').trim();
+  if (!secret) return { ok: true, skipped: true };
+  const t = String(token || '').trim();
+  if (!t) return { ok: false, error: 'Verification check is required. Please try again.' };
+  try {
+    const body = new URLSearchParams();
+    body.set('secret', secret);
+    body.set('response', t);
+    if (ip) body.set('remoteip', String(ip));
+    const ctrl = (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(8000) : undefined;
+    const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+      signal: ctrl
+    });
+    const data = await r.json().catch(() => ({}));
+    if (r.ok && data && data.success === true) return { ok: true };
+    return { ok: false, error: 'Verification failed. Please refresh and try again.' };
+  } catch (e) {
+    console.warn('[turnstile] verify failed:', e && e.message ? e.message : e);
+    return { ok: false, error: 'Verification could not be completed. Please try again.' };
+  }
+}
+
 app.post('/api/enquiries', asyncRoute(async (req, res) => {
   const ip = req.ip || 'unknown';
   if (await enquiryRateLimited(ip)) {
     res.status(429).json({ error: 'Too many enquiries from this connection. Please call us instead.' });
+    return;
+  }
+
+  const turnstile = await verifyTurnstile(req.body && req.body.turnstileToken, ip);
+  if (!turnstile.ok) {
+    res.status(400).json({ error: turnstile.error || 'Verification failed.' });
     return;
   }
 
@@ -1294,9 +1329,8 @@ function validatePassword(pw) {
 
 function normalizeRole(role) {
   const r = String(role || '').toLowerCase();
-  if (r === 'super_admin') return 'admin';
-  if (r === 'advisor') return 'staff';
-  return ['staff', 'admin'].includes(r) ? r : null;
+  if (['advisor', 'staff', 'admin', 'super_admin'].includes(r)) return r;
+  return null;
 }
 
 function userPublic(user) {
@@ -1420,7 +1454,7 @@ app.get('/api/audit', requireSession, requireRole('super_admin', 'admin'), async
   res.json({ entries, count: entries.length, limit });
 }));
 
-app.get('/api/sessions', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
+app.get('/api/sessions', requireSession, requireRole('staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
   const isAdmin = roleAtLeast(req.session.role || 'advisor', 'admin');
   const scopeAll = isAdmin && String(req.query.scope || '') === 'all';
   const currentToken = req.authToken || auth.tokenFrom(req);
@@ -1646,7 +1680,9 @@ const PRIVATE_PATHS = [
   /^\/\.git(\/|$)/i,
   /^\/\.env(\.|$)/i,
   /^\/package(-lock)?\.json$/i,
-  /^\/README\.md$/i
+  /^\/README\.md$/i,
+  /^\/IMPLEMENTATION_PLAN\.md$/i,
+  /^\/(AS_FINANCIAL_SERVICES_PRE_LAUNCH_AUDIT|AUTHORIZATION_TEST_REPORT|PHASE_1_5_SECURITY_AUDIT|PHASE_1_6_SECURITY_REPORT|POSTGRES_AUTHORIZATION_REPORT)\.md$/i
 ];
 
 app.use((req, res, next) => {

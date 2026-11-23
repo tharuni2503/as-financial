@@ -143,6 +143,7 @@
       if (!messages.dataset.init) {
         messages.dataset.init = '1';
         addMsg('Hi! I\'m the AS Financial assistant. Ask me about loans, eligibility, documents, rates, or the application process.', 'bot');
+        addMsg('<span style="font-size:.78rem;color:#5a6b7f">Informational only — not financial advice, not a loan approval, and rates/terms vary by lender and profile.</span>', 'bot', true);
         setQuick(['Loan products','Eligibility','Documents needed','Request callback']);
       }
       setTimeout(() => input.focus(), 50);

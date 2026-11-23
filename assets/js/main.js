@@ -202,7 +202,7 @@
         '<a class="header-phone" href="tel:+919182703079" data-setting="phone"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg><span><small>Talk to an advisor</small><strong>91827 03079</strong></span></a>' +
         '<button type="button" class="btn btn-gold" data-popup-open="apply-popup">Apply Now <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>' +
         '<a class="header-call-btn" href="tel:+919182703079" data-setting="phone" aria-label="Call advisor"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg></a>' +
-        '<button type="button" class="menu-toggle" data-menu-open aria-label="Open menu"><svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg></button>' +
+        '<button type="button" class="menu-toggle" data-menu-open aria-label="Open menu" aria-expanded="false" aria-controls="mobile-nav"><svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg></button>' +
       '</div>' +
     '</div>';
 
@@ -232,6 +232,12 @@
     let mob = document.querySelector('.mobile-nav');
     if (mob) { mob.innerHTML = mobileHtml; }
     else { mob = document.createElement('div'); mob.className = 'mobile-nav'; mob.setAttribute('aria-label','Mobile menu'); mob.innerHTML = mobileHtml; if (hdr) hdr.insertAdjacentElement('afterend', mob); }
+    if (mob) {
+      mob.id = 'mobile-nav';
+      mob.setAttribute('role', 'dialog');
+      mob.setAttribute('aria-modal', 'true');
+      mob.setAttribute('aria-hidden', mob.classList.contains('open') ? 'false' : 'true');
+    }
     if (typeof applySettings === 'function') applySettings();
   })();
 
@@ -342,23 +348,41 @@
 
   /* ---------- mobile nav ---------- */
   let lastMenuTrigger = null;
+  function getMobileNav() { return document.querySelector('.mobile-nav'); }
+  function setMenuExpanded(open) {
+    document.querySelectorAll('[data-menu-open]').forEach(btn => {
+      btn.setAttribute('aria-expanded', String(open));
+      if (!btn.getAttribute('aria-controls')) btn.setAttribute('aria-controls', 'mobile-nav');
+    });
+  }
   function closeMobileNav(restoreFocus) {
-    const nav = document.querySelector('.mobile-nav');
+    const nav = getMobileNav();
     if (!nav || !nav.classList.contains('open')) return;
     nav.classList.remove('open');
+    nav.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
-    if (restoreFocus && lastMenuTrigger) lastMenuTrigger.focus();
+    setMenuExpanded(false);
+    if (restoreFocus && lastMenuTrigger && typeof lastMenuTrigger.focus === 'function') lastMenuTrigger.focus();
+  }
+  function openMobileNav(trigger) {
+    const nav = getMobileNav();
+    if (!nav) return;
+    lastMenuTrigger = trigger || document.querySelector('[data-menu-open]');
+    nav.id = nav.id || 'mobile-nav';
+    nav.setAttribute('role', 'dialog');
+    nav.setAttribute('aria-modal', 'true');
+    nav.setAttribute('aria-hidden', 'false');
+    nav.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setMenuExpanded(true);
+    const focusables = nav.querySelectorAll('a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    const target = nav.querySelector('[data-menu-close]') || focusables[0];
+    if (target) target.focus();
   }
   document.querySelectorAll('[data-menu-open]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const nav = document.querySelector('.mobile-nav');
-      if (!nav) return;
-      lastMenuTrigger = btn;
-      nav.classList.add('open');
-      document.body.style.overflow = 'hidden';
-      const closeBtn = nav.querySelector('[data-menu-close]');
-      if (closeBtn) closeBtn.focus();
-    });
+    btn.setAttribute('aria-expanded', 'false');
+    if (!btn.getAttribute('aria-controls')) btn.setAttribute('aria-controls', 'mobile-nav');
+    btn.addEventListener('click', () => openMobileNav(btn));
   });
   document.querySelectorAll('[data-menu-close]').forEach(btn => {
     btn.addEventListener('click', () => closeMobileNav(true));
@@ -367,7 +391,18 @@
     link.addEventListener('click', () => closeMobileNav(false));
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeMobileNav(true);
+    const nav = getMobileNav();
+    if (!nav || !nav.classList.contains('open')) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeMobileNav(true); return; }
+    if (e.key === 'Tab') {
+      const focusables = Array.prototype.slice.call(nav.querySelectorAll('a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+        .filter(el => el.offsetParent !== null || nav === el.ownerDocument.activeElement);
+      if (!focusables.length) { e.preventDefault(); return; }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
   });
 
   /* ---------- reveal on scroll ---------- */
@@ -948,7 +983,7 @@
     actions.innerHTML =
       '<a class="btn btn-gold" href="' + (opts.waUrl || '#') + '" target="_blank" rel="noopener"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-whatsapp"></use></svg> Continue on WhatsApp</a>' +
       '<a class="btn btn-outline-navy" href="tel:+' + (opts.phoneRaw || '919182703079') + '"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-phone"></use></svg> Call ' + (opts.phone || '91827 03079') + '</a>';
-    note.textContent = opts.delivered ? 'We usually respond within 30 minutes during business hours.' : 'If you need immediate help, please call or WhatsApp us directly.';
+    note.textContent = opts.delivered ? 'We usually respond during business hours.' : 'If you need immediate help, please call or WhatsApp us directly.';
     openPopup('thankyou-popup');
   }
 

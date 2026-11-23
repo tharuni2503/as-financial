@@ -2581,7 +2581,8 @@
           return;
         }
         try { history.replaceState(null, '', location.pathname); } catch (e) {}
-        enterApp(result || { email: email }, true);
+        const remember = !!($('#login-remember') ? $('#login-remember').checked : true);
+        enterApp(result || { email: email }, remember);
       }).catch((error) => {
         err.textContent = (error && error.message) || 'Sign in failed. Check your details and try again.';
         err.classList.add('show');
@@ -2637,7 +2638,7 @@
       const pw = ($('#reset-password') && $('#reset-password').value) || '';
       const confirm = ($('#reset-password-confirm') && $('#reset-password-confirm').value) || '';
       if (!pendingResetToken) { showMsg(resultEl, 'Reset link is missing or invalid. Please request a new one.', 'error'); return; }
-      if (pw.length < 6) { showMsg(resultEl, 'Password must be at least 6 characters.', 'error'); return; }
+      if (pw.length < 10 || !/[A-Za-z]/.test(pw) || !/[0-9]/.test(pw)) { showMsg(resultEl, 'Password must be at least 10 characters and include a letter and a number.', 'error'); return; }
       if (pw !== confirm) { showMsg(resultEl, 'Passwords do not match.', 'error'); return; }
       showMsg(resultEl, 'Updating password…', 'info');
       api.request('api/reset-password', { method: 'POST', body: { token: pendingResetToken, newPassword: pw } }).then((res) => {
@@ -2659,7 +2660,7 @@
       const currentPassword = ($('#cp-current') && $('#cp-current').value) || '';
       const newPassword = ($('#cp-new') && $('#cp-new').value) || '';
       const confirm = ($('#cp-confirm') && $('#cp-confirm').value) || '';
-      if (newPassword.length < 6) { showMsg(msg, 'New password must be at least 6 characters.', 'error'); return; }
+      if (newPassword.length < 10 || !/[A-Za-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) { showMsg(msg, 'New password must be at least 10 characters and include a letter and a number.', 'error'); return; }
       if (newPassword !== confirm) { showMsg(msg, 'New passwords do not match.', 'error'); return; }
       showMsg(msg, 'Updating password…', 'info');
       api.request('api/change-password', { method: 'POST', body: { currentPassword, newPassword } }).then((res) => {
@@ -3201,17 +3202,65 @@
   }
 
   /* ---------------------------------------------------------------- init */
+  let restoringSession = false;
+  async function restoreSession() {
+    if (restoringSession) return;
+    restoringSession = true;
+    const api = window.ASBackend;
+    const loginBox = document.querySelector('.login-box');
+    const err = $('#login-error');
+    if (err) err.classList.remove('show');
+    if (loginBox) loginBox.setAttribute('aria-busy', 'true');
+    try {
+      if (!api || !api.session) { showLogin(); return; }
+      const available = await api.available(true).catch(() => false);
+      if (!available) { showLogin(); return; }
+      const session = await api.session().catch(() => null);
+      if (session && isAllowedAdminRole(session)) {
+        enterApp(session, true);
+        return;
+      }
+    } catch (e) {
+      // fall through to login
+    } finally {
+      restoringSession = false;
+      if (loginBox) loginBox.removeAttribute('aria-busy');
+    }
+    showLogin();
+  }
+
   function init() {
     clearSampleDataOnce();
     loadData();
     bindEvents();
+    const api = window.ASBackend;
+    if (api && api.request && !api.__admin401Wrapped) {
+      const orig = api.request.bind(api);
+      api.request = function (path, options) {
+        return orig(path, options).catch((err) => {
+          if (err && err.status === 401 && !String(path || '').includes('api/login') && !String(path || '').includes('api/session')) {
+            const loginVisible = !$('#login-screen').classList.contains('hidden');
+            if (!loginVisible && !restoringSession) {
+              currentUser = null;
+              showLogin('Your session expired. Please sign in again.');
+            }
+          }
+          throw err;
+        });
+      };
+      api.__admin401Wrapped = true;
+    }
     $('#login-year').textContent = new Date().getFullYear();
     try {
       pendingResetToken = (new URLSearchParams(location.search).get('reset') || '').trim();
     } catch (e) { pendingResetToken = ''; }
-    // Always show the sign-in screen on open. Do not auto-restore a session:
-    // clicking "Admin" must never skip the login page.
-    showLogin();
+    // If a password reset token is present, show login/reset flow. Otherwise
+    // restore an existing authenticated session to avoid login/dashboard flicker.
+    if (pendingResetToken) {
+      showLogin();
+      return;
+    }
+    restoreSession();
   }
 
   init();

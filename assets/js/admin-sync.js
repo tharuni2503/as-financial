@@ -161,7 +161,6 @@
   /* --------------------------------------------------- auth hooks */
   function onAuthReady() {
     canSyncAdmin = true;
-    sessionStorage.removeItem('as_pulled_v3');
     status('Connected. Data syncs with the server.', 'ok');
     document.dispatchEvent(new Event('as:sync-enquiries'));
     pull();

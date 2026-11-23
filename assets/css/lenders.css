@@ -4,7 +4,8 @@
 .lp2-stat b { display:block; font-family:var(--serif, Georgia, serif); font-size:clamp(1.6rem,3vw,2.1rem); line-height:1; color:var(--navy); }
 .lp2-stat span { display:block; margin-top:6px; font-size:.72rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
 .lp2-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:6px 0 18px; }
-.lp2-tabs { display:flex; gap:8px; flex-wrap:wrap; }
+.lp2-tabs { display:flex; gap:8px; flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.lp2-tabs::-webkit-scrollbar { display:none; }
 .lp2-tab { border:1px solid var(--line); background:#fff; color:var(--muted); padding:10px 16px; min-height:44px; border-radius:999px; font-size:.875rem; font-weight:800; cursor:pointer; transition:.2s ease; }
 .lp2-tab:hover { border-color:var(--gold); color:var(--navy); }
 .lp2-tab.active { background:var(--navy); color:#fff; border-color:var(--navy); }

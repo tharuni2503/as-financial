@@ -20,9 +20,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261122z41">
-  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261122z40">
-  <link rel="stylesheet" href="assets/css/lenders.css?v=20261120z40">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261123f">
+  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261123f">
+  <link rel="stylesheet" href="assets/css/lenders.css?v=20261123f">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -182,7 +182,7 @@
           <span><small>Talk to an advisor</small><strong>91827 03079</strong></span>
         </a>
         <button type="button" class="btn btn-gold" data-popup-open="apply-popup">Apply Now <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
-        <a class="header-call-btn" href="tel:+919182703079" data-setting="phone" aria-label="Call advisor"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg></a><button type="button" class="menu-toggle" data-menu-open aria-label="Open menu">
+        <a class="header-call-btn" href="tel:+919182703079" data-setting="phone" aria-label="Call advisor"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg></a><button type="button" class="menu-toggle" data-menu-open aria-label="Open menu" aria-expanded="false" aria-controls="mobile-nav">
           <svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg>
         </button>
       </div>
@@ -190,7 +190,7 @@
   </header>
 
   <!-- Mobile nav -->
-  <div class="mobile-nav" aria-label="Mobile menu">
+  <div class="mobile-nav" id="mobile-nav" aria-label="Mobile menu" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="mobile-nav-head">
       <a class="brand" href="index.html"><img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions &mdash; Your Goals, Our Solutions" width="200" height="51" decoding="async" loading="lazy"></a>
       <button type="button" class="menu-toggle" data-menu-close aria-label="Close menu"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
@@ -298,7 +298,7 @@
           <button class="btn btn-gold" type="button" data-popup-open="apply-popup">Get a shortlist <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
         </div>
 
-        <p class="lp2-note">*Interest rates, EMI per ₹1 lakh, loan amount, tenure, processing fees/charges and other terms shown are indicative and may change. Actual offers depend on lender policy, product, property, eligibility, credit profile and market conditions. No approval, rate or amount is guaranteed. Lender names and marks belong to their respective owners; coloured initials are not official logos.</p>
+        <p class="lp2-note">*Indicative rates/terms only. Actual offers vary by lender policy, eligibility, and profile. Lender names/logos belong to their respective owners.</p>
       </div>
     </section>
 
@@ -313,7 +313,7 @@
 
         <div class="pgrid" id="products-grid">
           <article class="pcard reveal" data-content-img="home-loan">
-            <div class="pcard-media"><img height="190" width="408" src="assets/img/poster/home-loan.jpg" alt="Modern family home" loading="lazy" decoding="async"></div>
+            <div class="pcard-media"><img height="853" width="1280" src="assets/img/home-loan.jpg" alt="Modern family home" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
               <div class="pcard-head"><span class="pcard-ico"><svg class="icon" aria-hidden="true"><use href="#i-home"></use></svg></span><h3>Home Loans</h3></div>
               <p class="tag">Own your dream home</p>
@@ -322,7 +322,7 @@
             </div>
           </article>
           <article class="pcard reveal" data-content-img="mortgage">
-            <div class="pcard-media"><img height="206" width="436" src="assets/img/poster/mortgage.jpg" alt="House model with keys" loading="lazy" decoding="async"></div>
+            <div class="pcard-media"><img height="853" width="1280" src="assets/img/mortgage.jpg" alt="Property for mortgage loan" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
               <div class="pcard-head"><span class="pcard-ico"><svg class="icon" aria-hidden="true"><use href="#i-key"></use></svg></span><h3>Mortgage Loans</h3></div>
               <p class="tag">Leverage your property</p>
@@ -331,7 +331,7 @@
             </div>
           </article>
           <article class="pcard reveal" data-content-img="personal-loan">
-            <div class="pcard-media"><img height="210" width="256" src="assets/img/poster/personal-loan.jpg" alt="Smiling couple" loading="lazy" decoding="async"></div>
+            <div class="pcard-media"><img height="853" width="1280" src="assets/img/personal-loan.jpg" alt="Couple planning personal finances" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
               <div class="pcard-head"><span class="pcard-ico"><svg class="icon" aria-hidden="true"><use href="#i-user"></use></svg></span><h3>Personal Loans</h3></div>
               <p class="tag">Fulfil your personal needs</p>
@@ -340,7 +340,7 @@
             </div>
           </article>
           <article class="pcard reveal" data-content-img="business-loan">
-            <div class="pcard-media"><img height="214" width="254" src="assets/img/poster/business-loan.jpg" alt="Business professional" loading="lazy" decoding="async"></div>
+            <div class="pcard-media"><img height="853" width="1280" src="assets/img/business-loan.jpg" alt="Business owner at work" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
               <div class="pcard-head"><span class="pcard-ico"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"></use></svg></span><h3>Business Loans</h3></div>
               <p class="tag">Grow your business</p>
@@ -349,7 +349,7 @@
             </div>
           </article>
           <article class="pcard reveal" data-content-img="education-loan">
-            <div class="pcard-media"><img height="214" width="246" src="assets/img/poster/education-loan.jpg" alt="Graduate in gown" loading="lazy" decoding="async"></div>
+            <div class="pcard-media"><img height="853" width="1280" src="assets/img/education-loan.jpg" alt="Student pursuing higher education" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
               <div class="pcard-head"><span class="pcard-ico"><svg class="icon" aria-hidden="true"><use href="#i-graduation"></use></svg></span><h3>Education Loans</h3></div>
               <p class="tag">Build a better future</p>
@@ -367,7 +367,7 @@
             </div>
           </article>
           <article class="pcard reveal" data-content-img="car-loan">
-            <div class="pcard-media icon-only"><svg class="icon" aria-hidden="true"><use href="#i-car"></use></svg></div>
+            <div class="pcard-media"><img height="853" width="1280" src="assets/img/car-loan.jpg" alt="New car" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
               <div class="pcard-head"><span class="pcard-ico"><svg class="icon" aria-hidden="true"><use href="#i-car"></use></svg></span><h3>Car &amp; Two-Wheeler Loans</h3></div>
               <p class="tag">Drive your dream vehicle today</p>
@@ -376,7 +376,7 @@
             </div>
           </article>
           <article class="pcard reveal" data-content-img="doctor-loan">
-            <div class="pcard-media icon-only"><svg class="icon" aria-hidden="true"><use href="#i-stethoscope"></use></svg></div>
+            <div class="pcard-media"><img height="1066" width="1600" src="assets/img/office.jpg" alt="Professional office consultation" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
               <div class="pcard-head"><span class="pcard-ico"><svg class="icon" aria-hidden="true"><use href="#i-stethoscope"></use></svg></span><h3>Doctors Loans</h3></div>
               <p class="tag">Special loans for medical professionals</p>
@@ -385,7 +385,7 @@
             </div>
           </article>
           <article class="pcard reveal" data-content-img="balance-transfer">
-            <div class="pcard-media icon-only"><svg class="icon" aria-hidden="true"><use href="#i-transfer"></use></svg></div>
+            <div class="pcard-media"><img height="667" width="1000" src="assets/img/keys.jpg" alt="Home keys representing balance transfer" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
               <div class="pcard-head"><span class="pcard-ico"><svg class="icon" aria-hidden="true"><use href="#i-transfer"></use></svg></span><h3>Balance Transfer (Top-up)</h3></div>
               <p class="tag">Review your existing loan</p>
@@ -412,7 +412,7 @@
             </div>
           </article>
           <article class="pcard reveal" data-content-img="insurance">
-            <div class="pcard-media icon-only"><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg></div>
+            <div class="pcard-media"><img height="853" width="1280" src="assets/img/family.jpg" alt="Family protected by insurance" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
               <div class="pcard-head"><span class="pcard-ico"><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg></span><h3>Insurance</h3></div>
               <p class="tag">Secure your life, secure their future</p>
@@ -934,6 +934,7 @@
         <input id="as-assistant-input" type="text" maxlength="300" placeholder="Ask about loans, documents, rates..." autocomplete="off">
         <button type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
       </form>
+      <p style="margin:8px 12px 12px;font-size:.72rem;color:#64748b;line-height:1.4">Informational only. Not financial advice or loan approval. Rates/terms vary by lender and profile.</p>
     </div>
   </div>
 
@@ -943,7 +944,7 @@
       <button type="button" class="popup-close" data-popup-close aria-label="Close"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-close"></use></svg></button>
       <span class="pill pill-gold" style="margin-bottom:12px"><span class="dot"></span> Free eligibility check</span>
       <h3 id="apply-title">Let's find your best loan.</h3>
-      <p>Share a few details and an advisor will call you within 30 minutes with indicative offers.</p>
+      <p>Share a few details and an advisor will call you back during business hours with indicative options.</p>
       <form data-lead-form data-source="Homepage popup">
         <input type="text" name="website" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0" aria-label="Website">
         <div class="form-grid">
@@ -973,12 +974,12 @@
             </select>
           </div>
           <div class="full">
-            <label class="consent"><input type="checkbox" required> I agree to be contacted by AS Financial about my enquiry by phone, SMS or WhatsApp and accept the <a href="privacy-policy.html">Privacy Policy</a>.</label>
+            <label class="consent"><input type="checkbox" name="consent" required> I agree to be contacted by AS Financial about my enquiry by phone, SMS or WhatsApp and accept the <a href="privacy-policy.html">Privacy Policy</a>.</label>
           </div>
           <div class="field full">
             <button class="btn btn-gold btn-block" type="submit">Get a call back <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
           </div>
-          <div class="form-success full" role="status" aria-live="polite"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Thanks! Your enquiry is in. Our advisor will call you within 30 minutes.</span></div>
+          <div class="form-success full" role="status" aria-live="polite"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Thanks! Your enquiry is in. Our advisor will call you back during business hours.</span></div>
         </div>
       </form>
     </div>
