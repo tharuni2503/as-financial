@@ -1621,3 +1621,18 @@
     window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
   });
 })();
+
+/* ---------- mobile table scroll wrappers ---------- */
+(function () {
+  function wrapTables(root) {
+    (root || document).querySelectorAll('table').forEach((table) => {
+      if (table.closest('.table-wrap, .admin-table-wrap, .table-responsive')) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'table-wrap';
+      table.parentNode.insertBefore(wrap, table);
+      wrap.appendChild(table);
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => wrapTables(document));
+  else wrapTables(document);
+})();

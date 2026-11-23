@@ -1039,9 +1039,9 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
 .cta-inner h2 { color: var(--navy-deep); max-width: 620px; margin-bottom: 12px; }
 .cta-inner p { color: var(--muted); max-width: 540px; }
 .cta-actions { display: flex; flex-direction: column; gap: 12px; flex: none; }
-.cta-actions .btn { min-width: 240px; }
+.cta-actions .btn { min-width: min(240px, 100%); }
 .cta-phone { display: flex; align-items: center; gap: 10px; color: var(--navy-deep); font-weight: 800; font-size: 1.05rem; justify-content: center; }
-@media (max-width: 820px) { .cta-inner { flex-direction: column; align-items: flex-start; } .cta-actions { width: 100%; } .cta-actions .btn { width: 100%; } }
+@media (max-width: 820px) { .cta-inner { flex-direction: column; align-items: flex-start; } .cta-actions { width: 100%; } .cta-actions .btn { width: 100%; min-width: 0; } }
 
 /* ---------- Footer ---------- */
 .site-footer { background: var(--navy); color: rgba(255,255,255,.82); padding: 28px 0 0; font-size: .84rem; border-top: 3px solid var(--gold); }
