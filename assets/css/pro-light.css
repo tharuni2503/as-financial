@@ -2276,20 +2276,23 @@ pre, code { white-space: pre-wrap; word-break: break-word; }
 .pcard-foot { margin-top:auto; }
 
 /* Header/ticker compactness */
-.topbar { padding: 4px 0; min-height: 34px; }
-.topbar .container { gap: 10px; }
-.topbar-item { font-size: .74rem; line-height: 1.2; }
-.live-ticker { min-height: 36px; }
-.live-ticker-badge { font-size: .62rem; }
-.live-ticker-item { font-size: .72rem; padding: 0 12px; }
+.topbar { padding: 2px 0; min-height: 28px; }
+.topbar .container { gap: 8px; min-height: 28px; }
+.topbar-item { font-size: .7rem; line-height: 1.2; }
+.live-ticker { min-height: 34px; }
+.live-ticker-badge { font-size: .6rem; }
+.live-ticker-item { font-size: .7rem; padding: 0 12px; }
 @media (max-width: 900px){
-  .topbar { min-height: 32px; }
-  .topbar-item { font-size: .7rem; }
-  .live-ticker { min-height: 34px; }
+  .topbar { min-height: 26px; padding: 2px 0; }
+  .topbar .container { min-height: 26px; }
+  .topbar-item { font-size: .66rem; }
+  .live-ticker { min-height: 32px; }
 }
 @media (max-width: 560px){
-  .topbar-item { font-size: .66rem; }
-  .live-ticker-item { font-size: .68rem; }
+  .topbar { min-height: 24px; }
+  .topbar .container { min-height: 24px; }
+  .topbar-item { font-size: .62rem; }
+  .live-ticker-item { font-size: .66rem; }
 }
 
 /* Final completion pass */
