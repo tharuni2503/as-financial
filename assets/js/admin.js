@@ -2548,11 +2548,17 @@
   /* ---------------------------------------------------------------- sidebar */
   function openSidebar() {
     $('#admin-sidebar').classList.add('open');
-    $('#sidebar-scrim').classList.add('open');
+    const scrim = document.getElementById('sidebar-scrim');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (scrim) scrim.classList.add('open');
+    if (overlay) overlay.classList.add('open');
   }
   function closeSidebar() {
     $('#admin-sidebar').classList.remove('open');
-    $('#sidebar-scrim').classList.remove('open');
+    const scrim = document.getElementById('sidebar-scrim');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (scrim) scrim.classList.remove('open');
+    if (overlay) overlay.classList.remove('open');
   }
 
   /* ---------------------------------------------------------------- events */
@@ -2759,7 +2765,17 @@
     // mobile sidebar
     $('#admin-burger').addEventListener('click', openSidebar);
     $('#sidebar-close').addEventListener('click', closeSidebar);
-    $('#sidebar-scrim').addEventListener('click', closeSidebar);
+    const sidebarScrim = document.getElementById('sidebar-scrim');
+    if (sidebarScrim) sidebarScrim.addEventListener('click', closeSidebar);
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+    document.addEventListener('click', (e) => {
+      const sb = document.getElementById('admin-sidebar');
+      if (!sb || !sb.classList.contains('open')) return;
+      if (window.innerWidth > 1024) return;
+      if (sb.contains(e.target) || e.target.closest('#admin-burger')) return;
+      closeSidebar();
+    });
 
     // add lead buttons
     $$('[data-add-lead]').forEach(b => b.addEventListener('click', () => leadModal()));

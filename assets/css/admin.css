@@ -727,15 +727,18 @@ table.table, .data-table { min-width: 560px; }
   .a-table thead th, .table thead th, .data-table thead th { padding: 9px 12px; }
   .a-table tbody td, .table tbody td, .data-table tbody td { padding: 10px 12px; }
 }
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: transparent; z-index: 119; opacity: 0; transition: opacity .25s; pointer-events: none; }
 @media (max-width: 1024px) {
-  .admin-sidebar { transform: translateX(-100%); transition: transform .25s ease; }
+  .admin-sidebar { transform: translateX(-100%); transition: transform .25s ease; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
   .admin-sidebar.open { transform: none; }
+  .admin-sidebar.open ~ .sidebar-overlay, .sidebar-overlay.open { display: block; opacity: 1; }
   .admin-main { margin-left: 0; }
   .admin-burger { display: inline-flex; }
   .sidebar-close { display: inline-flex; }
   .sidebar-scrim.open { display: block; }
   .topbar-search { width: min(280px, 34vw); }
   .settings-grid { grid-template-columns: 1fr; }
+}
 }
 @media (max-width: 760px) {
   .demo-banner { margin: 12px 14px 0; font-size: .74rem; }
@@ -1328,9 +1331,9 @@ html, body { max-width: 100%; overflow-x: hidden; }
 #view-overview .kpi-label { font-size: .8125rem; margin-bottom: 2px; }
 #view-overview .kpi-sub { font-size: .75rem; }
 #view-overview .kpi-chip { font-size: .6875rem; padding: 3px 8px; }
-@media (max-width: 1200px) { #view-overview .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px) { #view-overview .kpi-grid { gap: 10px; } #view-overview .kpi { padding: 12px; } #view-overview .kpi-value { font-size: 1.25rem; } }
-@media (max-width: 400px) { #view-overview .kpi-grid { gap: 8px; } #view-overview .kpi { padding: 10px; } #view-overview .kpi-value { font-size: 1.15rem; } }
+@media (max-width: 1200px) { #view-overview .kpi-grid, #view-analytics .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { #view-overview .kpi-grid, #view-analytics .kpi-grid { gap: 10px; } #view-overview .kpi, #view-analytics .kpi { padding: 12px; } #view-overview .kpi-value, #view-analytics .kpi-value { font-size: 1.25rem; } }
+@media (max-width: 400px) { #view-overview .kpi-grid, #view-analytics .kpi-grid { gap: 8px; } #view-overview .kpi, #view-analytics .kpi { padding: 10px; } #view-overview .kpi-value, #view-analytics .kpi-value { font-size: 1.15rem; } }
 
 /* Live status badge for charts */
 .live-badge {
