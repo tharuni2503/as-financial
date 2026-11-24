@@ -414,6 +414,16 @@
     }
   });
 
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const active = document.activeElement;
+    const navItem = active && active.closest ? active.closest('.nav-item') : null;
+    if (navItem) {
+      const link = navItem.querySelector('.nav-link');
+      if (link) { e.preventDefault(); link.focus(); }
+    }
+  });
+
   /* ---------- reveal on scroll ---------- */
   const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (document.querySelector('.reveal')) {
