@@ -2344,6 +2344,10 @@ pre, code { white-space: pre-wrap; word-break: break-word; }
 @media (max-width:940px){.site-footer{padding-top:36px;}.footer-compact{gap:22px 24px;}}
 @media (max-width:560px){.site-footer{padding-top:30px;}.footer-compact{gap:20px;padding-bottom:22px;}.footer-brand-name{font-size:1.08rem;}.footer-compact-brand p{font-size:.82rem;}.footer-compact-contact a,.footer-compact-contact .footer-hours{font-size:.8rem;}.footer-bottom{padding:14px 0 18px;}}
 
+/* Live ticker overlap fix */
+.live-ticker-marquee,.live-ticker-item{min-width:max-content;flex-shrink:0;}
+.live-ticker-item{display:inline-flex!important;}
+
 /* Global responsive hardening & design-system consolidation */
 html,body{max-width:100%;overflow-x:hidden;}
 img,video,canvas,svg{max-width:100%;height:auto;}
