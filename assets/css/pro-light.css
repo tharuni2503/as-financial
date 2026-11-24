@@ -1,5 +1,5 @@
 ﻿/* ==========================================================================
-   AS Financial â€” Professional Light Theme (v2)
+   AS Financial — Professional Light Theme (v2)
    Brand: navy #10294B Â· gold #D6A329 Â· ivory #FFFFFF  (taken from logo + posters)
    Loaded AFTER styles.css so it re-skins every page without touching markup rules.
    ========================================================================== */
@@ -132,7 +132,7 @@ h3, h4 { color: var(--navy); }
   .hero2-points li { font-size: .86rem; }
 }
 
-/* Layered depth scene â€” replaces the old WebGL wireframe. Pure CSS, subtle parallax. */
+/* Layered depth scene — replaces the old WebGL wireframe. Pure CSS, subtle parallax. */
 .depth-scene { position: relative; perspective: 1400px; min-height: 470px; }
 .depth-layer { position: absolute; transition: transform .25s ease-out; will-change: transform; }
 .ds-plate {
