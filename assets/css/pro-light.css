@@ -2349,11 +2349,13 @@ html,body{max-width:100%;overflow-x:hidden;}
 img,video,canvas,svg{max-width:100%;height:auto;}
 *,*::before,*::after{min-width:0;}
 :root{
+  color-scheme:light;
   --navy:#10294B;--navy-deep:#0B1F3A;--gold:#c9a227;--gold-light:#d6a329;
   --bg:#f7f9fc;--surface:#ffffff;--text:#1f2937;--muted:#64748b;--line:#e6edf5;
   --radius:14px;--radius-sm:10px;--shadow:0 8px 24px rgba(16,41,75,.06);
   --topbar-h:30px;--header-h:68px;--section-y:clamp(52px,6vw,88px);--card-pad:20px;
 }
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 body{color:var(--text);background:var(--bg);padding-top:calc(var(--topbar-h) + var(--header-h) + var(--ticker-h))!important;}
 .topbar{position:fixed;top:0;left:0;right:0;z-index:1100;}
 .site-header{top:var(--topbar-h)!important;}
