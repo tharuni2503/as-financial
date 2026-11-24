@@ -2392,3 +2392,12 @@ img,video,canvas,svg{max-width:100%;}
 .hero2-cta{display:flex;flex-wrap:wrap;gap:12px;align-items:stretch;}
 .hero2-cta .btn{flex:1 1 220px;min-width:0;justify-content:center;}
 @media (max-width:560px){.hero2-cta .btn{flex:1 1 100%;width:100%;}}
+
+/* Fix topbar/header/ticker alignment */
+:root{--topbar-h:34px;}
+body{padding-top:calc(var(--topbar-h) + var(--header-h) + var(--ticker-h))!important;}
+.topbar{position:fixed;top:0;left:0;right:0;z-index:1100;}
+.site-header{top:var(--topbar-h)!important;}
+.live-ticker{top:calc(var(--topbar-h) + var(--header-h))!important;}
+@media (max-width:900px){:root{--topbar-h:32px;}}
+@media (max-width:560px){:root{--topbar-h:32px;}}
