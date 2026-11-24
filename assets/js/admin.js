@@ -2558,6 +2558,7 @@
 
   /* ---------------------------------------------------------------- modal */
   let modalSubmitHandler = null;
+  let modalLastFocus = null;
 
   function openModal(opts) {
     $('#modal-title').textContent = opts.title || '';
@@ -2595,6 +2596,12 @@
     $('#modal-overlay').classList.remove('open');
     document.body.style.overflow = '';
     modalSubmitHandler = null;
+    if (modalLastFocus && typeof modalLastFocus.focus === 'function') {
+      const f = modalLastFocus; modalLastFocus = null;
+      setTimeout(() => { try { f.focus(); } catch (e) {} }, 0);
+    } else {
+      modalLastFocus = null;
+    }
   }
 
   function confirmDialog(title, message, onConfirm) {
@@ -2705,7 +2712,7 @@
       if (submitBtn) { submitBtn.disabled = true; submitBtn.setAttribute('aria-busy', 'true'); }
       err.classList.remove('show');
       api.available(true).then((ok) => {
-        if (!ok) throw Object.assign(new Error('Backend is unavailable. Start the server and try again.'), { status: 503 });
+        if (!ok) throw Object.assign(new Error('Backend is unavailable. Start the backend server (npm start) and verify database configuration.'), { status: 503 });
         return api.login(email, pass);
       }).then((result) => {
         if (result && !isAllowedAdminRole(result)) {
