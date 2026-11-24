@@ -1461,7 +1461,7 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .toolbar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
 .toolbar .search-box { flex:1 1 220px; min-width:0; }
 .toolbar select { min-height:44px; }
-@media (max-width:760px){ .toolbar { flex-direction:column; align-items:stretch; } .toolbar .search-box, .toolbar select { width:100%; } }
+@media (max-width:760px){ .toolbar { flex-direction:column; align-items:stretch; } .toolbar .search-box, .toolbar select { width:100%; flex:0 0 auto; } }
 .settings-grid { gap:18px; }
 .a-field { margin-bottom:14px; }
 .a-field label { display:block; margin-bottom:6px; font-weight:700; font-size:.78rem; color:var(--navy); }
