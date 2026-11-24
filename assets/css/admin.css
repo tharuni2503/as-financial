@@ -1122,6 +1122,8 @@ table.table, .data-table { min-width: 560px; }
   .card-head h3 { font-size: .9rem; }
   .kpi-value { font-size: 1.3rem; }
   .detail-grid-2 { grid-template-columns: 1fr; }
+  .modal-foot { flex-direction: column-reverse; align-items: stretch; }
+  .modal-foot .a-btn { flex: 0 0 auto; width: 100%; justify-content: center; }
 }
 
 
