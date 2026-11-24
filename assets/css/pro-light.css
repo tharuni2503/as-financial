@@ -2387,3 +2387,8 @@ img,video,canvas,svg{max-width:100%;}
   .reveal-zoom,.reveal-left,.reveal-right{opacity:1!important;transform:none!important;transition:none!important;}
   .parallax-y{transform:none!important;}
 }
+
+/* Hero CTA flexible */
+.hero2-cta{display:flex;flex-wrap:wrap;gap:12px;align-items:stretch;}
+.hero2-cta .btn{flex:1 1 220px;min-width:0;justify-content:center;}
+@media (max-width:560px){.hero2-cta .btn{flex:1 1 100%;width:100%;}}
