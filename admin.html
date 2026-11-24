@@ -639,11 +639,11 @@
                     <div class="a-field"><label for="set-tagline">Tagline</label><input id="set-tagline" name="tagline" type="text"></div>
                   </div>
                   <div class="form-row">
-                    <div class="a-field"><label for="set-phone">Phone (display)</label><input id="set-phone" name="phone" type="text"></div>
-                    <div class="a-field"><label for="set-phoneRaw">Phone (WhatsApp, digits only)</label><input id="set-phoneRaw" name="phoneRaw" type="text"></div>
+                    <div class="a-field"><label for="set-phone">Phone (display)</label><input id="set-phone" name="phone" type="text" autocomplete="tel"></div>
+                    <div class="a-field"><label for="set-phoneRaw">Phone (WhatsApp, digits only)</label><input id="set-phoneRaw" name="phoneRaw" type="text" autocomplete="tel"></div>
                   </div>
                   <div class="form-row one">
-                    <div class="a-field"><label for="set-email">Email</label><input id="set-email" name="email" type="email"></div>
+                    <div class="a-field"><label for="set-email">Email</label><input id="set-email" name="email" type="email" autocomplete="email"></div>
                   </div>
                   <div class="form-row one">
                     <div class="a-field"><label for="set-address">Office address</label><input id="set-address" name="address" type="text"></div>
@@ -697,12 +697,12 @@
               <div class="card-body" style="display:grid;gap:12px">
                 <form id="create-user-form" style="display:grid;gap:8px">
                   <div class="form-row">
-                    <div class="a-field"><label for="nu-name">Name</label><input id="nu-name" name="name" type="text" placeholder="Full name"></div>
-                    <div class="a-field"><label for="nu-email">Email</label><input id="nu-email" name="email" type="email" required placeholder="user@example.com"></div>
+                    <div class="a-field"><label for="nu-name">Name</label><input id="nu-name" name="name" type="text" placeholder="Full name" autocomplete="off"></div>
+                    <div class="a-field"><label for="nu-email">Email</label><input id="nu-email" name="email" type="email" required placeholder="user@example.com" autocomplete="off"></div>
                   </div>
                   <div class="form-row">
                     <div class="a-field"><label for="nu-role">Role</label><select id="nu-role" name="role"><option value="staff">Staff</option><option value="admin">Admin</option></select></div>
-                    <div class="a-field"><label for="nu-password">Password</label><input id="nu-password" name="password" type="password" minlength="10" required placeholder="At least 10 characters"></div>
+                    <div class="a-field"><label for="nu-password">Password</label><input id="nu-password" name="password" type="password" minlength="10" required placeholder="At least 10 characters" autocomplete="new-password"></div>
                   </div>
                   <div><button type="submit" class="a-btn a-btn-primary a-btn-sm">Create user</button></div>
                 </form>
