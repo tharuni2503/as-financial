@@ -100,7 +100,7 @@
     var limit = (state.expanded || q) ? matches.length : pp;
     cards.forEach(function (c) { c.style.display = 'none'; });
     matches.forEach(function (c, idx) { if (idx < limit) c.style.display = ''; });
-    if (empty) empty.hidden = matches.length > 0;
+    if (empty) { var noMatch = matches.length === 0; empty.hidden = !noMatch; empty.setAttribute('aria-hidden', noMatch ? 'false' : 'true'); }
     if (moreBtn) {
       if (q || matches.length <= pp) {
         moreBtn.hidden = true;
