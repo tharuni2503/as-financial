@@ -13,6 +13,10 @@
   --gold: #C9A227;
   --gold-deep: #9A7A1A;
   --gold-light: #D6A329;
+  /* Canonical aliases (align with pro-light.css) */
+  --bg: #f7f9fc;
+  --surface: #FFFFFF;
+  --text: #1f2937;
   --white: #FFFFFF;
   --cream: #FFFFFF;
   --cream-2: #F7F9FC;

@@ -714,6 +714,8 @@
   async function loadUsers() {
     const api = window.ASBackend;
     if (!api || !currentUser || (currentUser.role !== 'super_admin' && currentUser.role !== 'admin')) return;
+    const tbody = $('#users-table-body');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="table-empty">Loading users...</td></tr>';
     try {
       const data = await api.request('api/users');
       renderUsers((data && data.users) || []);
@@ -746,6 +748,8 @@
   async function loadSessions() {
     const api = window.ASBackend;
     if (!api || !currentUser) return;
+    const tbody = $('#sessions-table-body');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="table-empty">Loading sessions...</td></tr>';
     try {
       const data = await api.request('api/sessions');
       renderSessions((data && data.sessions) || []);
@@ -1280,6 +1284,7 @@
   async function renderAudit() {
     const api = window.ASBackend; const body = $('#audit-body');
     if (api && body) {
+      body.innerHTML = '<tr><td colspan="4" class="table-empty">Loading audit logs...</td></tr>';
       try {
         const d = await api.request('api/audit');
         const items = Array.isArray(d) ? d : (Array.isArray(d.items) ? d.items : Array.isArray(d.logs) ? d.logs : []);
@@ -1288,6 +1293,7 @@
     }
     const sBody = $('#audit-sessions-body');
     if (api && sBody) {
+      sBody.innerHTML = '<tr><td colspan="4" class="table-empty">Loading sessions...</td></tr>';
       try {
         const d = await api.request('api/sessions');
         const items = Array.isArray(d) ? d : (Array.isArray(d.sessions) ? d.sessions : Array.isArray(d.items) ? d.items : []);
