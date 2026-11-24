@@ -2434,3 +2434,25 @@ img{height:auto;}
   .container{padding-inline:16px;}
   .section-head h2{letter-spacing:-.02em;}
 }
+
+/* Design system consistency */
+:root{
+  --navy:#10294B;--navy-deep:#0B1F3A;--gold:#c9a227;--gold-light:#d6a329;
+  --bg:#f7f9fc;--surface:#ffffff;--text:#1f2937;--muted:#64748b;--line:#e6edf5;
+  --radius:14px;--radius-sm:10px;--shadow:0 8px 24px rgba(16,41,75,.06);
+}
+body{color:var(--text);background:var(--bg);}
+.card,.pcard,.blog-card,.testi-card,.panel,.box{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);}
+.btn,.a-btn{border-radius:10px;font-weight:700;}
+.btn-primary,.a-btn-primary{background:var(--navy);color:#fff;border-color:var(--navy);}
+.btn-primary:hover,.a-btn-primary:hover{filter:brightness(1.05);}
+input,select,textarea{border-radius:10px;border:1px solid #dbe5f0;}
+input:focus,select:focus,textarea:focus{border-color:#b7c8dd;box-shadow:0 0 0 3px rgba(16,41,75,.08);outline:none;}
+/* Mobile/touch */
+@media (max-width:900px){
+  a,button,.btn,.a-btn,input,select,textarea{min-height:44px;}
+  .nav-link,.dropdown a,.mobile-nav a{min-height:44px;display:flex;align-items:center;}
+}
+html,body{overflow-x:hidden;width:100%;}
+*{max-width:100%;}
+img,svg,video,canvas{max-width:100%;height:auto;}
