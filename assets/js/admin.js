@@ -2561,6 +2561,7 @@
   let modalLastFocus = null;
 
   function openModal(opts) {
+    modalLastFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     $('#modal-title').textContent = opts.title || '';
     $('#modal-sub').textContent = opts.sub || '';
     $('#modal-body').innerHTML = '<form id="modal-form">' + (opts.body || '') + '<button type="submit" class="sr-only">Save</button></form>';
@@ -2604,7 +2605,27 @@
     }
   }
 
+  document.addEventListener('keydown', (e) => {
+    const overlay = $('#modal-overlay');
+    if (!overlay || !overlay.classList.contains('open')) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeModal(); return; }
+    if (e.key === 'Tab') {
+      const focusables = Array.prototype.slice.call(overlay.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+        .filter(el => el.offsetParent !== null || overlay.contains(document.activeElement));
+      if (!focusables.length) { e.preventDefault(); return; }
+      const first = focusables[0], last = focusables[focusables.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first || !overlay.contains(document.activeElement)) { e.preventDefault(); last.focus(); }
+      } else if (document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    }
+  });
+  const _modalOverlay = $('#modal-overlay');
+  if (_modalOverlay) _modalOverlay.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });
+
   function confirmDialog(title, message, onConfirm) {
+    modalLastFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     $('#modal-title').textContent = title;
     $('#modal-sub').textContent = 'This action cannot be undone.';
     $('#modal-body').innerHTML = '<div style="display:flex;gap:12px;align-items:flex-start"><span style="width:38px;height:38px;border-radius:10px;background:var(--red-soft);color:var(--red);display:grid;place-items:center;flex:none"><svg class="icon" aria-hidden="true"><use href="#i-alert"></use></svg></span><p style="margin:0;font-size:.84rem;color:var(--muted);line-height:1.6">' + esc(message) + '</p></div>';
