@@ -1263,9 +1263,8 @@
     }).sort((a,b)=> (b.overdue-a.overdue) || (b.followUpDue-a.followUpDue) || (b.ageH-a.ageH)).slice(0,20);
     body.innerHTML = items.length ? items.map(x => {
       const l = x.l;
-      const sla = x.overdue ? ' <span class="badge b-red">Overdue</span>' : '';
       const due = l.followUpDate ? '<div style="font-size:.72rem;color:'+(x.followUpDue?'var(--red)':'var(--muted)')+'">Due '+esc(fmtShort(l.followUpDate))+'</div>' : '';
-      return '<tr><td><b style="color:var(--navy)">'+esc(l.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(l.product||'')+'</div></td><td><span class="badge badge-'+String(l.status).toLowerCase()+'">'+esc(l.status||'')+'</span>'+sla+'</td><td>'+esc(l.priority||'Medium')+'</td><td>'+esc(fmtShort(l.createdAt))+due+'</td><td><button type="button" class="a-btn a-btn-light a-btn-sm" data-view-link="leads">Open</button></td></tr>';
+      return '<tr><td><b style="color:var(--navy)">'+esc(l.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(l.product||'')+'</div></td><td><span class="badge badge-'+String(l.status).toLowerCase()+'">'+esc(l.status||'')+'</span></td><td>'+esc(l.priority||'Medium')+'</td><td>'+esc(fmtShort(l.createdAt))+due+'</td><td><button type="button" class="a-btn a-btn-light a-btn-sm" data-view-link="leads">Open</button></td></tr>';
     }).join('') : '<tr><td colspan="5" class="table-empty">No follow-ups found.</td></tr>';
   }
 
@@ -1331,7 +1330,7 @@
       '<td>' + esc(l.phone) + '</td>' +
       '<td>' + esc(l.product) + '<div style="font-size:.66rem;color:#5b6b7e">' + esc(l.city || 'Hyderabad') + '</div></td>' +
       '<td class="num">' + compact(amountToNumber(l.amount)) + '</td>' +
-      '<td>' + (() => { const ageH=(Date.now()-new Date(l.createdAt||l.receivedAt||0).getTime())/36e5; const sla=(l.status==='New'&&ageH>=24)||(l.status==='Contacted'&&ageH>=72); return '<span class="badge badge-' + String(l.status).toLowerCase() + '">' + esc(l.status) + '</span>' + (sla ? ' <span class="badge b-red" title="Follow-up overdue">Overdue</span>' : ''); })() + '</td>' +
+      '<td><span class="badge badge-' + String(l.status).toLowerCase() + '">' + esc(l.status) + '</span></td>' +
       '<td><span class="badge badge-' + String(l.priority || 'medium').toLowerCase() + '">' + esc(l.priority || 'Medium') + '</span></td>' +
       '<td title="' + fmtDate(l.createdAt) + '">' + fmtShort(l.createdAt) + '</td>' +
       '<td><div class="row-actions">' +
