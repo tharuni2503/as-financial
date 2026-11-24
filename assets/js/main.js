@@ -414,10 +414,12 @@
           if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
         });
       }, { threshold: 0.08, rootMargin: '120px 0px -20px 0px' });
+      const revealSel = '.reveal:not(.in), .reveal-zoom:not(.in), .reveal-left:not(.in), .reveal-right:not(.in)';
+      const isReveal = (el) => el.classList && (el.classList.contains('reveal') || el.classList.contains('reveal-zoom') || el.classList.contains('reveal-left') || el.classList.contains('reveal-right')) && !el.classList.contains('in');
       const watch = (root) => {
         if (!root || root.nodeType !== 1) return;
-        if (root.classList && root.classList.contains('reveal') && !root.classList.contains('in')) io.observe(root);
-        if (root.querySelectorAll) root.querySelectorAll('.reveal:not(.in)').forEach(el => io.observe(el));
+        if (isReveal(root)) io.observe(root);
+        if (root.querySelectorAll) root.querySelectorAll(revealSel).forEach(el => io.observe(el));
       };
       watch(document.body);
       // Content rendered later (gallery, reviews, offering images) must reveal too.
@@ -427,7 +429,7 @@
         }).observe(document.body, { childList: true, subtree: true });
       }
       // Safety net: never leave content hidden if the observer misses an element.
-      setTimeout(() => document.querySelectorAll('.reveal:not(.in)').forEach(el => el.classList.add('in')), 2400);
+      setTimeout(() => document.querySelectorAll(revealSel).forEach(el => el.classList.add('in')), 2400);
     } else {
       document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
     }
@@ -1697,6 +1699,29 @@
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
   });
+})();
+
+/* ---------- subtle parallax ---------- */
+(function () {
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) return;
+  const items = Array.prototype.slice.call(document.querySelectorAll('.parallax-y'));
+  if (!items.length) return;
+  let raf = 0;
+  function update() {
+    raf = 0;
+    const vh = window.innerHeight || 800;
+    items.forEach(el => {
+      const r = el.getBoundingClientRect();
+      const center = r.top + r.height / 2 - vh / 2;
+      const val = Math.max(-18, Math.min(18, -center * 0.06));
+      el.style.setProperty('--parallax-y', val.toFixed(2));
+    });
+  }
+  function request() { if (raf) return; raf = requestAnimationFrame(update); }
+  update();
+  window.addEventListener('scroll', request, { passive: true });
+  window.addEventListener('resize', request);
 })();
 
 /* ---------- mobile table scroll wrappers ---------- */

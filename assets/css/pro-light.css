@@ -2375,3 +2375,15 @@ img,video,canvas,svg{max-width:100%;}
   .container{padding-inline:14px;}
   h1{font-size:clamp(1.8rem,8vw,2.2rem);}
 }
+
+/* Scroll animations (Maglr-inspired, tasteful) */
+.reveal-zoom{opacity:0;transform:scale(.96) translateY(16px);transition:opacity .65s cubic-bezier(.2,.65,.2,1),transform .65s cubic-bezier(.2,.65,.2,1);will-change:opacity,transform;}
+.reveal-zoom.in{opacity:1;transform:none;}
+.reveal-left{opacity:0;transform:translateX(-24px);transition:opacity .65s cubic-bezier(.2,.65,.2,1),transform .65s cubic-bezier(.2,.65,.2,1);}
+.reveal-right{opacity:0;transform:translateX(24px);transition:opacity .65s cubic-bezier(.2,.65,.2,1),transform .65s cubic-bezier(.2,.65,.2,1);}
+.reveal-left.in,.reveal-right.in{opacity:1;transform:none;}
+.parallax-y{will-change:transform;transform:translate3d(0,calc(var(--parallax-y,0) * 1px),0);}
+@media (prefers-reduced-motion: reduce){
+  .reveal-zoom,.reveal-left,.reveal-right{opacity:1!important;transform:none!important;transition:none!important;}
+  .parallax-y{transform:none!important;}
+}
