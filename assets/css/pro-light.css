@@ -2389,6 +2389,8 @@ input:focus,select:focus,textarea:focus{border-color:#b7c8dd;box-shadow:0 0 0 3p
 .reveal-left.in,.reveal-right.in{opacity:1;transform:none;}
 .parallax-y{will-change:transform;transform:translate3d(0,calc(var(--parallax-y,0) * 1px),0);}
 @media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto!important;}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}
   .reveal-zoom,.reveal-left,.reveal-right{opacity:1!important;transform:none!important;transition:none!important;}
   .parallax-y{transform:none!important;}
 }
