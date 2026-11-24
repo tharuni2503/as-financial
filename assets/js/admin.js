@@ -3104,7 +3104,7 @@
     $('#notif-btn').addEventListener('click', (e) => { e.stopPropagation(); $('#notif-menu').classList.toggle('open'); $('#profile-menu').classList.remove('open'); });
     document.addEventListener('click', (e) => {
       const rb = e.target.closest('#notif-refresh-btn, .notif-refresh-btn');
-      if (rb) { e.preventDefault(); e.stopPropagation(); renderNotifications(); if (typeof toast === 'function') toast('Notifications refreshed.'); }
+      if (rb) { e.preventDefault(); e.stopPropagation(); syncSlaNotifications(); updateCounts(); renderNotifications(); if (typeof toast === 'function') toast('Notifications refreshed.'); }
     });
     $('#profile-btn').addEventListener('click', (e) => { e.stopPropagation(); $('#profile-menu').classList.toggle('open'); $('#notif-menu').classList.remove('open'); });
     document.addEventListener('click', (e) => {
