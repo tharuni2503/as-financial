@@ -1481,3 +1481,30 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .form-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
 .form-row.one{grid-template-columns:1fr;}
 @media(max-width:760px){.form-row,.form-row.one{grid-template-columns:1fr;}.setting-block{padding:14px;}.stage-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;}}
+
+/* Admin polish pass */
+.kpi-grid{gap:16px;margin-bottom:20px;}
+.kpi{border-radius:14px;padding:18px;box-shadow:0 1px 2px rgba(16,41,75,.04);}
+.kpi-value{line-height:1.1;letter-spacing:-.02em;}
+.kpi-label{margin-top:6px;}
+.kpi-sub{margin-top:8px;}
+.card{border-radius:14px;}
+.card-head{padding:16px 18px;gap:12px;}
+.card-body{padding:18px;}
+.chart-wrap{min-height:220px;}
+.chart-wrap canvas{width:100%!important;height:100%!important;}
+.table-wrap{border-radius:12px;overflow:auto;background:#fff;}
+.a-table thead th{font-size:.72rem;letter-spacing:.04em;}
+.a-table tbody td{font-size:.8rem;vertical-align:middle;}
+.a-table tbody tr:hover{background:#fbfdff;}
+.btn,.a-btn,button{transition:all .18s ease;}
+.a-btn:hover,.btn:hover{transform:translateY(-1px);}
+.a-btn:active,.btn:active{transform:translateY(0);}
+.loading-state,.skeleton{background:linear-gradient(90deg,#eef3f8 25%,#f7fafc 37%,#eef3f8 63%);background-size:400% 100%;animation:as-shimmer 1.3s ease infinite;border-radius:8px;color:transparent!important;}
+@keyframes as-shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+@media (max-width:768px){
+  .kpi-grid{gap:12px;}
+  .kpi{padding:14px;}
+  .card-head,.card-body{padding:14px;}
+  .chart-wrap{min-height:200px;}
+}

@@ -2408,3 +2408,29 @@ body{padding-top:calc(var(--topbar-h) + var(--header-h) + var(--ticker-h))!impor
 .live-ticker{top:calc(var(--topbar-h) + var(--header-h))!important;}
 @media (max-width:900px){:root{--topbar-h:26px;--header-h:60px;}}
 @media (max-width:560px){:root{--topbar-h:24px;--header-h:56px;}}
+
+/* Consistency polish pass */
+:root{--section-y:clamp(52px,6vw,88px);--card-radius:16px;--card-pad:20px;}
+.section{padding:var(--section-y) 0;}
+.section-tight{padding:clamp(40px,4.5vw,64px) 0;}
+.section-head{margin-bottom:clamp(28px,4vw,42px);}
+.section-head p{max-width:62ch;}
+.grid-2,.grid-3,.grid-4,.pgrid,.blog-grid,.testi-grid,.benefits-grid{gap:20px;}
+.card,.pcard,.blog-card,.testi-card,.benefit-card,.loan-card{border-radius:var(--card-radius);}
+.btn{transition:transform .2s ease,box-shadow .2s ease,background-color .2s ease,color .2s ease,border-color .2s ease;}
+.btn:hover{transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid rgba(214,163,41,.45);outline-offset:2px;}
+img{height:auto;}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+@media (max-width:768px){
+  :root{--card-pad:16px;}
+  .section{padding:48px 0;}
+  .section-head{margin-bottom:24px;}
+  .grid-2,.grid-3,.grid-4,.blog-grid,.testi-grid,.benefits-grid{gap:16px;}
+}
+@media (max-width:560px){
+  .section{padding:42px 0;}
+  .container{padding-inline:16px;}
+  .section-head h2{letter-spacing:-.02em;}
+}
