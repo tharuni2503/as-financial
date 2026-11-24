@@ -243,6 +243,15 @@
 
   /* ---------- header ---------- */
   const header = document.querySelector('.site-header');
+  const syncTopbarHeight = () => {
+    const topbar = document.querySelector('.topbar');
+    if (!topbar) return;
+    const h = Math.ceil(topbar.getBoundingClientRect().height);
+    if (h > 0) document.documentElement.style.setProperty('--topbar-h', h + 'px');
+  };
+  syncTopbarHeight();
+  window.addEventListener('resize', syncTopbarHeight);
+  window.addEventListener('load', syncTopbarHeight);
   if (header) {
     const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 12);
     onScroll();
