@@ -100,7 +100,13 @@
     var limit = (state.expanded || q) ? matches.length : pp;
     cards.forEach(function (c) { c.style.display = 'none'; });
     matches.forEach(function (c, idx) { if (idx < limit) c.style.display = ''; });
-    if (empty) { var noMatch = matches.length === 0; empty.hidden = !noMatch; empty.setAttribute('aria-hidden', noMatch ? 'false' : 'true'); }
+    if (empty) {
+      var noMatch = matches.length === 0;
+      var noData = !list.length && !q && state.f === 'all';
+      empty.textContent = noData ? 'Lender information is loading. Please refresh if it does not appear.' : 'No lender matches your search. Try another name, category or loan type, or ask our advisor for help.';
+      empty.hidden = !noMatch;
+      empty.setAttribute('aria-hidden', noMatch ? 'false' : 'true');
+    }
     if (moreBtn) {
       if (q || matches.length <= pp) {
         moreBtn.hidden = true;
@@ -114,6 +120,12 @@
   }
 
   function mount() {
+    var defaultsNow = window.AS_LENDERS || defaults || {};
+    var catsNow = defaultsNow.categories || cats;
+    var prodsNow = defaultsNow.products || prods;
+    if ((!list || !list.length) && Array.isArray(defaultsNow.list) && defaultsNow.list.length) {
+      cats = catsNow; prods = prodsNow; list = defaultsNow.list.slice();
+    }
     list = list.map(norm).filter(Boolean);
     grid.innerHTML = list.map(card).join('');
     cards = $$('.lp2-item', grid);
@@ -187,6 +199,10 @@
 
   // Initial render with bundled fallback, then try backend content.
   mount();
+  if (!list.length) {
+    setTimeout(function(){ if (!list.length) mount(); }, 600);
+    setTimeout(function(){ if (!list.length) mount(); }, 1800);
+  }
   loadFromBackend().then(function () {
     // Re-mount if backend provided lenders (list already replaced when non-empty)
     mount();
