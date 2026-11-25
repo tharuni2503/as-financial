@@ -161,7 +161,16 @@ async function findEnquiry(id) {
 async function updateEnquiry(id, patch) {
   const enquiry = await findEnquiry(id);
   if (!enquiry) return null;
-  Object.assign(enquiry, patch);
+  const next = Object.assign({}, enquiry, patch || {});
+  if (patch && patch.internalNote) {
+    const notes = Array.isArray(next.internalNotes) ? next.internalNotes.slice() : [];
+    notes.push(patch.internalNote);
+    if (notes.length > 100) notes.splice(0, notes.length - 100);
+    next.internalNotes = notes;
+    delete next.internalNote;
+  }
+  if (next.status) next.handled = String(next.status) !== 'New';
+  Object.assign(enquiry, next);
   await save();
   return enquiry;
 }

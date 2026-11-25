@@ -447,6 +447,8 @@ table.table, .data-table { min-width: 560px; }
 .badge-medium { background: var(--amber-soft); color: var(--amber); }
 .badge-low { background: #eef1f5; color: var(--muted); }
 .badge-accepted { background: var(--green-soft); color: var(--green); }
+.badge-approved { background: var(--green-soft); color: var(--green); }
+.badge-in-progress { background: var(--purple-soft); color: var(--purple); }
 .badge-declined { background: var(--red-soft); color: var(--red); }
 .b-blue { background: var(--blue-soft); color: var(--blue); }
 .b-amber { background: var(--amber-soft); color: var(--amber); }

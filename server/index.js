@@ -542,15 +542,19 @@ app.post('/api/enquiries', asyncRoute(async (req, res) => {
     return;
   }
 
-  // Server-side duplicate guard: same phone+product within 2 minutes.
+  // Server-side duplicate guard: submissionId or same phone+product within 2 minutes.
   try {
     const recent = await store.listEnquiries();
     const now = Date.now();
+    const incomingSubmission = String(data.submissionId || '').trim();
     const dup = (Array.isArray(recent) ? recent : []).find((e) => {
-      if (!e || !e.receivedAt) return false;
+      if (!e) return false;
+      const existingSubmission = String(e.submissionId || (e.payload && e.payload.submissionId) || '').trim();
+      if (incomingSubmission && existingSubmission && incomingSubmission === existingSubmission) return true;
+      if (!e.receivedAt) return false;
       const age = now - Date.parse(e.receivedAt);
       if (!(age >= 0 && age < 120000)) return false;
-      const samePhone = String(e.phone || '').replace(/D/g, '') === String(data.phone || '').replace(/D/g, '');
+      const samePhone = String(e.phone || '').replace(/\D/g, '') === String(data.phone || '').replace(/\D/g, '');
       const sameProduct = String(e.product || '').toLowerCase() === String(data.product || '').toLowerCase();
       return samePhone && sameProduct;
     });
@@ -564,7 +568,13 @@ app.post('/api/enquiries', asyncRoute(async (req, res) => {
     {
       id: 'ENQ-' + Date.now().toString(36).toUpperCase(),
       receivedAt: new Date().toISOString(),
-      handled: false
+      handled: false,
+      status: 'New',
+      followUpDate: '',
+      internalNotes: [],
+      consent: true,
+      consentAt: data.consentAt || new Date().toISOString(),
+      submissionId: data.submissionId || ''
     },
     data
   );
@@ -604,17 +614,39 @@ app.get('/api/enquiries', requireSession, requireRole('advisor', 'staff', 'admin
 
   const q = validate.text(req.query.q, 120).toLowerCase();
   const handled = typeof req.query.handled === 'string' ? req.query.handled.toLowerCase() : '';
+  const status = validate.text(req.query.status, 40);
+  const product = validate.text(req.query.product, 80).toLowerCase();
+  const sort = validate.text(req.query.sort, 30).toLowerCase() || 'receivedat';
+  const order = validate.text(req.query.order, 4).toLowerCase() === 'asc' ? 'asc' : 'desc';
+
   if (handled === 'true' || handled === 'false') {
     const want = handled === 'true';
     enquiries = enquiries.filter((e) => Boolean(e && e.handled) === want);
   }
+  if (status) {
+    enquiries = enquiries.filter((e) => String(e && e.status || (e && e.handled ? 'Contacted' : 'New')) === status);
+  }
+  if (product) {
+    enquiries = enquiries.filter((e) => String(e && e.product || '').toLowerCase() === product);
+  }
   if (q) {
     enquiries = enquiries.filter((e) => {
-      const hay = [e && e.id, e && e.name, e && e.phone, e && e.email, e && e.product, e && e.city, e && e.message, e && e.source]
+      const hay = [e && e.id, e && e.name, e && e.phone, e && e.email, e && e.product, e && e.city, e && e.message, e && e.source, e && e.status]
         .filter(Boolean).join(' ').toLowerCase();
       return hay.includes(q);
     });
   }
+
+  enquiries.sort((a, b) => {
+    let av = 0; let bv = 0;
+    if (sort === 'name') { av = String(a && a.name || '').toLowerCase(); bv = String(b && b.name || '').toLowerCase(); }
+    else if (sort === 'status') { av = String(a && a.status || '').toLowerCase(); bv = String(b && b.status || '').toLowerCase(); }
+    else if (sort === 'product') { av = String(a && a.product || '').toLowerCase(); bv = String(b && b.product || '').toLowerCase(); }
+    else { av = Date.parse(a && a.receivedAt || 0) || 0; bv = Date.parse(b && b.receivedAt || 0) || 0; }
+    if (av < bv) return order === 'asc' ? -1 : 1;
+    if (av > bv) return order === 'asc' ? 1 : -1;
+    return 0;
+  });
 
   const total = enquiries.length;
   const hasLimit = req.query.limit !== undefined || req.query.offset !== undefined || req.query.page !== undefined;
@@ -634,7 +666,7 @@ app.get('/api/enquiries', requireSession, requireRole('advisor', 'staff', 'admin
 
 app.patch('/api/enquiries/:id', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
   const patch = {};
-  const allowedStatus = new Set(['New', 'Contacted', 'Accepted', 'Qualified', 'Documents', 'Sanctioned', 'Disbursed', 'Declined', 'Lost']);
+  const allowedStatus = new Set(['New', 'Contacted', 'In Progress', 'Approved', 'Rejected', 'Accepted', 'Qualified', 'Documents', 'Sanctioned', 'Disbursed', 'Declined', 'Lost']);
   if (req.body && typeof req.body.status === 'string') {
     const status = String(req.body.status).trim();
     if (allowedStatus.has(status)) {
@@ -643,13 +675,21 @@ app.patch('/api/enquiries/:id', requireSession, requireRole('advisor', 'staff', 
     }
   }
   if (req.body && typeof req.body.handled === 'boolean') patch.handled = req.body.handled;
-  if (req.body && typeof req.body.note === 'string') patch.note = validate.text(req.body.note, 500);
+  if (req.body && typeof req.body.note === 'string') patch.note = validate.text(req.body.note, 1000);
+  if (req.body && typeof req.body.followUpDate === 'string') {
+    const d = validate.text(req.body.followUpDate, 20);
+    patch.followUpDate = /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : (d === '' ? '' : undefined);
+  }
+  if (req.body && typeof req.body.internalNote === 'string') {
+    const t = validate.text(req.body.internalNote, 1000);
+    if (t) patch.internalNote = { at: new Date().toISOString(), by: (req.session && req.session.name) || (req.session && req.session.email) || 'Admin', text: t };
+  }
   const updated = await store.updateEnquiry(String(req.params.id), patch);
   if (!updated) {
     res.status(404).json({ error: 'Enquiry not found.' });
     return;
   }
-  audit(req, { type: 'enquiry.updated', summary: 'Enquiry updated: ' + String(req.params.id), targetType: 'enquiry', targetId: String(req.params.id), meta: patch });
+  audit(req, { type: 'enquiry.updated', summary: 'Enquiry updated: ' + String(req.params.id), targetType: 'enquiry', targetId: String(req.params.id), meta: { status: patch.status, handled: patch.handled, hasNote: !!patch.note, hasInternalNote: !!patch.internalNote, followUpDate: patch.followUpDate } });
   res.json({ ok: true, enquiry: updated });
 }));
 

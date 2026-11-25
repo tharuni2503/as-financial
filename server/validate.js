@@ -133,22 +133,33 @@ function enquiry(payload) {
   const email = text(payload.email, 120);
   if (email && !EMAIL.test(email)) throw new HttpError(400, 'Please enter a valid email address.');
 
-  const consent = payload.consent;
-  if (consent === false || consent === 'false') {
+  const product = text(payload.product, 80, { required: true, label: 'loan type' });
+  const amount = text(payload.amount, 40);
+  if (amount && !/^[\d,\s.\-₹INRLAKHSCRlakhscr]+$/.test(amount)) {
+    throw new HttpError(400, 'Please enter a valid requested amount.');
+  }
+
+  const consent = payload.consent === true || payload.consent === 'true' || payload.consent === 'on' || payload.consent === 1;
+  if (!consent) {
     throw new HttpError(400, 'Please accept the consent note so we can contact you.');
   }
+
+  const submissionId = text(payload.submissionId, 80).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80);
 
   return {
     name,
     phone,
     email,
-    product: text(payload.product, 80) || 'General enquiry',
-    amount: text(payload.amount, 40),
+    product: product || 'General enquiry',
+    amount,
     income: text(payload.income, 40),
     employment: text(payload.employment, 60),
     city: text(payload.city, 60),
     message: text(payload.message, 2000),
-    source: text(payload.source, 60) || 'Website form'
+    source: text(payload.source, 60) || 'Website form',
+    consent: true,
+    consentAt: new Date().toISOString(),
+    submissionId
   };
 }
 

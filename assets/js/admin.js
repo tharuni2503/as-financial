@@ -68,7 +68,20 @@
 
   const STAGES = ['Logged', 'Documents', 'Underwriting', 'Sanctioned', 'Disbursed', 'Rejected'];
   const STAGE_PROGRESS = { Logged: 15, Documents: 35, Underwriting: 60, Sanctioned: 85, Disbursed: 100, Rejected: 0 };
-  const STATUSES = ['New', 'Contacted', 'Accepted', 'Declined'];
+  const STATUSES = ['New', 'Contacted', 'In Progress', 'Approved', 'Rejected'];
+  const LEGACY_STATUS_MAP = {
+    'Accepted': 'Approved', 'Qualified': 'In Progress', 'Documents': 'In Progress', 'Sanctioned': 'In Progress', 'Disbursed': 'Approved',
+    'Declined': 'Rejected', 'Lost': 'Rejected', 'Inactive': 'Rejected'
+  };
+  function normalizeStatus(status, handled) {
+    const raw = String(status || '').trim();
+    if (STATUSES.indexOf(raw) !== -1) return raw;
+    if (LEGACY_STATUS_MAP[raw]) return LEGACY_STATUS_MAP[raw];
+    return handled ? 'Contacted' : 'New';
+  }
+  function statusBadgeClass(status) {
+    return 'badge badge-' + String(status || 'new').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  }
 
   const store = {
     get(key, fallback) {
@@ -199,6 +212,9 @@
 
   /* ------------------------------------------------------------ server enquiries */
   function mapServerEnquiry(e) {
+    const status = normalizeStatus(e.status, e.handled);
+    const internalNotes = Array.isArray(e.internalNotes) ? e.internalNotes : [];
+    const notes = internalNotes.length ? internalNotes.map(n => ({ at: n.at || e.receivedAt || new Date().toISOString(), text: n.text || '', by: n.by || 'Admin' })) : (e.note ? [{ at: e.receivedAt || new Date().toISOString(), text: e.note, by: 'Server' }] : []);
     return {
       id: e.id,
       name: e.name || '',
@@ -209,12 +225,17 @@
       amount: amountToNumber(e.amount) || 0,
       source: e.source || 'Website form',
       employment: e.employment || '',
-      status: (['New','Contacted','Accepted','Qualified','Documents','Sanctioned','Disbursed','Declined','Lost'].indexOf(e.status) !== -1) ? e.status : (e.handled ? 'Contacted' : 'New'),
+      status: status,
       priority: 'Medium',
       owner: 'Admin',
       message: e.message || '',
+      followUpDate: e.followUpDate || '',
+      consent: !!e.consent,
+      consentAt: e.consentAt || '',
+      submissionId: e.submissionId || '',
+      internalNotes: internalNotes,
       createdAt: e.receivedAt || new Date().toISOString(),
-      notes: e.note ? [{ at: e.receivedAt || new Date().toISOString(), text: e.note, by: 'Server' }] : [],
+      notes: notes,
       _server: true,
       _handled: !!e.handled
     };
@@ -1320,8 +1341,8 @@
     const pageItems = list.slice(start, start + PAGE_SIZE);
 
     $('#leads-count-label').textContent = list.length;
-    $('#leads-open').textContent = leads.filter(l => ['New', 'Contacted'].includes(l.status)).length;
-    $('#leads-converted').textContent = leads.filter(l => l.status === 'Accepted').length;
+    $('#leads-open').textContent = leads.filter(l => ['New', 'Contacted', 'In Progress'].includes(l.status)).length;
+    $('#leads-converted').textContent = leads.filter(l => ['Approved', 'Accepted'].includes(l.status)).length;
     $('#leads-value').textContent = compact(leads.reduce((s, l) => s + amountToNumber(l.amount), 0));
 
     $('#leads-body').innerHTML = pageItems.length ? pageItems.map(l =>
@@ -1330,9 +1351,9 @@
       '<td>' + esc(l.phone) + '</td>' +
       '<td>' + esc(l.product) + '<div style="font-size:.66rem;color:#5b6b7e">' + esc(l.city || 'Hyderabad') + '</div></td>' +
       '<td class="num">' + compact(amountToNumber(l.amount)) + '</td>' +
-      '<td><span class="badge badge-' + String(l.status).toLowerCase() + '">' + esc(l.status) + '</span></td>' +
+      '<td><span class="' + statusBadgeClass(l.status) + '">' + esc(l.status) + '</span></td>' +
       '<td><span class="badge badge-' + String(l.priority || 'medium').toLowerCase() + '">' + esc(l.priority || 'Medium') + '</span></td>' +
-      '<td title="' + fmtDate(l.createdAt) + '">' + fmtShort(l.createdAt) + '</td>' +
+      '<td title="' + fmtDate(l.createdAt) + '">' + fmtShort(l.createdAt) + (l.followUpDate ? '<div style="font-size:.68rem;color:' + (new Date(l.followUpDate+"T23:59:59").getTime() < Date.now() ? "var(--red)" : "var(--muted)") + '">Follow-up ' + esc(fmtShort(l.followUpDate)) + '</div>' : '') + '</td>' +
       '<td><div class="row-actions">' +
         '<a class="a-btn-icon" href="https://wa.me/' + esc(String(l.phone || "").replace(/\D/g, "").replace(/^0/, "91").slice(-12)) + '" target="_blank" rel="noopener noreferrer" title="WhatsApp"><svg class="icon" aria-hidden="true"><use href="#i-whatsapp"></use></svg></a>' +
         '<button class="a-btn-icon" data-action="edit-lead" data-id="' + esc(l.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
@@ -1426,7 +1447,7 @@
             if ((lead.followUpDate || '') !== (payload.followUpDate || '')) addTimeline(payload, 'follow_up_updated', payload.followUpDate ? ('Next follow-up: ' + payload.followUpDate) : 'Follow-up cleared');
             if ((lead.message || '') !== (payload.message || '') && payload.message) addTimeline(payload, 'note_updated', payload.message);
             if (lead._server && canUseApi) {
-              await api.request('api/enquiries/' + lead.id, { method: 'PATCH', body: { status: payload.status, handled: payload.status !== 'New', note: payload.message || '' } }).catch(()=>{});
+              await api.request('api/enquiries/' + lead.id, { method: 'PATCH', body: { status: payload.status, handled: payload.status !== 'New', note: payload.message || '', followUpDate: payload.followUpDate || '' } }).catch(()=>{});
               Object.assign(lead, payload);
             } else if (canUseApi) {
               const res = await api.request('api/admin/leads/' + encodeURIComponent(lead.id), { method: 'PATCH', body: payload }).catch(() => null);
@@ -1490,7 +1511,7 @@
         '<div class="detail-box"><small>City</small><b>' + esc(lead.city || 'Hyderabad') + '</b></div>' +
         '<div class="detail-box"><small>Employment</small><b>' + esc(lead.employment || '—') + '</b></div>' +
         '<div class="detail-box"><small>Next follow-up</small><b>' + esc(lead.followUpDate ? fmtShort(lead.followUpDate) : 'Not set') + '</b></div>' +
-        '<div class="detail-box"><small>Last contacted</small><b>' + esc(lead.lastContactedAt ? fmtShort(lead.lastContactedAt) : '—') + '</b></div>' +
+        '<div class="detail-box"><small>Consent</small><b>' + (lead.consent ? 'Recorded' : 'Not recorded') + '</b></div>' +
       '</div>' +
       '<div class="drawer-section"><h3>Update status</h3><select id="drawer-status" style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:.8rem">' + statusOptions + '</select></div>' +
       '<div class="drawer-section"><h3>Contact</h3>' +
@@ -1554,7 +1575,7 @@
       lead.timeline.unshift({ at, event: 'note_added', detail: text.slice(0, 240) });
       if (lead.timeline.length > 50) lead.timeline.length = 50;
       if (lead._server && window.ASBackend && window.ASBackend.request) {
-        window.ASBackend.request('api/enquiries/' + lead.id, { method: 'PATCH', body: { note: text } }).catch(function () {});
+        window.ASBackend.request('api/enquiries/' + lead.id, { method: 'PATCH', body: { note: text, internalNote: text } }).catch(function () {});
       }
       save.leads();
       input.value = '';

@@ -174,10 +174,17 @@ async function setSection(section, value) {
 }
 
 function rowToEnquiry(row) {
-  return Object.assign({}, row.payload || {}, {
+  const payload = row.payload && typeof row.payload === 'object' ? row.payload : {};
+  return Object.assign({}, payload, {
     id: row.id,
     receivedAt: row.received_at instanceof Date ? row.received_at.toISOString() : row.received_at,
     handled: Boolean(row.handled),
+    status: row.status || payload.status || (row.handled ? 'Contacted' : 'New'),
+    followUpDate: row.follow_up_date ? String(row.follow_up_date).slice(0, 10) : (payload.followUpDate || ''),
+    consent: typeof row.consent === 'boolean' ? row.consent : Boolean(payload.consent),
+    consentAt: row.consent_at instanceof Date ? row.consent_at.toISOString() : (row.consent_at || payload.consentAt || ''),
+    submissionId: row.submission_id || payload.submissionId || '',
+    internalNotes: Array.isArray(row.internal_notes) ? row.internal_notes : (Array.isArray(payload.internalNotes) ? payload.internalNotes : []),
     name: row.name || '',
     phone: row.phone || '',
     email: row.email || '',
@@ -193,30 +200,50 @@ function rowToEnquiry(row) {
 }
 
 async function addEnquiry(enquiry) {
-  await getPool().query(
-    `INSERT INTO enquiries
-      (id, received_at, handled, name, phone, email, product, amount, income, employment, city, source, message, note, payload, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,NOW())
-     ON CONFLICT (id) DO NOTHING`,
-    [
-      enquiry.id,
-      enquiry.receivedAt || new Date().toISOString(),
-      Boolean(enquiry.handled),
-      String(enquiry.name || ''),
-      String(enquiry.phone || ''),
-      String(enquiry.email || ''),
-      String(enquiry.product || ''),
-      String(enquiry.amount || ''),
-      String(enquiry.income || ''),
-      String(enquiry.employment || ''),
-      String(enquiry.city || ''),
-      String(enquiry.source || ''),
-      String(enquiry.message || ''),
-      String(enquiry.note || ''),
-      JSON.stringify(enquiry)
-    ]
-  );
-  // Trim to max
+  const payload = JSON.stringify(enquiry);
+  const baseArgs = [
+    enquiry.id,
+    enquiry.receivedAt || new Date().toISOString(),
+    Boolean(enquiry.handled),
+    String(enquiry.name || ''),
+    String(enquiry.phone || ''),
+    String(enquiry.email || ''),
+    String(enquiry.product || ''),
+    String(enquiry.amount || ''),
+    String(enquiry.income || ''),
+    String(enquiry.employment || ''),
+    String(enquiry.city || ''),
+    String(enquiry.source || ''),
+    String(enquiry.message || ''),
+    String(enquiry.note || ''),
+    payload
+  ];
+  const extArgs = baseArgs.concat([
+    String(enquiry.status || (enquiry.handled ? 'Contacted' : 'New')),
+    enquiry.followUpDate || null,
+    Boolean(enquiry.consent),
+    enquiry.consentAt || null,
+    String(enquiry.submissionId || ''),
+    JSON.stringify(Array.isArray(enquiry.internalNotes) ? enquiry.internalNotes : [])
+  ]);
+  try {
+    await getPool().query(
+      `INSERT INTO enquiries
+        (id, received_at, handled, name, phone, email, product, amount, income, employment, city, source, message, note, payload, status, follow_up_date, consent, consent_at, submission_id, internal_notes, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16,$17,$18,$19,$20,$21::jsonb,NOW())
+       ON CONFLICT (id) DO NOTHING`,
+      extArgs
+    );
+  } catch (e) {
+    if (!(e && e.code === '42703')) throw e;
+    await getPool().query(
+      `INSERT INTO enquiries
+        (id, received_at, handled, name, phone, email, product, amount, income, employment, city, source, message, note, payload, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,NOW())
+       ON CONFLICT (id) DO NOTHING`,
+      baseArgs
+    );
+  }
   await getPool().query(
     `DELETE FROM enquiries WHERE id IN (
        SELECT id FROM enquiries ORDER BY received_at DESC OFFSET $1
@@ -241,10 +268,40 @@ async function updateEnquiry(id, patch) {
   const current = await findEnquiry(id);
   if (!current) return null;
   const next = Object.assign({}, current, patch || {});
-  await getPool().query(
-    `UPDATE enquiries SET handled=$2, note=$3, payload=$4::jsonb, updated_at=NOW() WHERE id=$1`,
-    [id, Boolean(next.handled), String(next.note || ''), JSON.stringify(next)]
-  );
+  if (patch && patch.internalNote) {
+    const notes = Array.isArray(next.internalNotes) ? next.internalNotes.slice() : [];
+    notes.push(patch.internalNote);
+    if (notes.length > 100) notes.splice(0, notes.length - 100);
+    next.internalNotes = notes;
+    delete next.internalNote;
+  }
+  if (next.status) next.handled = String(next.status) !== 'New';
+  const payload = JSON.stringify(next);
+  try {
+    await getPool().query(
+      `UPDATE enquiries
+       SET handled=$2, note=$3, payload=$4::jsonb, status=$5, follow_up_date=$6, consent=$7, consent_at=$8, submission_id=$9, internal_notes=$10::jsonb, updated_at=NOW()
+       WHERE id=$1`,
+      [
+        id,
+        Boolean(next.handled),
+        String(next.note || ''),
+        payload,
+        String(next.status || (next.handled ? 'Contacted' : 'New')),
+        next.followUpDate || null,
+        Boolean(next.consent),
+        next.consentAt || null,
+        String(next.submissionId || ''),
+        JSON.stringify(Array.isArray(next.internalNotes) ? next.internalNotes : [])
+      ]
+    );
+  } catch (e) {
+    if (!(e && e.code === '42703')) throw e;
+    await getPool().query(
+      `UPDATE enquiries SET handled=$2, note=$3, payload=$4::jsonb, updated_at=NOW() WHERE id=$1`,
+      [id, Boolean(next.handled), String(next.note || ''), payload]
+    );
+  }
   await touchUpdatedAt();
   return next;
 }
