@@ -27,6 +27,16 @@
     const d = new Date(iso);
     return isNaN(d) ? '—' : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
   };
+  const fmtDateTimeIST = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d)) return '—';
+    try {
+      return d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) + ' IST';
+    } catch (e) {
+      return d.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+  };
   const timeAgo = (iso) => {
     const diff = Date.now() - new Date(iso).getTime();
     const mins = Math.floor(diff / 60000);
@@ -230,6 +240,8 @@
       owner: 'Admin',
       message: e.message || '',
       followUpDate: e.followUpDate || '',
+      followUpCompletedAt: e.followUpCompletedAt || '',
+      followUpActivity: Array.isArray(e.followUpActivity) ? e.followUpActivity : [],
       consent: !!e.consent,
       consentAt: e.consentAt || '',
       submissionId: e.submissionId || '',
@@ -826,6 +838,7 @@
   function renderView(view) {
     if (view === 'overview') renderOverview();
     else if (view === 'leads') renderLeads();
+    else if (view === 'followups') loadFollowups();
     else if (view === 'customers') renderCustomers();
     else if (view === 'applications') renderApplications();
     else if (view === 'notifications') renderNotifications();
@@ -886,6 +899,9 @@
     const open = leads.filter(l => ['New', 'Contacted'].includes(l.status)).length;
     const el = $('#nav-lead-count');
     if (el) el.textContent = open;
+    const today = new Date(); const todayISO = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    const fuDue = leads.filter(l => !l.followUpCompletedAt && l.followUpDate && String(l.followUpDate).slice(0,10) <= todayISO).length;
+    const fuEl = $('#nav-followup-count'); if (fuEl) fuEl.textContent = String(fuDue);
     const unread = Array.isArray(notifications) ? notifications.filter(n => n && !n.read).length : 0;
     const nel = $('#nav-notif-count');
     if (nel) { nel.textContent = unread; nel.style.display = unread ? '' : 'none'; }
@@ -1333,6 +1349,95 @@
     }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
 
+  /* ---------------------------------------------------------------- follow-ups */
+  let followups = [];
+  let followupPage = 1;
+  let followupCounts = { today: 0, upcoming: 0, overdue: 0, completed: 0, total: 0 };
+  const followupFilters = { q: '', bucket: 'all', status: '' };
+
+  function followupBucketLabel(b) {
+    return ({ today: 'Today', upcoming: 'Upcoming', overdue: 'Overdue', completed: 'Completed', scheduled: 'Scheduled' })[b] || b || '—';
+  }
+  function followupBucketClass(b) {
+    return ({ today: 'badge-medium', upcoming: 'badge-contacted', overdue: 'badge-rejected', completed: 'badge-approved', scheduled: 'badge-low' })[b] || 'badge-low';
+  }
+  async function loadFollowups() {
+    const api = window.ASBackend;
+    const body = $('#followups-body');
+    if (body) body.innerHTML = '<tr><td colspan="5" class="table-empty">Loading follow-ups…</td></tr>';
+    try {
+      if (api && api.request) {
+        const qs = new URLSearchParams({ page: String(followupPage), pageSize: String(PAGE_SIZE), bucket: followupFilters.bucket || 'all', status: followupFilters.status || '', q: followupFilters.q || '' });
+        const res = await api.request('api/follow-ups?' + qs.toString());
+        followups = Array.isArray(res.items) ? res.items : [];
+        followupCounts = Object.assign({ today: 0, upcoming: 0, overdue: 0, completed: 0, total: 0 }, res.counts || {});
+        renderFollowups(res.total || followups.length);
+        return;
+      }
+    } catch (e) { /* fall back to local */ }
+    // Fallback: compute from local leads
+    const today = new Date(); const y=today.getFullYear(), m=String(today.getMonth()+1).padStart(2,'0'), d=String(today.getDate()).padStart(2,'0');
+    const todayISO = y + '-' + m + '-' + d;
+    const end = new Date(today); end.setDate(end.getDate()+7); const endISO = end.toISOString().slice(0,10);
+    const all = leads.filter(l => l.followUpDate || l.followUpCompletedAt);
+    followupCounts = { today:0, upcoming:0, overdue:0, completed:0, total:0 };
+    all.forEach(l => {
+      const completed = !!l.followUpCompletedAt;
+      const date = String(l.followUpDate||'').slice(0,10);
+      let b = 'scheduled';
+      if (completed) b='completed'; else if (!date) b='none'; else if (date < todayISO) b='overdue'; else if (date===todayISO) b='today'; else if (date <= endISO) b='upcoming';
+      l.followUpBucket = b;
+      if (followupCounts[b] !== undefined) followupCounts[b]++;
+      if (b !== 'none') followupCounts.total++;
+    });
+    followups = all.filter(l => l.followUpBucket && l.followUpBucket !== 'none');
+    if (followupFilters.bucket && followupFilters.bucket !== 'all') followups = followups.filter(l => l.followUpBucket === followupFilters.bucket);
+    if (followupFilters.status) followups = followups.filter(l => l.status === followupFilters.status);
+    if (followupFilters.q) { const q = followupFilters.q.toLowerCase(); followups = followups.filter(l => [l.name,l.phone,l.email,l.product,l.status,l.followUpDate].filter(Boolean).join(' ').toLowerCase().includes(q)); }
+    renderFollowups(followups.length);
+  }
+
+  function renderFollowups(totalOverride) {
+    const total = typeof totalOverride === 'number' ? totalOverride : followups.length;
+    $('#fu-today-count') && ($('#fu-today-count').textContent = String(followupCounts.today || 0));
+    $('#fu-upcoming-count') && ($('#fu-upcoming-count').textContent = String(followupCounts.upcoming || 0));
+    $('#fu-overdue-count') && ($('#fu-overdue-count').textContent = String(followupCounts.overdue || 0));
+    $('#fu-completed-count') && ($('#fu-completed-count').textContent = String(followupCounts.completed || 0));
+    const navCount = $('#nav-followup-count'); if (navCount) navCount.textContent = String((followupCounts.today || 0) + (followupCounts.overdue || 0));
+    const body = $('#followups-body');
+    if (!body) return;
+    const items = followups;
+    body.innerHTML = items.length ? items.map(l => {
+      const b = l.followUpBucket || 'scheduled';
+      const date = l.followUpDate ? fmtShort(l.followUpDate) : 'Not set';
+      const overdue = b === 'overdue';
+      return '<tr>' +
+        '<td><div class="cust"><span class="cust-avatar">' + initials(l.name) + '</span><span><b>' + esc(l.name) + '</b><span>' + esc(l.phone || '') + '</span></span></div></td>' +
+        '<td>' + esc(l.product || '—') + '<div style="font-size:.68rem;color:#5b6b7e"><span class="' + statusBadgeClass(l.status) + '">' + esc(l.status || 'New') + '</span></div></td>' +
+        '<td><b style="color:' + (overdue ? 'var(--red)' : 'var(--navy)') + '">' + esc(date) + '</b></td>' +
+        '<td><span class="badge ' + followupBucketClass(b) + '">' + esc(followupBucketLabel(b)) + '</span></td>' +
+        '<td><div class="row-actions">' +
+          '<button class="a-btn-icon" data-action="fu-view" data-id="' + esc(l.id) + '" title="View"><svg class="icon" aria-hidden="true"><use href="#i-eye"></use></svg></button>' +
+          '<button class="a-btn-icon" data-action="fu-reschedule" data-id="' + esc(l.id) + '" title="Reschedule"><svg class="icon" aria-hidden="true"><use href="#i-calendar"></use></svg></button>' +
+          (b !== 'completed' ? '<button class="a-btn-icon" data-action="fu-complete" data-id="' + esc(l.id) + '" title="Mark completed"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg></button>' : '') +
+        '</div></td></tr>';
+    }).join('') : '<tr><td colspan="5" class="table-empty"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg><br>No follow-ups found for this filter.<br><button class="a-btn a-btn-light a-btn-sm" style="margin-top:10px" id="fu-empty-reset">Clear filters</button></td></tr>';
+    renderPagination('#followups-pagination', total, followupPage, (p) => { followupPage = p; loadFollowups(); }, PAGE_SIZE);
+    const reset = $('#fu-empty-reset'); if (reset) reset.addEventListener('click', () => { followupFilters.q=''; followupFilters.bucket='all'; followupFilters.status=''; $('#followup-search').value=''; $('#followup-bucket-filter').value='all'; $('#followup-status-filter').value=''; followupPage=1; loadFollowups(); });
+  }
+
+  async function updateFollowup(id, patch, okMsg) {
+    const api = window.ASBackend;
+    try {
+      if (api && api.request) await api.request('api/enquiries/' + id, { method: 'PATCH', body: patch });
+      toast(okMsg || 'Follow-up updated.');
+      await loadFollowups();
+      syncServerEnquiries();
+    } catch (e) {
+      toast((e && e.message) ? e.message : 'Could not update follow-up.', 'error');
+    }
+  }
+
   function renderLeads() {
     const list = filteredLeads();
     const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
@@ -1496,6 +1601,55 @@
     activeLeadId = null;
   }
 
+  function buildActivityTimeline(lead) {
+    const events = [];
+    const seen = new Set();
+    const push = (ev) => {
+      const id = ev.id || (ev.type + '|' + (ev.at||'') + '|' + (ev.detail||''));
+      if (seen.has(id)) return;
+      seen.add(id);
+      events.push(ev);
+    };
+    if (lead.createdAt) push({ id: 'created-' + (lead.id||''), at: lead.createdAt, by: 'System', type: 'created', detail: 'Enquiry created' });
+    const acts = Array.isArray(lead.followUpActivity) ? lead.followUpActivity : [];
+    acts.forEach(a => {
+      if (!a) return;
+      push({ id: a.id || '', at: a.at || '', by: a.by || 'Admin', type: a.type || 'follow_up', detail: a.detail || '', from: a.from || '', to: a.to || '' });
+    });
+    const notes = Array.isArray(lead.internalNotes) && lead.internalNotes.length ? lead.internalNotes : (Array.isArray(lead.notes) ? lead.notes : []);
+    notes.forEach((n, idx) => {
+      if (!n || !n.text) return;
+      const at = n.at || '';
+      const id = 'note-' + (lead.id||'') + '-' + at + '-' + idx;
+      // avoid duplicating notes already represented as follow-up activity detail
+      if (acts.some(a => a && a.detail === n.text && a.at === at)) return;
+      push({ id: id, at: at, by: n.by || 'Admin', type: 'note', detail: n.text });
+    });
+    events.sort((a,b) => (Date.parse(b.at||0)||0) - (Date.parse(a.at||0)||0));
+    return events;
+  }
+  function renderActivityTimeline(lead) {
+    const events = buildActivityTimeline(lead);
+    if (!events.length) return '<div class="note-item" style="color:#5b6b7e">No activity yet.</div>';
+    return '<div class="activity-timeline">' + events.map(ev => {
+      const type = ev.type || 'update';
+      const labelMap = { created:'Created', follow_up_scheduled:'Follow-up scheduled', follow_up_rescheduled:'Follow-up rescheduled', follow_up_completed:'Follow-up completed', follow_up_reopened:'Follow-up reopened', note:'Internal note' };
+      const label = labelMap[type] || (type.replace(/_/g,' ').replace(/\b\w/g, c=>c.toUpperCase()));
+      let detail = esc(ev.detail || label);
+      if (type === 'follow_up_rescheduled' && (ev.from || ev.to)) {
+        detail = 'Rescheduled from <b>' + esc(ev.from || '—') + '</b> to <b>' + esc(ev.to || '—') + '</b>';
+      }
+      return '<div class="activity-item activity-' + esc(type.replace(/[^a-z0-9_-]/gi,'-')) + '">' +
+        '<div class="activity-dot" aria-hidden="true"></div>' +
+        '<div class="activity-body">' +
+          '<div class="activity-head"><b>' + esc(label) + '</b><time>' + esc(fmtDateTimeIST(ev.at)) + '</time></div>' +
+          '<div class="activity-detail">' + detail + '</div>' +
+          '<div class="activity-meta">By ' + esc(ev.by || 'Admin') + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
   function renderDrawer() {
     const lead = leads.find(l => l.id === activeLeadId);
     if (!lead) return;
@@ -1536,9 +1690,7 @@
           return items.length ? items.join('') : '<div class="note-item" style="color:#5b6b7e">No linked applications/customers yet.</div>';
         })() +
       '</div></div>' +
-      '<div class="drawer-section"><h3>Timeline</h3><div class="note-list">' +
-        ((Array.isArray(lead.timeline)&&lead.timeline.length) ? lead.timeline.slice(0,8).map(t => '<div class="note-item">' + esc(t.detail || t.event || 'Update') + '<time>' + fmtDate(t.at) + '</time></div>').join('') : '<div class="note-item" style="color:#5b6b7e">No timeline events yet.</div>') +
-      '</div></div>' +
+      '<div class="drawer-section"><h3>Activity timeline</h3><div id="drawer-activity-timeline">' + (function(){ try { return renderActivityTimeline(lead); } catch(e){ return '<div class="note-item" style="color:var(--red)">Could not load activity timeline.</div>'; } })() + '</div></div>' +
       '<div class="drawer-section"><h3>Meta</h3><div class="detail-grid-2"><div class="detail-box"><small>Priority</small><b>' + esc(lead.priority || 'Medium') + '</b></div><div class="detail-box"><small>Owner</small><b>' + esc(lead.owner || 'Admin') + '</b></div></div></div>';
 
     $('#drawer-foot').innerHTML =
@@ -1571,6 +1723,9 @@
       const at = new Date().toISOString();
       lead.notes = lead.notes || [];
       lead.notes.unshift({ text, at });
+      lead.internalNotes = Array.isArray(lead.internalNotes) ? lead.internalNotes : [];
+      lead.internalNotes.push({ at, by: (currentUser && (currentUser.name || currentUser.email)) || 'Admin', text });
+      if (lead.internalNotes.length > 100) lead.internalNotes.splice(0, lead.internalNotes.length - 100);
       lead.timeline = Array.isArray(lead.timeline) ? lead.timeline : [];
       lead.timeline.unshift({ at, event: 'note_added', detail: text.slice(0, 240) });
       if (lead.timeline.length > 50) lead.timeline.length = 50;
@@ -2972,6 +3127,18 @@
       leadPage = 1; renderLeads();
     });
 
+    // follow-up filters
+    const fuSearch = $('#followup-search');
+    if (fuSearch) fuSearch.addEventListener('input', debounce((e) => { followupFilters.q = e.target.value; followupPage = 1; loadFollowups(); }, 180));
+    const fuBucket = $('#followup-bucket-filter');
+    if (fuBucket) fuBucket.addEventListener('change', (e) => { followupFilters.bucket = e.target.value; followupPage = 1; loadFollowups(); });
+    const fuStatus = $('#followup-status-filter');
+    if (fuStatus) fuStatus.addEventListener('change', (e) => { followupFilters.status = e.target.value; followupPage = 1; loadFollowups(); });
+    const fuClear = $('#clear-followup-filters');
+    if (fuClear) fuClear.addEventListener('click', () => { followupFilters.q=''; followupFilters.bucket='all'; followupFilters.status=''; if(fuSearch) fuSearch.value=''; if(fuBucket) fuBucket.value='all'; if(fuStatus) fuStatus.value=''; followupPage=1; loadFollowups(); });
+    const fuRefresh = $('#refresh-followups-btn');
+    if (fuRefresh) fuRefresh.addEventListener('click', () => loadFollowups());
+
     // applications section removed
 
     // products / partners / content
@@ -3252,6 +3419,37 @@
           } else {
             done();
           }
+        });
+      }
+      if (action === 'fu-view') {
+        const inLeads = leads.find(x => x.id === id);
+        if (inLeads) openDrawer(id);
+        else { toast('Open Enquiries and refresh to view full details.', 'error'); }
+      }
+      if (action === 'fu-reschedule') {
+        const item = followups.find(x => x.id === id) || leads.find(x => x.id === id);
+        const current = item && item.followUpDate ? String(item.followUpDate).slice(0,10) : '';
+        openModal({
+          title: 'Reschedule follow-up',
+          sub: (item && item.name ? item.name : 'Enquiry') + ' �?" set the next follow-up date.',
+          body: '<div class="form-row one"><div class="a-field"><label>Next follow-up date <span class="req">*</span></label><input id="fu-reschedule-date" type="date" value="' + esc(current) + '"></div></div>' +
+                '<div class="form-row one"><div class="a-field"><label>Internal note (optional)</label><textarea id="fu-reschedule-note" placeholder="Reason for rescheduling"></textarea></div></div>',
+          submitLabel: 'Save follow-up',
+          onSubmit: async () => {
+            const date = String($('#fu-reschedule-date').value || '').trim();
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { toast('Please select a valid follow-up date.', 'error'); return false; }
+            const note = String($('#fu-reschedule-note').value || '').trim();
+            const patch = { followUpDate: date, followUpCompleted: false, activityId: 'fu-resched-' + id + '-' + date };
+            if (note) patch.internalNote = note;
+            await updateFollowup(id, patch, 'Follow-up rescheduled.');
+            return true;
+          }
+        });
+      }
+      if (action === 'fu-complete') {
+        const item = followups.find(x => x.id === id) || leads.find(x => x.id === id);
+        confirmDialog('Mark follow-up completed?', (item && item.name ? item.name : 'This follow-up') + ' will be marked as completed.', async () => {
+          await updateFollowup(id, { followUpCompleted: true, activityId: 'fu-done-' + id + '-' + new Date().toISOString().slice(0,10) }, 'Follow-up marked completed.');
         });
       }
       if (action === 'clear-filters') {

@@ -169,6 +169,15 @@ async function updateEnquiry(id, patch) {
     next.internalNotes = notes;
     delete next.internalNote;
   }
+  if (patch && patch.followUpActivityEntry) {
+    const activity = Array.isArray(next.followUpActivity) ? next.followUpActivity.slice() : [];
+    const entry = patch.followUpActivityEntry;
+    const dup = entry && entry.id ? activity.some(a => a && a.id === entry.id) : false;
+    if (!dup) activity.push(entry);
+    if (activity.length > 200) activity.splice(0, activity.length - 200);
+    next.followUpActivity = activity;
+    delete next.followUpActivityEntry;
+  }
   if (next.status) next.handled = String(next.status) !== 'New';
   Object.assign(enquiry, next);
   await save();

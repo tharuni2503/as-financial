@@ -665,6 +665,12 @@ app.get('/api/enquiries', requireSession, requireRole('advisor', 'staff', 'admin
 }));
 
 app.patch('/api/enquiries/:id', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
+  const id = String(req.params.id);
+  const current = await store.findEnquiry ? await store.findEnquiry(id) : null;
+  if (!current) {
+    res.status(404).json({ error: 'Enquiry not found.' });
+    return;
+  }
   const patch = {};
   const allowedStatus = new Set(['New', 'Contacted', 'In Progress', 'Approved', 'Rejected', 'Accepted', 'Qualified', 'Documents', 'Sanctioned', 'Disbursed', 'Declined', 'Lost']);
   if (req.body && typeof req.body.status === 'string') {
@@ -684,12 +690,49 @@ app.patch('/api/enquiries/:id', requireSession, requireRole('advisor', 'staff', 
     const t = validate.text(req.body.internalNote, 1000);
     if (t) patch.internalNote = { at: new Date().toISOString(), by: (req.session && req.session.name) || (req.session && req.session.email) || 'Admin', text: t };
   }
-  const updated = await store.updateEnquiry(String(req.params.id), patch);
+  const actor = (req.session && req.session.name) || (req.session && req.session.email) || 'Admin';
+  const activityId = validate.text(req.body && req.body.activityId, 80).replace(/[^A-Za-z0-9_-]/g, '');
+  const nowIso = new Date().toISOString();
+
+  if (req.body && typeof req.body.followUpCompleted === 'boolean') {
+    if (req.body.followUpCompleted) {
+      if (!current.followUpCompletedAt) {
+        patch.followUpCompletedAt = nowIso;
+        patch.followUpActivityEntry = { id: activityId || ('fu-done-' + id + '-' + nowIso), at: nowIso, by: actor, type: 'follow_up_completed', detail: 'Follow-up marked completed' };
+      }
+    } else {
+      if (current.followUpCompletedAt) {
+        patch.followUpCompletedAt = '';
+        patch.followUpActivityEntry = { id: activityId || ('fu-reopen-' + id + '-' + nowIso), at: nowIso, by: actor, type: 'follow_up_reopened', detail: 'Follow-up reopened' };
+      }
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'followUpDate')) {
+    const prev = String(current.followUpDate || '').slice(0, 10);
+    const nextDate = String(patch.followUpDate || '').slice(0, 10);
+    if (prev !== nextDate) {
+      patch.followUpActivityEntry = {
+        id: activityId || ('fu-resched-' + id + '-' + prev + '-' + nextDate),
+        at: nowIso,
+        by: actor,
+        type: prev ? 'follow_up_rescheduled' : 'follow_up_scheduled',
+        detail: prev ? ('Rescheduled from ' + prev + ' to ' + (nextDate || 'none')) : ('Follow-up scheduled for ' + nextDate),
+        from: prev,
+        to: nextDate
+      };
+      if (nextDate && current.followUpCompletedAt && !Object.prototype.hasOwnProperty.call(patch, 'followUpCompletedAt')) {
+        patch.followUpCompletedAt = '';
+      }
+    }
+  }
+
+  const updated = await store.updateEnquiry(id, patch);
   if (!updated) {
     res.status(404).json({ error: 'Enquiry not found.' });
     return;
   }
-  audit(req, { type: 'enquiry.updated', summary: 'Enquiry updated: ' + String(req.params.id), targetType: 'enquiry', targetId: String(req.params.id), meta: { status: patch.status, handled: patch.handled, hasNote: !!patch.note, hasInternalNote: !!patch.internalNote, followUpDate: patch.followUpDate } });
+  audit(req, { type: 'enquiry.updated', summary: 'Enquiry updated: ' + id, targetType: 'enquiry', targetId: id, meta: { status: patch.status, handled: patch.handled, hasNote: !!patch.note, hasInternalNote: !!patch.internalNote, followUpDate: patch.followUpDate, followUpCompleted: req.body && req.body.followUpCompleted } });
   res.json({ ok: true, enquiry: updated });
 }));
 
@@ -702,6 +745,88 @@ app.delete('/api/enquiries/:id', requireSession, requireRole('staff', 'admin', '
   }
   audit(req, { type: 'enquiry.deleted', summary: 'Enquiry deleted: ' + id, targetType: 'enquiry', targetId: id });
   res.json({ ok: true });
+}));
+
+function kolkataDateISO(d) {
+  const dt = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(dt.getTime())) return '';
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(dt);
+  const map = {};
+  parts.forEach(p => { if (p.type !== 'literal') map[p.type] = p.value; });
+  return (map.year && map.month && map.day) ? (map.year + '-' + map.month + '-' + map.day) : '';
+}
+function addDaysISO(iso, days) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+  if (!m) return '';
+  const dt = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + days));
+  return dt.toISOString().slice(0, 10);
+}
+function followUpBucket(e, today) {
+  const completed = !!(e && e.followUpCompletedAt);
+  const date = String(e && e.followUpDate || '').slice(0, 10);
+  if (completed) return 'completed';
+  if (!date) return 'none';
+  if (date < today) return 'overdue';
+  if (date === today) return 'today';
+  const end = addDaysISO(today, 7);
+  if (date > today && date <= end) return 'upcoming';
+  return 'scheduled';
+}
+
+app.get('/api/follow-ups/summary', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
+  const enquiries = await store.listEnquiries();
+  const today = kolkataDateISO(new Date());
+  const counts = { today: 0, upcoming: 0, overdue: 0, completed: 0, total: 0 };
+  (Array.isArray(enquiries) ? enquiries : []).forEach(e => {
+    const b = followUpBucket(e, today);
+    if (b === 'today') counts.today++;
+    else if (b === 'upcoming') counts.upcoming++;
+    else if (b === 'overdue') counts.overdue++;
+    else if (b === 'completed') counts.completed++;
+    if (b !== 'none') counts.total++;
+  });
+  res.json({ ok: true, today, counts });
+}));
+
+app.get('/api/follow-ups', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
+  const all = await store.listEnquiries();
+  const today = kolkataDateISO(new Date());
+  const q = validate.text(req.query.q, 120).toLowerCase();
+  const status = validate.text(req.query.status, 40);
+  const bucket = validate.text(req.query.bucket, 20).toLowerCase();
+  let items = (Array.isArray(all) ? all : []).map(e => {
+    const b = followUpBucket(e, today);
+    return Object.assign({}, e, { followUpBucket: b });
+  }).filter(e => e.followUpBucket !== 'none');
+  if (bucket && ['today', 'upcoming', 'overdue', 'completed', 'scheduled', 'all'].includes(bucket) && bucket !== 'all') {
+    items = items.filter(e => e.followUpBucket === bucket);
+  }
+  if (status) items = items.filter(e => String(e.status || '') === status);
+  if (q) {
+    items = items.filter(e => {
+      const hay = [e.id, e.name, e.phone, e.email, e.product, e.status, e.followUpDate, e.note].filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+  }
+  items.sort((a, b) => {
+    const ad = String(a.followUpDate || '9999-99-99');
+    const bd = String(b.followUpDate || '9999-99-99');
+    if (ad < bd) return -1;
+    if (ad > bd) return 1;
+    return String(b.receivedAt || '').localeCompare(String(a.receivedAt || ''));
+  });
+  const total = items.length;
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const pageSize = Math.max(1, Math.min(100, Number(req.query.pageSize) || 20));
+  const offset = (page - 1) * pageSize;
+  const paged = items.slice(offset, offset + pageSize);
+  const counts = { today: 0, upcoming: 0, overdue: 0, completed: 0, total: 0 };
+  (Array.isArray(all) ? all : []).forEach(e => {
+    const b = followUpBucket(e, today);
+    if (counts[b] !== undefined) counts[b]++;
+    if (b !== 'none') counts.total++;
+  });
+  res.json({ ok: true, today, counts, items: paged, total, page, pageSize });
 }));
 
 app.get('/api/admin/store', requireSession, requireRole('staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {

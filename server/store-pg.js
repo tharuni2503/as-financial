@@ -181,6 +181,8 @@ function rowToEnquiry(row) {
     handled: Boolean(row.handled),
     status: row.status || payload.status || (row.handled ? 'Contacted' : 'New'),
     followUpDate: row.follow_up_date ? String(row.follow_up_date).slice(0, 10) : (payload.followUpDate || ''),
+    followUpCompletedAt: row.follow_up_completed_at instanceof Date ? row.follow_up_completed_at.toISOString() : (row.follow_up_completed_at || payload.followUpCompletedAt || ''),
+    followUpActivity: Array.isArray(row.follow_up_activity) ? row.follow_up_activity : (Array.isArray(payload.followUpActivity) ? payload.followUpActivity : []),
     consent: typeof row.consent === 'boolean' ? row.consent : Boolean(payload.consent),
     consentAt: row.consent_at instanceof Date ? row.consent_at.toISOString() : (row.consent_at || payload.consentAt || ''),
     submissionId: row.submission_id || payload.submissionId || '',
@@ -224,13 +226,15 @@ async function addEnquiry(enquiry) {
     Boolean(enquiry.consent),
     enquiry.consentAt || null,
     String(enquiry.submissionId || ''),
-    JSON.stringify(Array.isArray(enquiry.internalNotes) ? enquiry.internalNotes : [])
+    JSON.stringify(Array.isArray(enquiry.internalNotes) ? enquiry.internalNotes : []),
+    enquiry.followUpCompletedAt || null,
+    JSON.stringify(Array.isArray(enquiry.followUpActivity) ? enquiry.followUpActivity : [])
   ]);
   try {
     await getPool().query(
       `INSERT INTO enquiries
-        (id, received_at, handled, name, phone, email, product, amount, income, employment, city, source, message, note, payload, status, follow_up_date, consent, consent_at, submission_id, internal_notes, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16,$17,$18,$19,$20,$21::jsonb,NOW())
+        (id, received_at, handled, name, phone, email, product, amount, income, employment, city, source, message, note, payload, status, follow_up_date, consent, consent_at, submission_id, internal_notes, follow_up_completed_at, follow_up_activity, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16,$17,$18,$19,$20,$21::jsonb,$22,$23::jsonb,NOW())
        ON CONFLICT (id) DO NOTHING`,
       extArgs
     );
@@ -275,12 +279,21 @@ async function updateEnquiry(id, patch) {
     next.internalNotes = notes;
     delete next.internalNote;
   }
+  if (patch && patch.followUpActivityEntry) {
+    const activity = Array.isArray(next.followUpActivity) ? next.followUpActivity.slice() : [];
+    const entry = patch.followUpActivityEntry;
+    const dup = entry && entry.id ? activity.some(a => a && a.id === entry.id) : false;
+    if (!dup) activity.push(entry);
+    if (activity.length > 200) activity.splice(0, activity.length - 200);
+    next.followUpActivity = activity;
+    delete next.followUpActivityEntry;
+  }
   if (next.status) next.handled = String(next.status) !== 'New';
   const payload = JSON.stringify(next);
   try {
     await getPool().query(
       `UPDATE enquiries
-       SET handled=$2, note=$3, payload=$4::jsonb, status=$5, follow_up_date=$6, consent=$7, consent_at=$8, submission_id=$9, internal_notes=$10::jsonb, updated_at=NOW()
+       SET handled=$2, note=$3, payload=$4::jsonb, status=$5, follow_up_date=$6, consent=$7, consent_at=$8, submission_id=$9, internal_notes=$10::jsonb, follow_up_completed_at=$11, follow_up_activity=$12::jsonb, updated_at=NOW()
        WHERE id=$1`,
       [
         id,
@@ -292,7 +305,9 @@ async function updateEnquiry(id, patch) {
         Boolean(next.consent),
         next.consentAt || null,
         String(next.submissionId || ''),
-        JSON.stringify(Array.isArray(next.internalNotes) ? next.internalNotes : [])
+        JSON.stringify(Array.isArray(next.internalNotes) ? next.internalNotes : []),
+        next.followUpCompletedAt || null,
+        JSON.stringify(Array.isArray(next.followUpActivity) ? next.followUpActivity : [])
       ]
     );
   } catch (e) {

@@ -129,6 +129,7 @@
         <button type="button" class="sidebar-link active" data-view="overview"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg> Dashboard</button>
         <button type="button" class="sidebar-link" data-view="analytics"><svg class="icon" aria-hidden="true"><use href="#i-chart"></use></svg> Web Analytics</button>
         <button type="button" class="sidebar-link" data-view="leads"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg> Enquiries <span class="badge-count" id="nav-lead-count">0</span></button>
+        <button type="button" class="sidebar-link" data-view="followups"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg> Follow-ups <span class="badge-count" id="nav-followup-count">0</span></button>
 
         <div class="sidebar-label">Website content</div>
         <button type="button" class="sidebar-link" data-view="partners"><svg class="icon" aria-hidden="true"><use href="#i-handshake"></use></svg> Loan partners</button>
@@ -338,6 +339,57 @@
               </table>
             </div>
             <div class="pagination" id="leads-pagination"></div>
+          </div>
+        </section>
+
+        <!-- FOLLOW-UPS -->
+        <section class="view" id="view-followups">
+          <div class="page-head">
+            <div>
+              <h2>Follow-ups</h2>
+              <p>Track due, upcoming, overdue, and completed customer follow-ups.</p>
+            </div>
+            <div class="page-head-actions">
+              <button type="button" class="a-btn a-btn-light" id="refresh-followups-btn"><svg class="icon" aria-hidden="true"><use href="#i-refresh"></use></svg> Refresh</button>
+            </div>
+          </div>
+
+          <div class="mini-stats" id="followup-stats">
+            <div class="mini-stat"><b id="fu-today-count">0</b><span>Today</span></div>
+            <div class="mini-stat"><b id="fu-upcoming-count">0</b><span>Upcoming (7 days)</span></div>
+            <div class="mini-stat"><b id="fu-overdue-count">0</b><span>Overdue</span></div>
+            <div class="mini-stat"><b id="fu-completed-count">0</b><span>Completed</span></div>
+          </div>
+
+          <div class="card">
+            <div class="filters">
+              <div class="search-field" style="flex:1;max-width:320px">
+                <label class="sr-only" for="followup-search">Search follow-ups</label>
+                <svg class="icon" aria-hidden="true"><use href="#i-search"></use></svg>
+                <input type="search" id="followup-search" placeholder="Search customer, phone, loan..." autocomplete="off">
+              </div>
+              <label class="sr-only" for="followup-bucket-filter">Filter by follow-up</label>
+              <select id="followup-bucket-filter">
+                <option value="all">All follow-ups</option>
+                <option value="today">Today</option>
+                <option value="upcoming">Upcoming (7 days)</option>
+                <option value="overdue">Overdue</option>
+                <option value="completed">Completed</option>
+              </select>
+              <label class="sr-only" for="followup-status-filter">Filter by status</label>
+              <select id="followup-status-filter">
+                <option value="">All statuses</option>
+                <option>New</option><option>Contacted</option><option>In Progress</option><option>Approved</option><option>Rejected</option>
+              </select>
+              <button type="button" class="a-btn a-btn-ghost a-btn-sm" id="clear-followup-filters">Reset</button>
+            </div>
+            <div class="table-wrap">
+              <table class="a-table">
+                <thead><tr><th scope="col">Customer</th><th scope="col">Loan / Status</th><th scope="col">Follow-up date</th><th scope="col">Bucket</th><th scope="col" style="text-align:right">Actions</th></tr></thead>
+                <tbody id="followups-body"><tr><td colspan="5" class="table-empty">Loading follow-ups…</td></tr></tbody>
+              </table>
+            </div>
+            <div class="pagination" id="followups-pagination"></div>
           </div>
         </section>
 
@@ -734,6 +786,7 @@
       <button type="button" class="bottom-nav-item active" data-view="overview" aria-label="Dashboard"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg><span>Dashboard</span></button>
       <button type="button" class="bottom-nav-item" data-view="analytics" aria-label="Analytics"><svg class="icon" aria-hidden="true"><use href="#i-chart"></use></svg><span>Analytics</span></button>
       <button type="button" class="bottom-nav-item" data-view="leads" aria-label="Enquiries"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg><span>Enquiries</span></button>
+      <button type="button" class="bottom-nav-item" data-view="followups" aria-label="Follow-ups"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg><span>Follow-ups</span></button>
       <button type="button" class="bottom-nav-item" data-view="settings" aria-label="Settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"></use></svg><span>Settings</span></button>
       <button type="button" class="bottom-nav-item bottom-nav-logout" id="bottom-nav-logout" aria-label="Logout"><svg class="icon" aria-hidden="true"><use href="#i-logout"></use></svg><span>Logout</span></button>
     </nav>
