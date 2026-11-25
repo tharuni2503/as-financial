@@ -62,22 +62,28 @@
       : '<span class="lp2-logo has-img lp2-logo-empty" aria-hidden="true"></span>';
     var summaryRate = esc(l.r || 'Indicative*');
     var summaryTenure = esc(l.t || 'As per lender*');
+    var pNames = (l.p || []).map(function (k) { return prods[k] || k; });
+    var pPreview = pNames.slice(0, 3).map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('');
+    if (pNames.length > 3) pPreview += '<span class="lp2-more-tag">+' + (pNames.length - 3) + '</span>';
     var detailsId = 'lp2d-' + Math.random().toString(36).slice(2, 9);
     return '<article class="lp2-item" data-cat="' + esc(l.c) + '" data-name="' + esc(nameBlob) + '">' +
       '<div class="lp2-row">' +
         '<div class="lp2-main">' + logoHtml +
-          '<div class="lp2-title"><h3>' + esc(l.n) + '</h3><span class="lp2-badge lp2-' + esc(l.c) + '">' + esc(cats[l.c] ? cats[l.c].label : l.c) + '</span></div>' +
+          '<div class="lp2-title"><h3>' + esc(l.n) + '</h3><span class="lp2-badge lp2-' + esc(l.c) + '">' + esc(cats[l.c] ? cats[l.c].label : l.c) + '</span>' +
+          (pPreview ? '<div class="lp2-products-preview" aria-label="Loan types">' + pPreview + '</div>' : '') +
+          '</div>' +
         '</div>' +
         '<div class="lp2-meta"><span class="lp2-meta-item"><small>Interest</small><b>' + summaryRate + '</b></span><span class="lp2-meta-item"><small>Tenure</small><b>' + summaryTenure + '</b></span></div>' +
         '<div class="lp2-actions">' +
           '<button type="button" class="lp2-link" data-lp2-toggle aria-expanded="false" aria-controls="' + detailsId + '">Details</button>' +
-          '<button type="button" class="lp2-cta" data-lp2-apply="' + esc(l.n) + '" data-lp2-prod="' + esc((l.p && l.p[0]) || 'home') + '">Check</button>' +
+          '<button type="button" class="lp2-cta" data-lp2-apply="' + esc(l.n) + '" data-lp2-prod="' + esc((l.p && l.p[0]) || 'home') + '">Check options</button>' +
         '</div>' +
       '</div>' +
       '<div class="lp2-details" id="' + detailsId + '" hidden>' +
         '<div class="lp2-facts">' + facts + '</div>' +
         (ben ? '<ul class="lp2-benefits">' + ben + '</ul>' : '') +
         (tags ? '<div class="lp2-tags" aria-label="Products">' + tags + '</div>' : '') +
+        '<p class="lp2-eligibility-note">Eligibility, rates, and charges vary by lender, profile, and product. Final terms are subject to lender assessment.</p>' +
       '</div>' +
       '</article>';
   }

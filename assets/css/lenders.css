@@ -32,6 +32,9 @@
 .lp2-badge { display:inline-flex; align-items:center; margin-top:3px; padding:3px 8px; border-radius:999px; font-size:.62rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; background:#eef4fb; color:#35557a; border:1px solid #dbe7f3; }
 .lp2-badge.lp2-private { background:#f4eff6; color:#6c2d52; border-color:#eadfec; }
 .lp2-badge.lp2-nbfc { background:#fff4e8; color:#7a4a14; border-color:#f1dfc4; }
+.lp2-products-preview { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+.lp2-products-preview span { display:inline-flex; align-items:center; padding:2px 7px; border-radius:999px; background:#f4f7fb; border:1px solid #e3ebf5; color:#4b6078; font-size:.62rem; font-weight:700; line-height:1.2; }
+.lp2-products-preview .lp2-more-tag { background:#eef4fb; color:#35557a; border-color:#dbe7f3; }
 .lp2-meta { display:flex; gap:14px; min-width:0; }
 .lp2-meta-item { min-width:0; }
 .lp2-meta-item small { display:block; font-size:.58rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#6a7b90; margin-bottom:2px; }
@@ -39,7 +42,7 @@
 .lp2-actions { display:flex; align-items:center; gap:8px; justify-content:flex-end; }
 .lp2-link { border:1px solid #d7deea; background:#f8fbff; color:var(--navy); border-radius:8px; padding:10px 14px; min-height:44px; font:inherit; font-size:.875rem; font-weight:700; cursor:pointer; }
 .lp2-link:hover { background:#eef5ff; border-color:#bfd0e6; }
-.lp2-cta { min-height:34px; border-radius:8px; border:1px solid var(--navy); background:var(--navy); color:#fff; font:inherit; font-weight:700; font-size:.78rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:0 12px; transition:background .2s,color .2s,border-color .2s; }
+.lp2-cta { min-height:44px; border-radius:8px; border:1px solid var(--navy); background:var(--navy); color:#fff; font:inherit; font-weight:700; font-size:.78rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:0 14px; transition:background .2s,color .2s,border-color .2s; }
 .lp2-cta:hover, .lp2-cta:focus-visible { background:#0B1F3A; border-color:#0B1F3A; color:#fff; }
 .lp2-details { border-top:1px solid #e8edf5; padding:12px 14px 14px; background:#fbfcfe; display:grid; gap:10px; }
 .lp2-details[hidden] { display:none; }
@@ -53,6 +56,7 @@
 .lp2-benefits li::before { content:""; position:absolute; left:0; top:.32em; width:11px; height:11px; border-radius:50%; background:#e8f7f1 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.4l2.3 2.3 4.7-4.9' fill='none' stroke='%23168a66' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat; }
 .lp2-tags { display:flex; flex-wrap:wrap; gap:6px; }
 .lp2-tags span { padding:3px 8px; border-radius:999px; border:1px solid var(--line); background:#fff; font-size:.66rem; font-weight:700; color:#4b5d72; }
+.lp2-eligibility-note { margin:2px 0 0; font-size:.72rem; line-height:1.45; color:#66788c; }
 .lp2-empty, .lp2-more { text-align:center; margin-top:14px; }
 .lp2-empty { color:var(--muted); padding:16px 8px; }
 .lp2-help { margin-top:18px; padding:18px 20px; border-radius:18px; color:#fff; background:linear-gradient(120deg,#0f2a4f,#163968 55%,#1f4a7e); display:flex; align-items:center; justify-content:space-between; gap:16px; }
