@@ -103,6 +103,7 @@
     if (empty) {
       var noMatch = matches.length === 0;
       var noData = !list.length && !q && state.f === 'all';
+      if (list.length > 0 && !q && state.f === 'all') { noMatch = false; noData = false; }
       empty.textContent = noData ? 'Lender information is loading. Please refresh if it does not appear.' : 'No lender matches your search. Try another name, category or loan type, or ask our advisor for help.';
       empty.hidden = !noMatch;
       empty.setAttribute('aria-hidden', noMatch ? 'false' : 'true');
