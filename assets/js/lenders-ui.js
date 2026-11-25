@@ -192,6 +192,41 @@
     }
   });
 
+  function mergeLenders(base, incoming) {
+    if (!Array.isArray(incoming) || !incoming.length) return base.slice();
+    if (!Array.isArray(base) || !base.length) return incoming.slice();
+    var byName = {};
+    base.forEach(function (l) { if (l && l.n) byName[String(l.n).toLowerCase().trim()] = l; });
+    incoming.forEach(function (l) {
+      if (!l || !l.n) return;
+      var k = String(l.n).toLowerCase().trim();
+      if (byName[k]) {
+        // Overlay backend fields, but keep bundled identity/fallbacks.
+        byName[k] = norm(Object.assign({}, byName[k], l, {
+          n: byName[k].n,
+          c: l.c || byName[k].c,
+          logo: l.logo || byName[k].logo,
+          p: (Array.isArray(l.p) && l.p.length) ? l.p : byName[k].p,
+          b: (Array.isArray(l.b) && l.b.length) ? l.b : byName[k].b
+        })) || byName[k];
+      } else {
+        var nl = norm(l) || l;
+        byName[k] = nl;
+        base = base.concat([nl]);
+      }
+    });
+    // Rebuild in original base order, then append any backend-only items already added.
+    var seen = {};
+    var out = [];
+    base.forEach(function (l) {
+      var k = l && l.n ? String(l.n).toLowerCase().trim() : '';
+      if (!k || seen[k]) return;
+      seen[k] = true;
+      out.push(byName[k] || l);
+    });
+    return out;
+  }
+
   function loadFromBackend() {
     var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     var t = setTimeout(function(){ if (ctrl) try{ ctrl.abort(); }catch(e){} }, 5000);
@@ -200,7 +235,10 @@
       clearTimeout(t);
       if (!j) return;
       var fromApi = mapFromBackend(j.lenders || []);
-      if (fromApi.length) list = fromApi;
+      if (!fromApi.length) return;
+      var merged = mergeLenders(list, fromApi);
+      // Never replace a complete bundled set with a smaller backend subset.
+      if (merged.length >= list.length) list = merged;
     }).catch(function(){ clearTimeout(t); });
   }
 
