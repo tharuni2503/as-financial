@@ -2719,9 +2719,10 @@
     // login (backend-authenticated)
     $('#login-form').addEventListener('submit', (e) => {
       e.preventDefault();
+      const submitBtn = $('#login-form button[type="submit"]');
+      if (submitBtn && submitBtn.disabled) return;
       const email = $('#login-email').value.trim().toLowerCase();
       const pass = $('#login-password').value;
-      const submitBtn = $('#login-form button[type="submit"]');
       const err = $('#login-error');
       const api = window.ASBackend;
       if (!api) {
@@ -3378,7 +3379,7 @@
   /* ---------------------------------------------------------------- init */
   let restoringSession = false;
   async function restoreSession() {
-    if (restoringSession) return;
+    if (restoringSession || currentUser) return;
     restoringSession = true;
     const api = window.ASBackend;
     const loginBox = document.querySelector('.login-box');
@@ -3386,10 +3387,12 @@
     if (err) err.classList.remove('show');
     if (loginBox) loginBox.setAttribute('aria-busy', 'true');
     try {
-      if (!api || !api.session) { showLogin(); return; }
+      if (!api || !api.session) { if (!currentUser) showLogin(); return; }
       const available = await api.available(true).catch(() => false);
+      if (currentUser) return;
       if (!available) { showLogin(); return; }
       const session = await api.session().catch(() => null);
+      if (currentUser) return;
       if (session && isAllowedAdminRole(session)) {
         enterApp(session, true);
         return;
@@ -3400,10 +3403,12 @@
       restoringSession = false;
       if (loginBox) loginBox.removeAttribute('aria-busy');
     }
-    showLogin();
+    if (!currentUser) showLogin();
   }
 
   function init() {
+    if (window.__asAdminInit) return;
+    window.__asAdminInit = true;
     clearSampleDataOnce();
     loadData();
     bindEvents();
