@@ -483,6 +483,40 @@ async function takeRateLimit(key, limit, windowMs) {
   }
   return { allowed: rec.count <= lim, count: rec.count, limit: lim, resetAt: rec.resetAt };
 }
+async function queryFollowUps(opts = {}) {
+  const today = String(opts.today || '').slice(0, 10);
+  const bucket = String(opts.bucket || 'all').toLowerCase();
+  const status = String(opts.status || '').trim();
+  const q = String(opts.q || '').trim().toLowerCase();
+  const from = String(opts.from || '').slice(0, 10);
+  const to = String(opts.to || '').slice(0, 10);
+  const page = Math.max(1, Number(opts.page) || 1);
+  const pageSize = Math.max(1, Math.min(100, Number(opts.pageSize) || 20));
+  const offset = (page - 1) * pageSize;
+  const addDays = (iso, days) => { const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||''); if(!m) return ''; const dt=new Date(Date.UTC(+m[1],+m[2]-1,+m[3]+days)); return dt.toISOString().slice(0,10); };
+  let items = (db.enquiries || []).filter(e => e && (e.followUpDate || e.followUpCompletedAt));
+  if (status) items = items.filter(e => String(e.status || '') === status);
+  if (q) items = items.filter(e => [e.id,e.name,e.phone,e.email,e.product].filter(Boolean).join(' ').toLowerCase().includes(q));
+  if (from) items = items.filter(e => String(e.followUpDate||'').slice(0,10) >= from);
+  if (to) items = items.filter(e => String(e.followUpDate||'').slice(0,10) <= to);
+  items = items.filter(e => {
+    const completed = !!e.followUpCompletedAt;
+    const date = String(e.followUpDate||'').slice(0,10);
+    if (bucket === 'completed') return completed;
+    if (completed) return false;
+    if (bucket === 'overdue') return date && date < today;
+    if (bucket === 'today') return date === today;
+    if (bucket === 'tomorrow') return date === addDays(today,1);
+    if (bucket === 'next7' || bucket === 'upcoming') return date > today && date <= addDays(today,7);
+    if (bucket === 'next30') return date > today && date <= addDays(today,30);
+    if (bucket === 'scheduled') return true;
+    return true;
+  });
+  items.sort((a,b) => { const ad=String(a.followUpDate||'9999-99-99'); const bd=String(b.followUpDate||'9999-99-99'); if(ad<bd) return -1; if(ad>bd) return 1; return String(b.receivedAt||'').localeCompare(String(a.receivedAt||'')); });
+  const total = items.length;
+  return { items: items.slice(offset, offset + pageSize), total, page, pageSize };
+}
+
 module.exports = {
   DATA_DIR,
   ADMIN_COLLECTIONS,
@@ -519,5 +553,6 @@ module.exports = {
   getAnalytics,
   stats,
   describe,
-  takeRateLimit
+  takeRateLimit,
+  queryFollowUps
 };

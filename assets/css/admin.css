@@ -1580,3 +1580,14 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .activity-detail{font-size:.75rem;color:#425266;margin-top:2px;line-height:1.45;word-break:break-word}
 .activity-meta{font-size:.68rem;color:#64758b;margin-top:3px}
 @media (max-width:640px){.activity-head{flex-direction:column;gap:2px}.activity-head time{white-space:normal}}
+
+/* Follow-up advanced filters */
+.followup-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.followup-date-range{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.followup-date-range input[type="date"]{min-height:40px;padding:8px 10px;border:1px solid #d7deea;border-radius:8px;font:inherit;color:var(--navy);background:#fff}
+.followup-date-sep{font-size:.75rem;color:#64758b;font-weight:600}
+.followup-quick-filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.followup-quick-filters .a-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.followup-results-bar{font-size:.78rem;color:#5b6b7e;margin:0 0 10px;font-weight:600}
+@media (max-width:768px){.followup-date-range{width:100%}.followup-date-range input[type="date"]{flex:1 1 140px}}
+@media (max-width:480px){.followup-quick-filters .a-btn{flex:1 1 calc(50% - 8px);justify-content:center}}

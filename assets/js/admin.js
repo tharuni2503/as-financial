@@ -1353,48 +1353,81 @@
   let followups = [];
   let followupPage = 1;
   let followupCounts = { today: 0, upcoming: 0, overdue: 0, completed: 0, total: 0 };
-  const followupFilters = { q: '', bucket: 'all', status: '' };
+  const followupFilters = { q: '', bucket: 'all', status: '', from: '', to: '' };
 
   function followupBucketLabel(b) {
-    return ({ today: 'Today', upcoming: 'Upcoming', overdue: 'Overdue', completed: 'Completed', scheduled: 'Scheduled' })[b] || b || '—';
+    return ({ today: 'Today', tomorrow: 'Tomorrow', upcoming: 'Upcoming (7 days)', next7: 'Next 7 Days', next30: 'Next 30 Days', overdue: 'Overdue', completed: 'Completed', scheduled: 'Scheduled' })[b] || b || '—';
   }
   function followupBucketClass(b) {
-    return ({ today: 'badge-medium', upcoming: 'badge-contacted', overdue: 'badge-rejected', completed: 'badge-approved', scheduled: 'badge-low' })[b] || 'badge-low';
+    return ({ today: 'badge-medium', tomorrow: 'badge-contacted', upcoming: 'badge-contacted', next7: 'badge-contacted', next30: 'badge-contacted', overdue: 'badge-rejected', completed: 'badge-approved', scheduled: 'badge-low' })[b] || 'badge-low';
+  }
+  function syncFollowupFilterUI() {
+    const q = $('#followup-search'); if (q) q.value = followupFilters.q || '';
+    const b = $('#followup-bucket-filter'); if (b) b.value = followupFilters.bucket || 'all';
+    const s = $('#followup-status-filter'); if (s) s.value = followupFilters.status || '';
+    const f = $('#followup-from'); if (f) f.value = followupFilters.from || '';
+    const t = $('#followup-to'); if (t) t.value = followupFilters.to || '';
+    $$('.fu-quick').forEach(btn => btn.classList.toggle('active', btn.dataset.fuBucket === followupFilters.bucket));
+  }
+  function clearFollowupFilters() {
+    followupFilters.q = ''; followupFilters.bucket = 'all'; followupFilters.status = ''; followupFilters.from = ''; followupFilters.to = '';
+    followupPage = 1;
+    syncFollowupFilterUI();
+    loadFollowups();
   }
   async function loadFollowups() {
     const api = window.ASBackend;
     const body = $('#followups-body');
     if (body) body.innerHTML = '<tr><td colspan="5" class="table-empty">Loading follow-ups…</td></tr>';
+    if (followupFilters.from && followupFilters.to && followupFilters.from > followupFilters.to) {
+      toast('Start date must be before or equal to end date.', 'error');
+      if (body) body.innerHTML = '<tr><td colspan="5" class="table-empty">Invalid date range. Start date must be before or equal to end date.</td></tr>';
+      return;
+    }
     try {
       if (api && api.request) {
         const qs = new URLSearchParams({ page: String(followupPage), pageSize: String(PAGE_SIZE), bucket: followupFilters.bucket || 'all', status: followupFilters.status || '', q: followupFilters.q || '' });
+        if (followupFilters.from) qs.set('from', followupFilters.from);
+        if (followupFilters.to) qs.set('to', followupFilters.to);
         const res = await api.request('api/follow-ups?' + qs.toString());
         followups = Array.isArray(res.items) ? res.items : [];
         followupCounts = Object.assign({ today: 0, upcoming: 0, overdue: 0, completed: 0, total: 0 }, res.counts || {});
-        renderFollowups(res.total || followups.length);
+        renderFollowups(res.total || 0);
         return;
       }
-    } catch (e) { /* fall back to local */ }
+    } catch (e) {
+      toast((e && e.message) ? e.message : 'Could not load follow-ups.', 'error');
+    }
     // Fallback: compute from local leads
     const today = new Date(); const y=today.getFullYear(), m=String(today.getMonth()+1).padStart(2,'0'), d=String(today.getDate()).padStart(2,'0');
     const todayISO = y + '-' + m + '-' + d;
-    const end = new Date(today); end.setDate(end.getDate()+7); const endISO = end.toISOString().slice(0,10);
+    const addDays = (iso, n) => { const mm=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||''); if(!mm) return ''; const dt=new Date(Date.UTC(+mm[1],+mm[2]-1,+mm[3]+n)); return dt.toISOString().slice(0,10); };
+    const end7 = addDays(todayISO,7); const end30 = addDays(todayISO,30); const tomorrow = addDays(todayISO,1);
     const all = leads.filter(l => l.followUpDate || l.followUpCompletedAt);
     followupCounts = { today:0, upcoming:0, overdue:0, completed:0, total:0 };
     all.forEach(l => {
       const completed = !!l.followUpCompletedAt;
       const date = String(l.followUpDate||'').slice(0,10);
       let b = 'scheduled';
-      if (completed) b='completed'; else if (!date) b='none'; else if (date < todayISO) b='overdue'; else if (date===todayISO) b='today'; else if (date <= endISO) b='upcoming';
+      if (completed) b='completed'; else if (!date) b='none'; else if (date < todayISO) b='overdue'; else if (date===todayISO) b='today'; else if (date > todayISO && date <= end7) b='upcoming';
       l.followUpBucket = b;
       if (followupCounts[b] !== undefined) followupCounts[b]++;
       if (b !== 'none') followupCounts.total++;
     });
     followups = all.filter(l => l.followUpBucket && l.followUpBucket !== 'none');
-    if (followupFilters.bucket && followupFilters.bucket !== 'all') followups = followups.filter(l => l.followUpBucket === followupFilters.bucket);
+    const bucket = followupFilters.bucket || 'all';
+    if (bucket === 'tomorrow') followups = followups.filter(l => !l.followUpCompletedAt && String(l.followUpDate||'').slice(0,10) === tomorrow);
+    else if (bucket === 'next7' || bucket === 'upcoming') followups = followups.filter(l => !l.followUpCompletedAt && String(l.followUpDate||'').slice(0,10) > todayISO && String(l.followUpDate||'').slice(0,10) <= end7);
+    else if (bucket === 'next30') followups = followups.filter(l => !l.followUpCompletedAt && String(l.followUpDate||'').slice(0,10) > todayISO && String(l.followUpDate||'').slice(0,10) <= end30);
+    else if (bucket && bucket !== 'all') followups = followups.filter(l => l.followUpBucket === bucket);
     if (followupFilters.status) followups = followups.filter(l => l.status === followupFilters.status);
-    if (followupFilters.q) { const q = followupFilters.q.toLowerCase(); followups = followups.filter(l => [l.name,l.phone,l.email,l.product,l.status,l.followUpDate].filter(Boolean).join(' ').toLowerCase().includes(q)); }
-    renderFollowups(followups.length);
+    if (followupFilters.from) followups = followups.filter(l => String(l.followUpDate||'').slice(0,10) >= followupFilters.from);
+    if (followupFilters.to) followups = followups.filter(l => String(l.followUpDate||'').slice(0,10) <= followupFilters.to);
+    if (followupFilters.q) { const q = followupFilters.q.toLowerCase(); followups = followups.filter(l => [l.name,l.phone,l.email,l.product,l.status,l.followUpDate,l.id].filter(Boolean).join(' ').toLowerCase().includes(q)); }
+    const total = followups.length;
+    const start = (followupPage - 1) * PAGE_SIZE;
+    followups = followups.slice(start, start + PAGE_SIZE);
+    renderFollowups(total);
   }
 
   function renderFollowups(totalOverride) {
@@ -1404,6 +1437,8 @@
     $('#fu-overdue-count') && ($('#fu-overdue-count').textContent = String(followupCounts.overdue || 0));
     $('#fu-completed-count') && ($('#fu-completed-count').textContent = String(followupCounts.completed || 0));
     const navCount = $('#nav-followup-count'); if (navCount) navCount.textContent = String((followupCounts.today || 0) + (followupCounts.overdue || 0));
+    const countEl = $('#followup-results-count'); if (countEl) countEl.textContent = total + ' matching record' + (total === 1 ? '' : 's');
+    syncFollowupFilterUI();
     const body = $('#followups-body');
     if (!body) return;
     const items = followups;
@@ -1421,9 +1456,9 @@
           '<button class="a-btn-icon" data-action="fu-reschedule" data-id="' + esc(l.id) + '" title="Reschedule"><svg class="icon" aria-hidden="true"><use href="#i-calendar"></use></svg></button>' +
           (b !== 'completed' ? '<button class="a-btn-icon" data-action="fu-complete" data-id="' + esc(l.id) + '" title="Mark completed"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg></button>' : '') +
         '</div></td></tr>';
-    }).join('') : '<tr><td colspan="5" class="table-empty"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg><br>No follow-ups found for this filter.<br><button class="a-btn a-btn-light a-btn-sm" style="margin-top:10px" id="fu-empty-reset">Clear filters</button></td></tr>';
+    }).join('') : '<tr><td colspan="5" class="table-empty"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg><br>No follow-ups found for this filter.<br><button class="a-btn a-btn-light a-btn-sm" style="margin-top:10px" id="fu-empty-reset">Clear All Filters</button></td></tr>';
     renderPagination('#followups-pagination', total, followupPage, (p) => { followupPage = p; loadFollowups(); }, PAGE_SIZE);
-    const reset = $('#fu-empty-reset'); if (reset) reset.addEventListener('click', () => { followupFilters.q=''; followupFilters.bucket='all'; followupFilters.status=''; $('#followup-search').value=''; $('#followup-bucket-filter').value='all'; $('#followup-status-filter').value=''; followupPage=1; loadFollowups(); });
+    const reset = $('#fu-empty-reset'); if (reset) reset.addEventListener('click', clearFollowupFilters);
   }
 
   async function updateFollowup(id, patch, okMsg) {
@@ -3134,8 +3169,13 @@
     if (fuBucket) fuBucket.addEventListener('change', (e) => { followupFilters.bucket = e.target.value; followupPage = 1; loadFollowups(); });
     const fuStatus = $('#followup-status-filter');
     if (fuStatus) fuStatus.addEventListener('change', (e) => { followupFilters.status = e.target.value; followupPage = 1; loadFollowups(); });
+    const fuFrom = $('#followup-from');
+    if (fuFrom) fuFrom.addEventListener('change', (e) => { followupFilters.from = e.target.value || ''; followupPage = 1; loadFollowups(); });
+    const fuTo = $('#followup-to');
+    if (fuTo) fuTo.addEventListener('change', (e) => { followupFilters.to = e.target.value || ''; followupPage = 1; loadFollowups(); });
+    $$('.fu-quick').forEach(btn => btn.addEventListener('click', () => { followupFilters.bucket = btn.dataset.fuBucket || 'all'; followupPage = 1; loadFollowups(); }));
     const fuClear = $('#clear-followup-filters');
-    if (fuClear) fuClear.addEventListener('click', () => { followupFilters.q=''; followupFilters.bucket='all'; followupFilters.status=''; if(fuSearch) fuSearch.value=''; if(fuBucket) fuBucket.value='all'; if(fuStatus) fuStatus.value=''; followupPage=1; loadFollowups(); });
+    if (fuClear) fuClear.addEventListener('click', clearFollowupFilters);
     const fuRefresh = $('#refresh-followups-btn');
     if (fuRefresh) fuRefresh.addEventListener('click', () => loadFollowups());
 

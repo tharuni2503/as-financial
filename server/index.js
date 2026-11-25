@@ -789,44 +789,53 @@ app.get('/api/follow-ups/summary', requireSession, requireRole('advisor', 'staff
 }));
 
 app.get('/api/follow-ups', requireSession, requireRole('advisor', 'staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {
-  const all = await store.listEnquiries();
   const today = kolkataDateISO(new Date());
   const q = validate.text(req.query.q, 120).toLowerCase();
   const status = validate.text(req.query.status, 40);
-  const bucket = validate.text(req.query.bucket, 20).toLowerCase();
-  let items = (Array.isArray(all) ? all : []).map(e => {
-    const b = followUpBucket(e, today);
-    return Object.assign({}, e, { followUpBucket: b });
-  }).filter(e => e.followUpBucket !== 'none');
-  if (bucket && ['today', 'upcoming', 'overdue', 'completed', 'scheduled', 'all'].includes(bucket) && bucket !== 'all') {
-    items = items.filter(e => e.followUpBucket === bucket);
-  }
-  if (status) items = items.filter(e => String(e.status || '') === status);
-  if (q) {
-    items = items.filter(e => {
-      const hay = [e.id, e.name, e.phone, e.email, e.product, e.status, e.followUpDate, e.note].filter(Boolean).join(' ').toLowerCase();
-      return hay.includes(q);
-    });
-  }
-  items.sort((a, b) => {
-    const ad = String(a.followUpDate || '9999-99-99');
-    const bd = String(b.followUpDate || '9999-99-99');
-    if (ad < bd) return -1;
-    if (ad > bd) return 1;
-    return String(b.receivedAt || '').localeCompare(String(a.receivedAt || ''));
-  });
-  const total = items.length;
+  const bucketRaw = validate.text(req.query.bucket, 20).toLowerCase();
+  const bucket = ['today', 'tomorrow', 'next7', 'upcoming', 'next30', 'overdue', 'completed', 'scheduled', 'all', ''].includes(bucketRaw) ? (bucketRaw || 'all') : 'all';
+  const from = validate.text(req.query.from, 10);
+  const to = validate.text(req.query.to, 10);
+  const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
+  if (from && !isDate(from)) return res.status(400).json({ error: 'Invalid start date.' });
+  if (to && !isDate(to)) return res.status(400).json({ error: 'Invalid end date.' });
+  if (from && to && from > to) return res.status(400).json({ error: 'Start date must be before or equal to end date.' });
   const page = Math.max(1, Number(req.query.page) || 1);
   const pageSize = Math.max(1, Math.min(100, Number(req.query.pageSize) || 20));
-  const offset = (page - 1) * pageSize;
-  const paged = items.slice(offset, offset + pageSize);
+
+  const opts = { today, q, status, bucket, from: isDate(from) ? from : '', to: isDate(to) ? to : '', page, pageSize };
+  let result;
+  try {
+    if (typeof store.queryFollowUps === 'function') result = await store.queryFollowUps(opts);
+  } catch (e) {
+    if (!(e && e.code === '42703')) throw e;
+    result = null;
+  }
+
+  if (!result) {
+    const all = await store.listEnquiries();
+    let items = (Array.isArray(all) ? all : []).map(e => Object.assign({}, e, { followUpBucket: followUpBucket(e, today) })).filter(e => e.followUpBucket !== 'none');
+    if (bucket !== 'all') items = items.filter(e => e.followUpBucket === (bucket === 'upcoming' ? 'upcoming' : bucket));
+    if (status) items = items.filter(e => String(e.status || '') === status);
+    if (opts.from) items = items.filter(e => String(e.followUpDate || '').slice(0, 10) >= opts.from);
+    if (opts.to) items = items.filter(e => String(e.followUpDate || '').slice(0, 10) <= opts.to);
+    if (q) items = items.filter(e => [e.id, e.name, e.phone, e.email, e.product, e.status].filter(Boolean).join(' ').toLowerCase().includes(q));
+    items.sort((a, b) => { const ad = String(a.followUpDate || '9999-99-99'); const bd = String(b.followUpDate || '9999-99-99'); if (ad < bd) return -1; if (ad > bd) return 1; return String(b.receivedAt || '').localeCompare(String(a.receivedAt || '')); });
+    const total = items.length;
+    const offset = (page - 1) * pageSize;
+    result = { items: items.slice(offset, offset + pageSize), total, page, pageSize };
+  }
+
+  const countsSource = await store.listEnquiries();
   const counts = { today: 0, upcoming: 0, overdue: 0, completed: 0, total: 0 };
-  (Array.isArray(all) ? all : []).forEach(e => {
+  (Array.isArray(countsSource) ? countsSource : []).forEach(e => {
     const b = followUpBucket(e, today);
     if (counts[b] !== undefined) counts[b]++;
     if (b !== 'none') counts.total++;
   });
-  res.json({ ok: true, today, counts, items: paged, total, page, pageSize });
+
+  const items = (result.items || []).map(e => Object.assign({}, e, { followUpBucket: followUpBucket(e, today) }));
+  res.json({ ok: true, today, counts, items, total: result.total || 0, page: result.page || page, pageSize: result.pageSize || pageSize });
 }));
 
 app.get('/api/admin/store', requireSession, requireRole('staff', 'admin', 'super_admin'), asyncRoute(async (req, res) => {

@@ -744,6 +744,45 @@ async function takeRateLimit(key, limit, windowMs) {
   const ra = row.reset_at ? new Date(row.reset_at).getTime() : resetAt.getTime();
   return { allowed: count <= lim, count, limit: lim, resetAt: ra };
 }
+async function queryFollowUps(opts = {}) {
+  const today = String(opts.today || '').slice(0, 10);
+  const bucket = String(opts.bucket || 'all').toLowerCase();
+  const status = String(opts.status || '').trim();
+  const q = String(opts.q || '').trim().toLowerCase();
+  const from = String(opts.from || '').slice(0, 10);
+  const to = String(opts.to || '').slice(0, 10);
+  const page = Math.max(1, Number(opts.page) || 1);
+  const pageSize = Math.max(1, Math.min(100, Number(opts.pageSize) || 20));
+  const offset = (page - 1) * pageSize;
+
+  const where = ["(follow_up_date IS NOT NULL OR follow_up_completed_at IS NOT NULL)"];
+  const params = [];
+  const add = (sql, val) => { params.push(val); where.push(sql.replace('$?', '$' + params.length)); };
+
+  if (status) add('status = $?', status);
+  if (q) { params.push('%' + q + '%'); const p = '$' + params.length; where.push('(LOWER(name) LIKE ' + p + ' OR LOWER(phone) LIKE ' + p + ' OR LOWER(email) LIKE ' + p + ' OR LOWER(id) LIKE ' + p + ' OR LOWER(product) LIKE ' + p + ')'); }
+  if (from) add('follow_up_date >= $?::date', from);
+  if (to) add('follow_up_date <= $?::date', to);
+
+  if (bucket === 'completed') where.push('follow_up_completed_at IS NOT NULL');
+  else if (bucket === 'overdue') { add('follow_up_date < $?::date', today); where.push('follow_up_completed_at IS NULL'); }
+  else if (bucket === 'today') { add('follow_up_date = $?::date', today); where.push('follow_up_completed_at IS NULL'); }
+  else if (bucket === 'tomorrow') { params.push(today); const p = '$' + params.length; where.push('follow_up_date = (' + p + '::date + INTERVAL \'1 day\')::date'); where.push('follow_up_completed_at IS NULL'); }
+  else if (bucket === 'next7' || bucket === 'upcoming') { params.push(today); const p = '$' + params.length; where.push('follow_up_date > ' + p + '::date'); where.push('follow_up_date <= (' + p + '::date + INTERVAL \'7 day\')::date'); where.push('follow_up_completed_at IS NULL'); }
+  else if (bucket === 'next30') { params.push(today); const p = '$' + params.length; where.push('follow_up_date > ' + p + '::date'); where.push('follow_up_date <= (' + p + '::date + INTERVAL \'30 day\')::date'); where.push('follow_up_completed_at IS NULL'); }
+  else if (bucket === 'scheduled') where.push('follow_up_completed_at IS NULL');
+
+  const whereSql = where.length ? ('WHERE ' + where.join(' AND ')) : '';
+  const countRes = await getPool().query('SELECT COUNT(*)::int AS total FROM enquiries ' + whereSql, params);
+  const total = (countRes.rows[0] && countRes.rows[0].total) || 0;
+  const listParams = params.concat([pageSize, offset]);
+  const listRes = await getPool().query(
+    'SELECT * FROM enquiries ' + whereSql + ' ORDER BY follow_up_date ASC NULLS LAST, received_at DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2),
+    listParams
+  );
+  return { items: listRes.rows.map(rowToEnquiry), total, page, pageSize };
+}
+
 module.exports = {
   DATA_DIR: process.env.AS_DATA_DIR ? path.resolve(process.env.AS_DATA_DIR) : path.join(__dirname, '..', 'data'),
   ADMIN_COLLECTIONS,
@@ -780,5 +819,6 @@ module.exports = {
   getAnalytics,
   stats,
   describe,
-  takeRateLimit
+  takeRateLimit,
+  queryFollowUps
 };

@@ -128,4 +128,29 @@ test('Follow-up timeline and activity', async (t) => {
     const notes = res.json.enquiry.internalNotes || [];
     assert.ok(notes.some(n => n.text === 'Timeline note'));
   });
+
+  await t.test('date range validation rejects start after end', async () => {
+    const res = await api('/api/follow-ups?from=2026-12-10&to=2026-12-01', { token: admin.token });
+    assert.equal(res.status, 400);
+  });
+
+  await t.test('search by enquiry id and pagination with filters', async () => {
+    const res = await api('/api/follow-ups?q=' + encodeURIComponent(enquiryId) + '&page=1&pageSize=5', { token: admin.token });
+    assert.equal(res.status, 200);
+    assert.ok(Array.isArray(res.json.items));
+    assert.ok(res.json.items.some(i => i.id === enquiryId));
+    assert.equal(res.json.page, 1);
+    assert.equal(res.json.pageSize, 5);
+  });
+
+  await t.test('bucket and status filters combine', async () => {
+    const res = await api('/api/follow-ups?bucket=all&status=New', { token: admin.token });
+    assert.equal(res.status, 200);
+    assert.ok(Array.isArray(res.json.items));
+  });
+
+  await t.test('unauthorized follow-up access rejected', async () => {
+    const res = await api('/api/follow-ups');
+    assert.equal(res.status, 401);
+  });
 });
