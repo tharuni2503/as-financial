@@ -27,6 +27,8 @@
   <link rel="stylesheet" href="assets/css/home-hover-reveal.css?v=20261126f">
   <link rel="stylesheet" href="assets/css/home-portal-hero.css?v=20261126f">
   <link rel="stylesheet" href="assets/css/home-aurora-hero.css?v=20261126f">
+  <link rel="stylesheet" href="assets/css/home-journey-line.css?v=20261126f">
+  <link rel="stylesheet" href="assets/css/home-stacking-cards.css?v=20261126f">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -133,6 +135,28 @@
 </head>
 <body class="page-home">
   <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- Selected Superdesign animation: scroll journey line -->
+  <div class="jl-journey" data-journey-line aria-hidden="true">
+    <svg viewBox="0 0 100 1000" preserveAspectRatio="none" focusable="false">
+      <defs>
+        <linearGradient id="jl-gradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#C49A45" stop-opacity="0.5"></stop>
+          <stop offset="50%" stop-color="#C49A45"></stop>
+          <stop offset="100%" stop-color="#9A7A1A"></stop>
+        </linearGradient>
+        <filter id="jl-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur"></feGaussianBlur>
+          <feMerge>
+            <feMergeNode in="coloredBlur"></feMergeNode>
+            <feMergeNode in="SourceGraphic"></feMergeNode>
+          </feMerge>
+        </filter>
+      </defs>
+      <path class="jl-track" d="M 50 0 C 50 100, 80 150, 80 250 S 20 350, 20 500 S 80 650, 80 800 S 50 900, 50 1000" fill="none" stroke="rgba(16,31,56,0.06)" stroke-width="3" vector-effect="non-scaling-stroke" stroke-linecap="round"></path>
+      <path class="jl-progress" d="M 50 0 C 50 100, 80 150, 80 250 S 20 350, 20 500 S 80 650, 80 800 S 50 900, 50 1000" fill="none" stroke="url(#jl-gradient)" stroke-width="3" stroke-linecap="round" vector-effect="non-scaling-stroke" pathLength="1" filter="url(#jl-glow)"></path>
+    </svg>
+  </div>
 
   <!-- Announcement -->
   <div class="topbar">
@@ -873,7 +897,7 @@
             <a href="tel:+919182703079" style="font-weight:800;color:var(--navy)" data-setting="phone">91827 03079</a>
           </div>
         </div>
-        <div class="faq-list reveal">
+        <div class="faq-list reveal" data-stacking-cards>
           <div class="faq-item open">
             <button type="button" class="faq-q" aria-expanded="true" id="home-faq-q1" aria-controls="home-faq-a1">Does AS Financial charge a fee for loan assistance? <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></button>
             <div class="faq-a" style="max-height:220px" id="home-faq-a1" role="region" aria-labelledby="home-faq-q1"><div>For many retail loans we may be compensated by the lender. If any service fee applies, we will inform you clearly before you proceed. You can discuss charges and terms with our advisor.</div></div>
@@ -1104,6 +1128,8 @@
   <script src="assets/js/home-hover-reveal.js?v=20261126f" defer></script>
   <script src="assets/js/home-portal-hero.js?v=20261126f" defer></script>
   <script src="assets/js/home-aurora-hero.js?v=20261126f" defer></script>
+  <script src="assets/js/home-journey-line.js?v=20261126f" defer></script>
+  <script src="assets/js/home-stacking-cards.js?v=20261126f" defer></script>
 
   <script>
     /* Subtle layered-depth parallax for the hero (pure CSS transforms, no WebGL) */

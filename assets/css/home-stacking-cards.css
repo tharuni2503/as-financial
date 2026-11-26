@@ -1,0 +1,20 @@
+/* ==========================================================================
+   Homepage-only stacking cards effect adapted from the selected Superdesign
+   "Stacking Cards" component. The source scrubs each preceding card to
+   scale(0.95) and brightness(0.5) while the next card travels from the bottom
+   of the viewport to the top. Only those two transforms are applied here; the
+   restored FAQ card layout, typography, colours and spacing are untouched.
+   ========================================================================== */
+
+.home-stacking-ready [data-stacking-cards] .faq-item {
+  transform-origin: center top;
+  will-change: transform, filter;
+}
+
+@media (max-width: 700px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .home-stacking-ready [data-stacking-cards] .faq-item {
+    transform: none !important;
+    filter: none !important;
+    will-change: auto !important;
+  }
+}

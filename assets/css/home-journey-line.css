@@ -1,0 +1,44 @@
+/* ==========================================================================
+   Homepage-only scroll journey line adapted from the selected Superdesign
+   "Scroll Journey Line" component. The source draws a winding SVG path
+   (viewBox 0 0 100 1000, preserveAspectRatio none) whose revealed length is
+   bound to scroll progress through a spring (stiffness 400, damping 90,
+   restDelta 1e-3). Here it is mounted as a fixed, non-interactive rail so the
+   restored homepage keeps its exact resting layout, dimensions and styling.
+   ========================================================================== */
+
+.jl-journey {
+  position: fixed;
+  top: 0;
+  right: clamp(8px, 1.6vw, 24px);
+  width: clamp(22px, 2.6vw, 38px);
+  height: 100vh;
+  height: 100svh;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .4s ease;
+}
+
+.home-journey-line-ready .jl-journey {
+  opacity: 1;
+}
+
+.jl-journey svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* source path: M 50 0 C 50 100, 80 150, 80 250 S 20 350, 20 500
+                  S 80 650, 80 800 S 50 900, 50 1000 */
+.jl-progress {
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: calc(1 - var(--jl-progress, 0));
+}
+
+@media (max-width: 700px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .jl-journey {
+    display: none !important;
+  }
+}
