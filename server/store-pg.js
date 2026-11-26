@@ -783,6 +783,292 @@ async function queryFollowUps(opts = {}) {
   return { items: listRes.rows.map(rowToEnquiry), total, page, pageSize };
 }
 
+/* ------------------------------------------------- notifications table (optional) */
+// Atomic, multi-instance-safe notification storage. Used only when the additive
+// migration has been applied (see server/migrations-pending/007_notifications.sql).
+// Falls back to the JSON app_admin collection when the table/columns are absent.
+let _notificationsReady = null;
+const REQUIRED_NOTIFICATION_COLUMNS = [
+  'id', 'dedupe_key', 'type', 'title', 'message', 'target_type', 'target_id', 'state', 'read',
+  'acknowledged_at', 'dismissed_at', 'meta', 'created_at', 'updated_at'
+];
+async function notificationsTableReady() {
+  if (_notificationsReady !== null) return _notificationsReady;
+  try {
+    const res = await getPool().query(
+      "SELECT to_regclass('public.notifications') AS t, " +
+      "COALESCE((SELECT array_agg(column_name) FROM information_schema.columns WHERE table_schema='public' AND table_name='notifications'), '{}'::text[]) AS notification_cols, " +
+      "(SELECT COUNT(*)::int FROM information_schema.columns WHERE table_schema='public' AND table_name='enquiries' AND column_name IN ('follow_up_date','follow_up_completed_at')) AS cols"
+    );
+    const row = res.rows[0] || {};
+    const cols = Array.isArray(row.notification_cols) ? row.notification_cols : [];
+    _notificationsReady = !!(row.t && Number(row.cols) === 2 && REQUIRED_NOTIFICATION_COLUMNS.every(c => cols.includes(c)));
+  } catch (e) {
+    _notificationsReady = false;
+  }
+  return _notificationsReady;
+}
+
+function rowToNotification(row) {
+  if (!row) return null;
+  const state = String(row.state || 'pending');
+  const acknowledged = state === 'acknowledged' || !!row.acknowledged_at;
+  const dismissed = state === 'dismissed' || !!row.dismissed_at;
+  return {
+    id: row.id,
+    type: row.type,
+    title: row.title,
+    message: row.message,
+    targetType: row.target_type,
+    targetId: row.target_id,
+    read: !!row.read || acknowledged || dismissed,
+    state,
+    acknowledged,
+    dismissed,
+    superseded: state === 'superseded',
+    acknowledgedAt: row.acknowledged_at ? new Date(row.acknowledged_at).toISOString() : '',
+    dismissedAt: row.dismissed_at ? new Date(row.dismissed_at).toISOString() : '',
+    createdAt: row.created_at ? new Date(row.created_at).toISOString() : '',
+    updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : '',
+    meta: row.meta && typeof row.meta === 'object' && !Array.isArray(row.meta) ? row.meta : {}
+  };
+}
+
+async function syncFollowupReminders(opts = {}) {
+  if (!(await notificationsTableReady())) return { ok: false, reason: 'table-missing' };
+  const today = String(opts.today || '').slice(0, 10);
+  const next7 = String(opts.next7 || '').slice(0, 10);
+  if (!today || !next7) return { ok: false, reason: 'missing-dates' };
+  const client = await getPool().connect();
+  try {
+    await client.query('BEGIN');
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('notifications-sync'))");
+    await client.query(
+      `INSERT INTO notifications
+         (id, dedupe_key, type, title, message, target_type, target_id, state, read, meta, created_at, updated_at)
+       SELECT
+         'NTF-FU-' || e.id || '-' || (e.follow_up_date::date)::text,
+         'followup:' || e.id || ':' || (e.follow_up_date::date)::text,
+         'followup.reminder',
+         CASE WHEN e.follow_up_date::date < $1::date THEN 'Overdue follow-up'
+              WHEN e.follow_up_date::date = $1::date THEN 'Today''s follow-up'
+              ELSE 'Upcoming follow-up' END,
+         COALESCE(NULLIF(e.name, ''), 'Enquiry') || ' • ' || COALESCE(e.phone, '') || ' • ' || COALESCE(e.product, '') ||
+           ' — follow-up ' || (e.follow_up_date::date)::text || '.',
+         'enquiry', e.id, 'pending', FALSE,
+         jsonb_build_object(
+           'bucket', CASE WHEN e.follow_up_date::date < $1::date THEN 'overdue'
+                          WHEN e.follow_up_date::date = $1::date THEN 'today'
+                          ELSE 'upcoming' END,
+           'followUpDate', (e.follow_up_date::date)::text,
+           'enquiryStatus', COALESCE(e.status, ''),
+           'reminderKey', 'followup:' || e.id || ':' || (e.follow_up_date::date)::text
+         ),
+         NOW(), NOW()
+       FROM enquiries e
+       WHERE e.follow_up_completed_at IS NULL
+         AND e.follow_up_date IS NOT NULL
+         AND e.follow_up_date::date <= $2::date
+       ON CONFLICT (dedupe_key) DO UPDATE
+         SET title = EXCLUDED.title,
+             message = EXCLUDED.message,
+             meta = EXCLUDED.meta,
+             updated_at = NOW(),
+             state = CASE WHEN notifications.state = 'superseded' THEN 'pending' ELSE notifications.state END,
+             read = CASE WHEN notifications.state = 'superseded' THEN FALSE ELSE notifications.read END,
+             acknowledged_at = CASE WHEN notifications.state = 'superseded' THEN NULL ELSE notifications.acknowledged_at END,
+             dismissed_at = CASE WHEN notifications.state = 'superseded' THEN NULL ELSE notifications.dismissed_at END
+         WHERE notifications.state IN ('pending', 'superseded')`,
+      [today, next7]
+    );
+    await client.query(
+      `UPDATE notifications n
+         SET state = 'superseded', updated_at = NOW()
+       WHERE n.type = 'followup.reminder'
+         AND n.state = 'pending'
+         AND NOT EXISTS (
+           SELECT 1 FROM enquiries e
+           WHERE e.id = n.target_id
+             AND e.follow_up_completed_at IS NULL
+             AND e.follow_up_date IS NOT NULL
+             AND e.follow_up_date::date = NULLIF(n.meta->>'followUpDate', '')::date
+             AND e.follow_up_date::date <= $1::date
+         )`,
+      [next7]
+    );
+    await client.query('COMMIT');
+    return { ok: true };
+  } catch (e) {
+    try { await client.query('ROLLBACK'); } catch (_) {}
+    if (e && (e.code === '42P01' || e.code === '42703' || e.code === '42710')) {
+      _notificationsReady = false;
+      return { ok: false, reason: 'schema-missing' };
+    }
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+async function listNotifications(opts = {}) {
+  if (!(await notificationsTableReady())) return null;
+  const limit = Math.max(1, Math.min(500, Number(opts.limit) || 50));
+  const offset = Math.max(0, Number(opts.offset) || 0);
+  const where = [];
+  const params = [];
+  if (opts.state) { params.push(String(opts.state)); where.push('state = $' + params.length); }
+  if (opts.type) { params.push(String(opts.type)); where.push('type = $' + params.length); }
+  if (opts.pending) where.push("state = 'pending'");
+  if (opts.unread) where.push('read = FALSE');
+  const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
+  const countRes = await getPool().query('SELECT COUNT(*)::int AS total FROM notifications ' + whereSql, params);
+  const counts = { overdue: 0, today: 0, upcoming: 0, completed: 0, pending: 0 };
+  try {
+    const bucketRes = await getPool().query(
+      "SELECT COALESCE(meta->>'bucket', '') AS bucket, COUNT(*)::int AS c " +
+      "FROM notifications WHERE type = 'followup.reminder' AND state = 'pending' GROUP BY 1"
+    );
+    bucketRes.rows.forEach((r) => { if (counts[r.bucket] !== undefined) counts[r.bucket] = Number(r.c) || 0; });
+    const pendRes = await getPool().query(
+      "SELECT COUNT(*)::int AS c FROM notifications WHERE type = 'followup.reminder' AND state = 'pending'"
+    );
+    counts.pending = (pendRes.rows[0] && Number(pendRes.rows[0].c)) || 0;
+  } catch (e) { /* counts best effort */ }
+  let stateCounts = { all: 0, pending: 0, unread: 0, acknowledged: 0, dismissed: 0, completed: 0, superseded: 0 };
+  try {
+    const stateRes = await getPool().query(
+      "SELECT COUNT(*)::int AS all_count, " +
+      "COUNT(*) FILTER (WHERE state = 'pending')::int AS pending, " +
+      "COUNT(*) FILTER (WHERE state = 'pending' AND read = FALSE)::int AS unread, " +
+      "COUNT(*) FILTER (WHERE state = 'acknowledged')::int AS acknowledged, " +
+      "COUNT(*) FILTER (WHERE state = 'dismissed')::int AS dismissed, " +
+      "COUNT(*) FILTER (WHERE state = 'completed')::int AS completed, " +
+      "COUNT(*) FILTER (WHERE state = 'superseded')::int AS superseded " +
+      "FROM notifications"
+    );
+    const row = (stateRes.rows && stateRes.rows[0]) || {};
+    stateCounts = {
+      all: Number(row.all_count) || 0,
+      pending: Number(row.pending) || 0,
+      unread: Number(row.unread) || 0,
+      acknowledged: Number(row.acknowledged) || 0,
+      dismissed: Number(row.dismissed) || 0,
+      completed: Number(row.completed) || 0,
+      superseded: Number(row.superseded) || 0
+    };
+  } catch (e) { /* state counts best effort */ }
+  const listParams = params.concat([limit, offset]);
+  const res = await getPool().query(
+    'SELECT * FROM notifications ' + whereSql + ' ORDER BY created_at DESC LIMIT $' + (params.length + 1) +
+    ' OFFSET $' + (params.length + 2),
+    listParams
+  );
+  return {
+    items: res.rows.map(rowToNotification),
+    total: (countRes.rows[0] && Number(countRes.rows[0].total)) || 0,
+    counts,
+    stateCounts,
+    limit,
+    offset
+  };
+}
+
+async function insertNotificationIdempotent(n) {
+  if (!(await notificationsTableReady())) return null;
+  const id = String(n && n.id || '');
+  const dedupeKey = String((n && (n.dedupeKey || n.id)) || '');
+  if (!id || !dedupeKey) return null;
+  const meta = Object.assign({}, n.meta && typeof n.meta === 'object' && !Array.isArray(n.meta) ? n.meta : {});
+  const res = await getPool().query(
+    `INSERT INTO notifications
+       (id, dedupe_key, type, title, message, target_type, target_id, state, read, meta, created_at, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,'pending',FALSE,$8::jsonb,NOW(),NOW())
+     ON CONFLICT (dedupe_key) DO UPDATE
+       SET state = 'pending',
+           read = FALSE,
+           acknowledged_at = NULL,
+           dismissed_at = NULL,
+           title = EXCLUDED.title,
+           message = EXCLUDED.message,
+           meta = EXCLUDED.meta,
+           updated_at = NOW()
+       WHERE notifications.state = 'superseded'
+     RETURNING *`,
+    [id, dedupeKey, String(n.type || 'notification'), String(n.title || ''), String(n.message || ''),
+      String(n.targetType || ''), String(n.targetId || ''), JSON.stringify(meta)]
+  );
+  if (res.rows[0]) return rowToNotification(res.rows[0]);
+  // Benign conflict: the dedupe key already exists with a preserved history
+  // state. Return that row so callers do not mistake it for a failed insert.
+  const existing = await getPool().query('SELECT * FROM notifications WHERE dedupe_key = $1 LIMIT 1', [dedupeKey]);
+  return existing.rows[0] ? rowToNotification(existing.rows[0]) : null;
+}
+
+async function getNotification(id) {
+  if (!(await notificationsTableReady())) return null;
+  const res = await getPool().query('SELECT * FROM notifications WHERE id = $1', [String(id)]);
+  return res.rows[0] ? rowToNotification(res.rows[0]) : undefined;
+}
+
+async function updateNotificationState(id, patch = {}) {
+  if (!(await notificationsTableReady())) return null;
+  const state = patch.state || (patch.dismissed ? 'dismissed' : patch.acknowledged ? 'acknowledged' : null);
+  const read = typeof patch.read === 'boolean' ? patch.read : null;
+  const ack = !!patch.acknowledged || state === 'acknowledged';
+  const dis = !!patch.dismissed || state === 'dismissed';
+  const actor = JSON.stringify(patch.actor && typeof patch.actor === 'object' ? patch.actor : {});
+  const res = await getPool().query(
+    `UPDATE notifications
+        SET state = COALESCE($2, state),
+            read = CASE WHEN COALESCE($2, state) IN ('acknowledged', 'dismissed') THEN TRUE ELSE COALESCE($3, read) END,
+            acknowledged_at = CASE WHEN $4 THEN COALESCE(acknowledged_at, NOW()) ELSE acknowledged_at END,
+            dismissed_at = CASE WHEN $5 THEN COALESCE(dismissed_at, NOW()) ELSE dismissed_at END,
+            meta = CASE WHEN $4 OR $5 THEN
+              jsonb_set(
+                jsonb_set(COALESCE(meta, '{}'::jsonb), '{acknowledgedBy}',
+                  CASE WHEN $4 THEN $6::jsonb ELSE COALESCE(meta->'acknowledgedBy', 'null'::jsonb) END, true),
+                '{dismissedBy}',
+                  CASE WHEN $5 THEN $6::jsonb ELSE COALESCE(meta->'dismissedBy', 'null'::jsonb) END, true)
+              ELSE meta END,
+            updated_at = NOW()
+      WHERE id = $1
+      RETURNING *`,
+    [String(id), state, read, ack, dis, actor]
+  );
+  return res.rows[0] ? rowToNotification(res.rows[0]) : undefined;
+}
+
+async function deleteNotificationState(id, actor) {
+  if (!(await notificationsTableReady())) return null;
+  const actorJson = JSON.stringify(actor && typeof actor === 'object' ? actor : {});
+  const upd = await getPool().query(
+    `UPDATE notifications
+        SET state = 'dismissed', read = TRUE, dismissed_at = COALESCE(dismissed_at, NOW()),
+            meta = jsonb_set(COALESCE(meta, '{}'::jsonb), '{dismissedBy}', $2::jsonb, true),
+            updated_at = NOW()
+      WHERE id = $1 AND type = 'followup.reminder'
+      RETURNING *`,
+    [String(id), actorJson]
+  );
+  if (upd.rows[0]) return { item: rowToNotification(upd.rows[0]), dismissed: true };
+  const del = await getPool().query('DELETE FROM notifications WHERE id = $1 RETURNING id', [String(id)]);
+  return del.rows[0] ? { item: null, dismissed: false, deleted: true } : undefined;
+}
+
+async function supersedeSlaReminders(activeKeys) {
+  if (!(await notificationsTableReady())) return null;
+  const keys = Array.isArray(activeKeys) ? activeKeys.map(String) : [];
+  const res = await getPool().query(
+    `UPDATE notifications
+        SET state = 'superseded', updated_at = NOW()
+      WHERE type = 'lead.sla'
+        AND state = 'pending'
+        AND NOT (dedupe_key = ANY($1::text[]))`,
+    [keys]
+  );
+  return Number(res.rowCount) || 0;
+}
+
 module.exports = {
   DATA_DIR: process.env.AS_DATA_DIR ? path.resolve(process.env.AS_DATA_DIR) : path.join(__dirname, '..', 'data'),
   ADMIN_COLLECTIONS,
@@ -820,5 +1106,13 @@ module.exports = {
   stats,
   describe,
   takeRateLimit,
-  queryFollowUps
+  queryFollowUps,
+  notificationsTableReady,
+  syncFollowupReminders,
+  listNotifications,
+  getNotification,
+  insertNotificationIdempotent,
+  updateNotificationState,
+  deleteNotificationState,
+  supersedeSlaReminders
 };

@@ -554,5 +554,6 @@ module.exports = {
   stats,
   describe,
   takeRateLimit,
-  queryFollowUps
+  queryFollowUps,
+  notificationsTableReady: async () => false
 };

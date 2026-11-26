@@ -13,9 +13,9 @@
   <link rel="apple-touch-icon" href="assets/img/brand/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/admin.css?v=20261123g57">
-  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261123g57">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261125b">
+  <link rel="stylesheet" href="assets/css/admin.css?v=20261125e">
 </head>
 <body>
   <a class="skip-link" href="#login-screen">Skip to content</a>
@@ -124,19 +124,23 @@
         <button type="button" class="sidebar-close" id="sidebar-close" aria-label="Close menu"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
       </div>
 
-      <nav class="sidebar-nav" aria-label="Dashboard">
+      <nav class="sidebar-nav" aria-label="Admin navigation">
         <div class="sidebar-label">Main</div>
         <button type="button" class="sidebar-link active" data-view="overview"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg> Dashboard</button>
-        <button type="button" class="sidebar-link" data-view="analytics"><svg class="icon" aria-hidden="true"><use href="#i-chart"></use></svg> Web Analytics</button>
         <button type="button" class="sidebar-link" data-view="leads"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg> Enquiries <span class="badge-count" id="nav-lead-count">0</span></button>
         <button type="button" class="sidebar-link" data-view="followups"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg> Follow-ups <span class="badge-count" id="nav-followup-count">0</span></button>
+        <button type="button" class="sidebar-link" data-view="notifications"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg> Notifications <span class="badge-count" id="nav-notif-count" style="display:none">0</span></button>
+        <button type="button" class="sidebar-link" data-view="applications"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"></use></svg> Applications</button>
+        <button type="button" class="sidebar-link" data-view="analytics"><svg class="icon" aria-hidden="true"><use href="#i-chart"></use></svg> Analytics &amp; Reports</button>
 
-        <div class="sidebar-label">Website content</div>
-        <button type="button" class="sidebar-link" data-view="partners"><svg class="icon" aria-hidden="true"><use href="#i-handshake"></use></svg> Loan partners</button>
-        <button type="button" class="sidebar-link" data-view="products"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"></use></svg> Loan products</button>
-        <button type="button" class="sidebar-link" data-view="content"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg> Reviews &amp; content</button>
+        <div class="sidebar-label">Management</div>
+        <button type="button" class="sidebar-link" data-view="customers"><svg class="icon" aria-hidden="true"><use href="#i-user"></use></svg> Customers</button>
+        <button type="button" class="sidebar-link" data-view="partners"><svg class="icon" aria-hidden="true"><use href="#i-handshake"></use></svg> Lenders &amp; Products</button>
+        <button type="button" class="sidebar-link" data-view="content"><svg class="icon" aria-hidden="true"><use href="#i-doc"></use></svg> Reviews &amp; Content</button>
 
         <div class="sidebar-label">System</div>
+        <button type="button" class="sidebar-link" data-view="health"><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg> Website Health</button>
+        <button type="button" class="sidebar-link" data-view="audit"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg> Activity &amp; Security</button>
         <button type="button" class="sidebar-link" data-view="settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"></use></svg> Settings</button>
       </nav>
 
@@ -158,7 +162,7 @@
       <header class="admin-topbar">
         <button type="button" class="admin-burger" id="admin-burger" aria-label="Open menu"><svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg></button>
         <div class="topbar-title">
-          <h2 id="topbar-title">Overview</h2>
+          <h2 id="topbar-title">Dashboard</h2>
           <span id="topbar-date">—</span>
         </div>
 
@@ -175,7 +179,7 @@
               <span class="notif-dot"></span>
             </button>
             <div class="dropdown-menu notif-menu" id="notif-menu">
-              <div class="notif-head"><strong>Notifications</strong><div style="display:flex;align-items:center;gap:8px"><span id="notif-menu-count">No new alerts</span><button type="button" class="icon-btn" id="notif-refresh-btn" aria-label="Refresh notifications" style="width:32px;height:32px;min-width:32px"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-refresh"></use></svg></button></div></div>
+              <div class="notif-head"><strong>Notifications</strong><div style="display:flex;align-items:center;gap:8px"><span id="notif-menu-count">No new alerts</span><button type="button" class="icon-btn" id="notif-refresh-btn" aria-label="Refresh notifications"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-refresh"></use></svg></button></div></div>
               <div class="notif-item"><span><b>No notifications</b><span>New alerts will appear here.</span></span></div>
             </div>
           </div>
@@ -208,6 +212,30 @@
             <div class="page-head-actions">
               <button type="button" class="a-btn a-btn-light" data-view-link="leads"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg> View enquiries</button>
               <button type="button" class="a-btn a-btn-light" id="refresh-analytics-btn"><svg class="icon" aria-hidden="true"><use href="#i-refresh"></use></svg> Refresh</button>
+            </div>
+          </div>
+
+          <div class="card priority-board" aria-label="Today's priorities">
+            <div class="card-head">
+              <div><h3>Start here</h3><p>What needs attention today, in one place</p></div>
+              <span class="kpi-chip flat" id="ov-priority-updated">Live</span>
+            </div>
+            <div class="priority-grid">
+              <button type="button" class="priority-tile" data-view-link="leads">
+                <span class="priority-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg></span>
+                <span class="priority-copy"><b id="ov-priority-enquiries">0</b><span>Open enquiries</span></span>
+                <svg class="icon priority-arrow" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+              </button>
+              <button type="button" class="priority-tile" data-view-link="followups" data-followup-bucket="overdue">
+                <span class="priority-icon red"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg></span>
+                <span class="priority-copy"><b id="ov-priority-overdue">0</b><span>Overdue follow-ups</span></span>
+                <svg class="icon priority-arrow" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+              </button>
+              <button type="button" class="priority-tile" data-view-link="followups" data-followup-bucket="today">
+                <span class="priority-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg></span>
+                <span class="priority-copy"><b id="ov-priority-today">0</b><span>Follow-ups due today</span></span>
+                <svg class="icon priority-arrow" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+              </button>
             </div>
           </div>
 
@@ -259,22 +287,8 @@
               </div>
             </div>
             <div class="card">
-              <div class="card-head"><div><h3>Loan Categories</h3><p>Enquiry distribution by loan type</p></div></div>
-              <div class="card-body">
-                <div class="chart-wrap" style="height:220px"><canvas id="ov-loan-categories-chart"></canvas></div>
-                <div class="donut-legend" id="ov-loan-categories-legend"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="dash-grid equal" style="margin-top:18px">
-            <div class="card">
-              <div class="card-head"><div><h3>Top Lenders</h3><p>Partner performance by enquiry share</p></div></div>
-              <div class="card-body"><div id="ov-top-lenders" class="lender-bars"><div class="empty-state" style="padding:18px"><p>No lender data yet.</p></div></div></div>
-            </div>
-            <div class="card">
               <div class="card-head"><div><h3>Recent Enquiries</h3><p>Latest customer enquiries</p></div><button type="button" class="a-btn a-btn-ghost a-btn-sm" data-view-link="leads">View all</button></div>
-              <div class="card-body" style="padding:0"><div class="table-wrap" style="border:0;border-radius:0"><table class="a-table"><thead><tr><th>Customer</th><th>Loan type</th><th>Date</th><th>Status</th></tr></thead><tbody id="ov-recent-enquiries"><tr><td colspan="4" class="table-empty">No enquiries yet.</td></tr></tbody></table></div></div>
+              <div class="card-body" style="padding:0"><div class="table-wrap" style="border:0;border-radius:0"><table class="a-table responsive-cards"><thead><tr><th>Customer</th><th>Loan type</th><th>Date</th><th>Status</th></tr></thead><tbody id="ov-recent-enquiries"><tr><td colspan="4" class="table-empty">No enquiries yet.</td></tr></tbody></table></div></div>
             </div>
           </div>
 
@@ -282,7 +296,7 @@
             <div class="card">
               <div class="card-head">
                 <div><h3>Urgent reminders</h3><p>Leads and follow-ups that need attention</p></div>
-                <button type="button" class="a-btn a-btn-ghost a-btn-sm" data-view-link="leads">View enquiries</button>
+                <button type="button" class="a-btn a-btn-ghost a-btn-sm" data-view-link="followups" data-followup-bucket="overdue">Open follow-ups</button>
               </div>
               <div class="card-body"><div class="alert-list" id="ov-urgent-list"><div class="empty-state" style="padding:18px"><p>No urgent reminders right now.</p></div></div></div>
             </div>
@@ -294,6 +308,19 @@
               <div class="card-body">
                 <div class="pipeline" id="ov-lead-pipeline"><div class="empty-state" style="padding:18px"><p>No enquiry data yet.</p></div></div>
               </div>
+            </div>
+          </div>
+
+          <div class="card view-shortcuts-card">
+            <div class="card-head"><div><h3>Go deeper</h3><p>Shortcuts to the detail views without leaving the dashboard</p></div></div>
+            <div class="view-shortcuts" role="group" aria-label="Dashboard shortcuts">
+              <button type="button" class="view-shortcut" data-view-shortcut data-view="reports"><svg class="icon" aria-hidden="true"><use href="#i-chart"></use></svg><span>Reports</span></button>
+              <button type="button" class="view-shortcut" data-view-shortcut data-view="funnel"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg><span>Enquiry funnel</span></button>
+              <button type="button" class="view-shortcut" data-view-shortcut data-view="recovery"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg><span>Recovery queue</span></button>
+              <button type="button" class="view-shortcut" data-view-shortcut data-view="marketing"><svg class="icon" aria-hidden="true"><use href="#i-globe"></use></svg><span>Marketing</span></button>
+              <button type="button" class="view-shortcut" data-view-shortcut data-view="growth"><svg class="icon" aria-hidden="true"><use href="#i-percent"></use></svg><span>Growth</span></button>
+              <button type="button" class="view-shortcut" data-view-shortcut data-view="partners"><svg class="icon" aria-hidden="true"><use href="#i-handshake"></use></svg><span>Lenders</span></button>
+              <button type="button" class="view-shortcut" data-view-shortcut data-view="products"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"></use></svg><span>Products</span></button>
             </div>
           </div>
         </section>
@@ -333,7 +360,7 @@
               <button type="button" class="a-btn a-btn-ghost a-btn-sm" id="clear-lead-filters">Reset</button>
             </div>
             <div class="table-wrap">
-              <table class="a-table">
+              <table class="a-table responsive-cards">
                 <thead><tr><th scope="col">Customer</th><th scope="col">Phone</th><th scope="col">Loan type</th><th scope="col">Amount</th><th scope="col">Status</th><th scope="col">Priority</th><th scope="col">Date</th><th scope="col" style="text-align:right">Actions</th></tr></thead>
                 <tbody id="leads-body"></tbody>
               </table>
@@ -402,7 +429,7 @@
             </div>
             <div class="followup-results-bar"><span id="followup-results-count">0 matching records</span></div>
             <div class="table-wrap">
-              <table class="a-table">
+              <table class="a-table responsive-cards">
                 <thead><tr><th scope="col">Customer</th><th scope="col">Loan / Status</th><th scope="col">Follow-up date</th><th scope="col">Bucket</th><th scope="col" style="text-align:right">Actions</th></tr></thead>
                 <tbody id="followups-body"><tr><td colspan="5" class="table-empty">Loading follow-ups…</td></tr></tbody>
               </table>
@@ -420,7 +447,7 @@
           <div class="card">
             <div class="card-head"><div><h3>Product catalogue</h3><p>Toggle visibility to show or hide a product on the site</p></div></div>
             <div class="table-wrap">
-              <table class="a-table">
+              <table class="a-table responsive-cards">
                 <thead><tr><th scope="col">Product</th><th scope="col">Interest rate</th><th scope="col">Max amount</th><th scope="col">Max tenure</th><th scope="col">Leads</th><th scope="col">Visible</th><th scope="col" style="text-align:right">Actions</th></tr></thead>
                 <tbody id="products-body"></tbody>
               </table>
@@ -536,7 +563,7 @@
           <div class="card">
             <div class="card-head"><div><h3>Product interest performance</h3><p>Enquiries and accepted outcomes by product (real lead data)</p></div></div>
             <div class="table-wrap">
-              <table class="a-table">
+              <table class="a-table responsive-cards">
                 <thead><tr><th scope="col">Product</th><th scope="col">Type</th><th scope="col">Enquiries</th><th scope="col">Accepted</th><th scope="col">Note</th><th scope="col">Accept rate</th></tr></thead>
                 <tbody id="lender-body"></tbody>
               </table>
@@ -553,7 +580,7 @@
           <div class="card">
             <div class="card-head"><div><h3>Customer records</h3><p>Synced to the server when signed in</p></div></div>
             <div class="table-wrap">
-              <table class="a-table">
+              <table class="a-table responsive-cards">
                 <thead><tr><th scope="col">Customer</th><th scope="col">Phone</th><th scope="col">Email</th><th scope="col">Product interest</th><th scope="col">Status</th><th scope="col">City</th><th scope="col">Actions</th></tr></thead>
                 <tbody id="customers-body"></tbody>
               </table>
@@ -567,11 +594,20 @@
             <div><h2>Notifications</h2><p>In-app alerts and enquiry notifications</p></div>
             <div class="page-head-actions">
               <button type="button" class="a-btn a-btn-light" id="mark-all-notifs-read"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg> Mark all read</button>
-              <button type="button" class="a-btn a-btn-ghost danger" id="clear-notifs-btn"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg> Clear all</button>
+              <button type="button" class="a-btn a-btn-ghost" id="clear-notifs-btn"><svg class="icon" aria-hidden="true"><use href="#i-refresh"></use></svg> Reload history</button>
             </div>
           </div>
           <div class="card">
-            <div class="card-head"><div><h3>Notification feed</h3><p>New website enquiries create notifications automatically</p></div></div>
+            <div class="card-head"><div><h3>Notification feed</h3><p>Pending, acknowledged and dismissed alerts stay in one history</p></div></div>
+            <div class="notif-state-tabs" role="tablist" aria-label="Notification states">
+              <button type="button" class="notif-state-tab active" data-notif-state="all" role="tab" aria-selected="true">All <span id="notif-tab-count-all">0</span></button>
+              <button type="button" class="notif-state-tab" data-notif-state="pending" role="tab" aria-selected="false">Pending <span id="notif-tab-count-pending">0</span></button>
+              <button type="button" class="notif-state-tab" data-notif-state="unread" role="tab" aria-selected="false">Unread <span id="notif-tab-count-unread">0</span></button>
+              <button type="button" class="notif-state-tab" data-notif-state="acknowledged" role="tab" aria-selected="false">Acknowledged <span id="notif-tab-count-acknowledged">0</span></button>
+              <button type="button" class="notif-state-tab" data-notif-state="dismissed" role="tab" aria-selected="false">Dismissed <span id="notif-tab-count-dismissed">0</span></button>
+              <button type="button" class="notif-state-tab" data-notif-state="completed" role="tab" aria-selected="false">Completed <span id="notif-tab-count-completed">0</span></button>
+              <button type="button" class="notif-state-tab" data-notif-state="superseded" role="tab" aria-selected="false">Superseded <span id="notif-tab-count-superseded">0</span></button>
+            </div>
             <div class="card-body" id="notifications-list"></div>
           </div>
         </section>
@@ -622,7 +658,7 @@
 
         <section class="view" id="view-recovery">
           <div class="page-head"><div><h2>Lead Recovery Centre</h2><p>Find incomplete enquiries, uncontacted leads, and missed follow-ups.</p></div></div>
-          <div class="card"><div class="card-head"><div><h3>Recovery queue</h3><p>Leads that need immediate follow-up</p></div><div id="recovery-note" style="font-size:.8125rem;color:var(--muted)"></div></div><div class="table-wrap"><table class="a-table"><thead><tr><th>Lead</th><th>Status</th><th>Age</th><th>Reason</th></tr></thead><tbody id="recovery-body"><tr><td colspan="4" class="table-empty">No recovery items detected yet.</td></tr></tbody></table></div></div>
+          <div class="card"><div class="card-head"><div><h3>Recovery queue</h3><p>Leads that need immediate follow-up</p></div><div id="recovery-note" style="font-size:.8125rem;color:var(--muted)"></div></div><div class="table-wrap"><table class="a-table responsive-cards"><thead><tr><th>Lead</th><th>Status</th><th>Age</th><th>Reason</th></tr></thead><tbody id="recovery-body"><tr><td colspan="4" class="table-empty">No recovery items detected yet.</td></tr></tbody></table></div></div>
         </section>
 
         <section class="view" id="view-applications">
@@ -639,17 +675,12 @@
           <div class="card">
             <div class="card-head"><div><h3>Applications</h3><p>Additive application pipeline (real data only)</p></div></div>
             <div class="table-wrap">
-              <table class="a-table">
+              <table class="a-table responsive-cards">
                 <thead><tr><th>Applicant</th><th>Product</th><th>Amount</th><th>Stage</th><th>Owner</th><th>Updated</th><th>Actions</th></tr></thead>
                 <tbody id="applications-body"><tr><td colspan="7" class="table-empty">No applications yet.</td></tr></tbody>
               </table>
             </div>
           </div>
-        </section>
-
-        <section class="view" id="view-followups">
-          <div class="page-head"><div><h2>Follow-ups & Reminders</h2><p>Manage follow-up dates, reminders, and overdue actions.</p></div></div>
-          <div class="card"><div class="card-head"><div><h3>Follow-up reminders</h3><p>Upcoming and overdue follow-ups from lead data</p></div></div><div class="table-wrap"><table class="a-table"><thead><tr><th>Lead</th><th>Status</th><th>Priority</th><th>Created</th><th>Action</th></tr></thead><tbody id="followups-body"><tr><td colspan="5" class="table-empty">No follow-ups found.</td></tr></tbody></table></div></div>
         </section>
 
         <section class="view" id="view-marketing">
@@ -679,21 +710,21 @@
 
         <section class="view" id="view-audit">
           <div class="page-head"><div><h2>Admin Activity & Security</h2><p>Review audit logs, sessions, and sensitive admin actions.</p></div></div>
-          <div class="card" style="margin-bottom:18px"><div class="card-head"><div><h3>Recent audit activity</h3><p>Latest recorded admin actions</p></div><button type="button" class="a-btn a-btn-light a-btn-sm" id="audit-refresh-btn">Refresh</button></div><div class="table-wrap"><table class="a-table"><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th></tr></thead><tbody id="audit-body"><tr><td colspan="4" class="table-empty">No audit logs loaded.</td></tr></tbody></table></div></div>
-          <div class="card"><div class="card-head"><div><h3>Active sessions</h3><p>Current authenticated sessions</p></div><button type="button" class="a-btn a-btn-light a-btn-sm" id="sessions-refresh-btn">Refresh</button></div><div class="table-wrap"><table class="a-table"><thead><tr><th>User</th><th>Role</th><th>Last seen</th><th>IP/UA</th></tr></thead><tbody id="audit-sessions-body"><tr><td colspan="4" class="table-empty">No session data loaded.</td></tr></tbody></table></div></div>
+          <div class="card" style="margin-bottom:18px"><div class="card-head"><div><h3>Recent audit activity</h3><p>Latest recorded admin actions</p></div><button type="button" class="a-btn a-btn-light a-btn-sm" id="audit-refresh-btn">Refresh</button></div><div class="table-wrap"><table class="a-table responsive-cards"><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th></tr></thead><tbody id="audit-body"><tr><td colspan="4" class="table-empty">No audit logs loaded.</td></tr></tbody></table></div></div>
+          <div class="card"><div class="card-head"><div><h3>Active sessions</h3><p>Current authenticated sessions</p></div><button type="button" class="a-btn a-btn-light a-btn-sm" id="sessions-refresh-btn">Refresh</button></div><div class="table-wrap"><table class="a-table responsive-cards"><thead><tr><th>User</th><th>Role</th><th>Last seen</th><th>IP/UA</th></tr></thead><tbody id="audit-sessions-body"><tr><td colspan="4" class="table-empty">No session data loaded.</td></tr></tbody></table></div></div>
         </section>
 
         <section class="view" id="view-settings">
           <div class="page-head">
-            <div><h2>Settings</h2><p>Manage business details, your account, users, and sessions.</p></div>
+            <div><h2>Settings</h2><p>Separate sections for business details, account security, users and active sessions.</p></div>
           </div>
 
           <div class="card" style="margin-bottom:16px">
             <div class="stage-tabs" id="settings-tabs" style="padding:12px 14px;gap:8px;flex-wrap:wrap">
-              <button type="button" class="stage-tab active" data-settings-tab="business">Business</button>
-              <button type="button" class="stage-tab" data-settings-tab="account">Account</button>
-              <button type="button" class="stage-tab" data-settings-tab="users">Users</button>
-              <button type="button" class="stage-tab" data-settings-tab="sessions">Sessions</button>
+              <button type="button" class="stage-tab active" data-settings-tab="business">Business details</button>
+              <button type="button" class="stage-tab" data-settings-tab="account">Account &amp; security</button>
+              <button type="button" class="stage-tab" data-settings-tab="users">Users &amp; roles</button>
+              <button type="button" class="stage-tab" data-settings-tab="sessions">Sessions &amp; devices</button>
             </div>
           </div>
 
@@ -777,7 +808,7 @@
                   <div><button type="submit" class="a-btn a-btn-primary a-btn-sm">Create user</button></div>
                 </form>
                 <div id="users-msg" class="demo-note" style="display:none;margin:0"></div>
-                <div class="table-wrap"><table class="table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody id="users-table-body"><tr><td colspan="5" class="table-empty">No users loaded.</td></tr></tbody></table></div>
+                <div class="table-wrap"><table class="table responsive-cards"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody id="users-table-body"><tr><td colspan="5" class="table-empty">No users loaded.</td></tr></tbody></table></div>
               </div>
             </div>
             <div class="card" id="users-access-note">
@@ -790,7 +821,7 @@
               <div class="card-head"><div><h3>Active sessions</h3><p>Devices and browsers signed in to your account</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="a-btn a-btn-light a-btn-sm" id="refresh-sessions-btn" type="button">Refresh</button><button class="a-btn a-btn-light a-btn-sm" id="revoke-other-sessions-btn" type="button">Sign out others</button></div></div>
               <div class="card-body" style="display:grid;gap:10px">
                 <div id="sessions-msg" class="demo-note" style="display:none;margin:0"></div>
-                <div class="table-wrap"><table class="table"><thead><tr><th>When</th><th>Device / IP</th><th>Status</th><th>Action</th></tr></thead><tbody id="sessions-table-body"><tr><td colspan="4" class="table-empty">No sessions loaded.</td></tr></tbody></table></div>
+                <div class="table-wrap"><table class="table responsive-cards"><thead><tr><th>When</th><th>Device / IP</th><th>Status</th><th>Action</th></tr></thead><tbody id="sessions-table-body"><tr><td colspan="4" class="table-empty">No sessions loaded.</td></tr></tbody></table></div>
               </div>
             </div>
           </div>
@@ -800,14 +831,6 @@
     </div>
 
     <!-- Lead drawer -->
-    <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile navigation">
-      <button type="button" class="bottom-nav-item active" data-view="overview" aria-label="Dashboard"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg><span>Dashboard</span></button>
-      <button type="button" class="bottom-nav-item" data-view="analytics" aria-label="Analytics"><svg class="icon" aria-hidden="true"><use href="#i-chart"></use></svg><span>Analytics</span></button>
-      <button type="button" class="bottom-nav-item" data-view="leads" aria-label="Enquiries"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg><span>Enquiries</span></button>
-      <button type="button" class="bottom-nav-item" data-view="followups" aria-label="Follow-ups"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg><span>Follow-ups</span></button>
-      <button type="button" class="bottom-nav-item" data-view="settings" aria-label="Settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"></use></svg><span>Settings</span></button>
-      <button type="button" class="bottom-nav-item bottom-nav-logout" id="bottom-nav-logout" aria-label="Logout"><svg class="icon" aria-hidden="true"><use href="#i-logout"></use></svg><span>Logout</span></button>
-    </nav>
     <div class="drawer-overlay" id="drawer-overlay"></div>
     <aside class="drawer" id="lead-drawer" aria-label="Lead details">
       <div class="drawer-head">
@@ -835,7 +858,8 @@
 
   <script src="assets/js/calculators.js?v=20261120z40" defer></script>
   <script src="assets/js/icons.js?v=20261118z22"></script>
-  <script src="assets/js/backend.js?v=20261122z1"></script><script src="assets/js/admin.js?v=20261123g57"></script><script src="assets/js/admin-sync.js?v=20261123g2"></script>
+  <script src="assets/js/date-format.js?v=20261125h1"></script>
+  <script src="assets/js/backend.js?v=20261122z1"></script><script src="assets/js/admin.js?v=20261126b"></script><script src="assets/js/admin-sync.js?v=20261125a"></script>
 </body>
 </html>
 

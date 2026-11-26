@@ -34,6 +34,11 @@
   var statusTimer = 0;
   var canSyncAdmin = false;
 
+  // Notifications are paginated in the UI, so a local array is only one page.
+  // The server is the source of truth; notification changes go through the
+  // dedicated PATCH/DELETE endpoints instead of a whole-collection PUT.
+  var SERVER_AUTHORITATIVE = { notifications: true };
+
   function status(message, tone) {
     if (!document.body) return;
     if (!statusEl) {
@@ -124,6 +129,10 @@
   var timers = {};
 
   function push(sectionType, name, value) {
+    // A local notification array can be a single page or an optimistic copy.
+    // Never replace the full server history with it; admin.js sends individual
+    // notification mutations through the dedicated state/removal endpoints.
+    if (sectionType === 'admin' && SERVER_AUTHORITATIVE[name]) return;
     var path = sectionType === 'content' ? 'api/content/' + name : 'api/admin/store/' + name;
     if (sectionType === 'admin' && !canSyncAdmin) return;
     api.request(path, { method: 'PUT', body: value })

@@ -44,6 +44,7 @@ const store = require('./store');
 const auth = require('./auth');
 const validate = require('./validate');
 const mailer = require('./mailer');
+const { trimNotificationHistory } = require('./notification-history');
 
 const ROOT = path.join(__dirname, '..');
 const PORT = Number(process.env.PORT || 3000);
@@ -332,6 +333,80 @@ function audit(req, entry) {
   });
 }
 
+/* --------------------------- notification generation gate (H1) */
+// Reminder derivation scans enquiries/leads. Refreshing the admin UI must not
+// trigger a full scan: generation runs once per interval, on a dirty write, on
+// a Kolkata calendar-day change, or on an explicit ?refresh=1 request.
+const NOTIFICATION_SYNC_TTL_MS = Math.max(30000, Number(process.env.NOTIFICATION_SYNC_TTL_MS) || 120000);
+const notificationSync = {
+  dirty: true,
+  key: '',
+  date: '',
+  nextAt: 0,
+  promise: null,
+  lastReason: 'initial'
+};
+
+function markNotificationDataDirty(reason) {
+  notificationSync.dirty = true;
+  notificationSync.lastReason = String(reason || 'changed').slice(0, 60);
+}
+
+function notificationSyncDue(tableReady) {
+  const key = tableReady ? 'postgres' : 'json';
+  const today = kolkataDateISO(new Date());
+  return notificationSync.dirty
+    || notificationSync.key !== key
+    || notificationSync.date !== today
+    || Date.now() >= notificationSync.nextAt;
+}
+
+async function refreshNotificationData(tableReady, force) {
+  if (force) markNotificationDataDirty('explicit-refresh');
+  const today = kolkataDateISO(new Date());
+  const key = tableReady ? 'postgres' : 'json';
+
+  // Concurrent requests share one generation pass instead of racing scans.
+  if (notificationSync.promise) {
+    try { await notificationSync.promise; } catch (_) {}
+  }
+  if (!force && !notificationSyncDue(tableReady)) {
+    return { ran: false, reason: 'fresh', tableReady };
+  }
+
+  const run = async () => {
+    // Recheck after awaiting an in-flight pass; another request may have done it.
+    if (!force && !notificationSyncDue(tableReady)) return false;
+    let effectiveTableReady = !!tableReady;
+    try {
+      const next7 = addDaysISO(today, 7);
+      if (effectiveTableReady && typeof store.syncFollowupReminders === 'function') {
+        await store.syncFollowupReminders({ today, next7 });
+      }
+      if (effectiveTableReady && typeof store.notificationsTableReady === 'function') {
+        effectiveTableReady = !!(await store.notificationsTableReady());
+      }
+      await ensureLeadReminderNotifications({ table: effectiveTableReady });
+      notificationSync.dirty = false;
+      notificationSync.key = key;
+      notificationSync.date = today;
+      notificationSync.nextAt = Date.now() + NOTIFICATION_SYNC_TTL_MS;
+      notificationSync.lastReason = force ? 'forced' : 'ran';
+      return true;
+    } catch (e) {
+      console.warn('[notifications] generation failed:', e && e.message ? e.message : e);
+      // Keep the work dirty; retry on the next request after a short backoff.
+      notificationSync.nextAt = Date.now() + 15000;
+      notificationSync.lastReason = 'failed';
+      return false;
+    }
+  };
+
+  notificationSync.promise = run().finally(() => { notificationSync.promise = null; });
+  const ran = await notificationSync.promise;
+  return { ran, reason: ran ? (force ? 'forced' : 'ran') : 'failed', tableReady };
+}
+
 /* ------------------------------------------------------------------ api */
 
 app.get('/api/health', (req, res) => {
@@ -580,26 +655,38 @@ app.post('/api/enquiries', asyncRoute(async (req, res) => {
   );
 
   await store.addEnquiry(enquiry);
+  markNotificationDataDirty('enquiry-created');
   console.log('[enquiry]', enquiry.id, enquiry.product || 'General');
   audit(req, { type: 'enquiry.created', actorEmail: '', summary: 'Website enquiry received: ' + (enquiry.product || 'General'), targetType: 'enquiry', targetId: enquiry.id, meta: { product: enquiry.product || '', source: enquiry.source || '', city: enquiry.city || '' } });
 
   // Create an in-app notification for staff (best-effort).
   try {
-    if (store.adminData && store.setAdminCollection) {
+    const note = {
+      id: 'NTF-' + Date.now().toString(36).toUpperCase(),
+      type: 'enquiry.new',
+      title: 'New enquiry received',
+      message: [enquiry.name, enquiry.phone, enquiry.product].filter(Boolean).join(' • ').slice(0, 240),
+      targetType: 'enquiry',
+      targetId: enquiry.id,
+      read: false,
+      createdAt: enquiry.receivedAt
+    };
+    let stored = false;
+    try {
+      const tableReady = store.notificationsTableReady ? await store.notificationsTableReady() : false;
+      if (tableReady && typeof store.insertNotificationIdempotent === 'function') {
+        await store.insertNotificationIdempotent(Object.assign({}, note, { dedupeKey: 'enquiry:' + enquiry.id }));
+        // A null result means the row already existed (idempotent conflict), which is success.
+        stored = true;
+      }
+    } catch (e) {
+      console.warn('[notify] table insert failed, using JSON store:', e && e.message ? e.message : e);
+    }
+    if (!stored && store.adminData && store.setAdminCollection) {
       const admin = await store.adminData();
       const notifications = Array.isArray(admin.notifications) ? admin.notifications.slice() : [];
-      notifications.unshift({
-        id: 'NTF-' + Date.now().toString(36).toUpperCase(),
-        type: 'enquiry.new',
-        title: 'New enquiry received',
-        message: [enquiry.name, enquiry.phone, enquiry.product].filter(Boolean).join(' • ').slice(0, 240),
-        targetType: 'enquiry',
-        targetId: enquiry.id,
-        read: false,
-        createdAt: enquiry.receivedAt
-      });
-      if (notifications.length > 500) notifications.length = 500;
-      await store.setAdminCollection('notifications', notifications);
+      notifications.unshift(note);
+      await store.setAdminCollection('notifications', trimNotificationHistory(notifications));
     }
   } catch (e) {
     console.warn('[notify] failed to create enquiry notification:', e && e.message ? e.message : e);
@@ -732,6 +819,9 @@ app.patch('/api/enquiries/:id', requireSession, requireRole('advisor', 'staff', 
     res.status(404).json({ error: 'Enquiry not found.' });
     return;
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'followUpDate') || Object.prototype.hasOwnProperty.call(patch, 'followUpCompletedAt')) {
+    markNotificationDataDirty('enquiry-follow-up-changed');
+  }
   audit(req, { type: 'enquiry.updated', summary: 'Enquiry updated: ' + id, targetType: 'enquiry', targetId: id, meta: { status: patch.status, handled: patch.handled, hasNote: !!patch.note, hasInternalNote: !!patch.internalNote, followUpDate: patch.followUpDate, followUpCompleted: req.body && req.body.followUpCompleted } });
   res.json({ ok: true, enquiry: updated });
 }));
@@ -743,6 +833,7 @@ app.delete('/api/enquiries/:id', requireSession, requireRole('staff', 'admin', '
     res.status(404).json({ error: 'Enquiry not found.' });
     return;
   }
+  markNotificationDataDirty('enquiry-deleted');
   audit(req, { type: 'enquiry.deleted', summary: 'Enquiry deleted: ' + id, targetType: 'enquiry', targetId: id });
   res.json({ ok: true });
 }));
@@ -857,8 +948,13 @@ app.get('/api/admin/store', requireSession, requireRole('staff', 'admin', 'super
 
 app.put('/api/admin/store/:name', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
   const name = String(req.params.name || '').toLowerCase();
+  if (name === 'notifications') {
+    res.status(409).json({ ok: false, error: 'Notification history is server-authoritative. Use the per-item notification endpoints.' });
+    return;
+  }
   const value = validate.adminCollection(name, req.body);
   await store.setAdminCollection(name, value);
+  if (name === 'leads' || name === 'notifications') markNotificationDataDirty('admin-store-' + name);
   const stats = await store.stats();
   const count = Array.isArray(value) ? value.length : Object.keys(value).length;
   audit(req, { type: 'admin.store_updated', summary: 'Admin data updated: ' + name, targetType: 'admin_store', targetId: name, meta: { name, count } });
@@ -1110,14 +1206,38 @@ app.get('/api/admin/google-reviews', requireSession, requireRole('staff', 'admin
   });
 }));
 
-async function ensureLeadReminderNotifications() {
+let _reminderLock = Promise.resolve();
+async function ensureLeadReminderNotifications(opts = {}) {
+  const tableMode = !!opts.table;
+  const run = async () => {
   if (!store.adminData || !store.setAdminCollection) return;
   const admin = await store.adminData();
   const leads = Array.isArray(admin.leads) ? admin.leads : [];
-  const notifications = Array.isArray(admin.notifications) ? admin.notifications.slice() : [];
-  const existing = new Set(notifications.map(n => String(n && n.id || '')));
+  let notifications = Array.isArray(admin.notifications) ? admin.notifications.slice() : [];
+  // Dedupe by id defensively (concurrent/race safety)
+  const seen = new Set();
+  notifications = notifications.filter(n => { const id = String(n && n.id || ''); if (!id || seen.has(id)) return false; seen.add(id); return true; });
+  const existing = new Map(notifications.map(n => [String(n && n.id || ''), n]));
   const now = Date.now();
+  const today = kolkataDateISO(new Date());
+  const next7 = addDaysISO(today, 7);
   let changed = false;
+
+  const upsert = (n) => {
+    const id = String(n.id || '');
+    if (!id) return;
+    const prev = existing.get(id);
+    if (prev) {
+      if (prev.dismissed || prev.acknowledged) return; // keep dismissed/acknowledged until new event creates new id
+      return;
+    }
+    notifications.unshift(n);
+    existing.set(id, n);
+    changed = true;
+  };
+
+  // Existing SLA reminders from admin leads
+  const activeSlaKeys = [];
   for (const lead of leads) {
     if (!lead || !lead.id) continue;
     const status = String(lead.status || 'New');
@@ -1131,27 +1251,136 @@ async function ensureLeadReminderNotifications() {
     if (status === 'Contacted' && ageHrs >= 72) rules.push({ rule:'contacted-72h', title:'SLA reminder: Follow-up needed', message:[lead.name,lead.phone,lead.product].filter(Boolean).join(' • ').slice(0,220)+' needs follow-up (72+ hours).' });
     if (followUpDue) rules.push({ rule:'followup-due', title:'Follow-up due', message:[lead.name,lead.phone,lead.product].filter(Boolean).join(' • ').slice(0,220)+' has a past-due follow-up date ('+String(lead.followUpDate).slice(0,10)+').' });
     for (const r of rules) {
-      const id = 'NTF-SLA-' + r.rule + '-' + String(lead.id);
-      if (existing.has(id)) continue;
-      notifications.unshift({ id, type:'lead.sla', title:r.title, message:r.message, targetType:'lead', targetId:String(lead.id), read:false, createdAt:new Date().toISOString(), meta:{ rule:r.rule, leadStatus:status } });
-      existing.add(id);
-      changed = true;
+      const leadId = String(lead.id);
+      const item = { id: 'NTF-SLA-' + r.rule + '-' + leadId, type:'lead.sla', title:r.title, message:r.message, targetType:'lead', targetId:leadId, read:false, createdAt:new Date().toISOString(), meta:{ rule:r.rule, leadStatus:status } };
+      const dedupeKey = 'sla:' + r.rule + ':' + leadId;
+      if (tableMode && typeof store.insertNotificationIdempotent === 'function') {
+        activeSlaKeys.push(dedupeKey);
+        try {
+          await store.insertNotificationIdempotent(Object.assign({}, item, { dedupeKey }));
+        } catch (e) {
+          console.warn('[sla] table insert failed:', e && e.message ? e.message : e);
+        }
+      } else {
+        upsert(item);
+      }
     }
   }
+  if (tableMode && typeof store.supersedeSlaReminders === 'function') {
+    try { await store.supersedeSlaReminders(activeSlaKeys); } catch (e) {
+      console.warn('[sla] table supersede failed:', e && e.message ? e.message : e);
+    }
+  }
+
+  if (!tableMode) {
+  // Follow-up reminders from actual enquiry records
+  try {
+    if (store.listEnquiries) {
+      const enquiries = await store.listEnquiries();
+      for (const e of (Array.isArray(enquiries) ? enquiries : [])) {
+        if (!e || !e.id) continue;
+        if (e.followUpCompletedAt) continue;
+        const date = String(e.followUpDate || '').slice(0, 10);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+        let bucket = '';
+        if (date < today) bucket = 'overdue';
+        else if (date === today) bucket = 'today';
+        else if (date > today && date <= next7) bucket = 'upcoming';
+        else continue;
+        const label = bucket === 'overdue' ? 'Overdue follow-up' : (bucket === 'today' ? "Today's follow-up" : 'Upcoming follow-up');
+        const id = 'NTF-FU-' + bucket + '-' + String(e.id) + '-' + date;
+        upsert({
+          id,
+          type: 'followup.reminder',
+          title: label,
+          message: [e.name, e.phone, e.product].filter(Boolean).join(' • ').slice(0, 220) + ' — follow-up ' + date + '.',
+          targetType: 'enquiry',
+          targetId: String(e.id),
+          read: false,
+          acknowledged: false,
+          dismissed: false,
+          createdAt: new Date().toISOString(),
+          meta: { bucket, followUpDate: date, enquiryStatus: e.status || '', reminderKey: bucket + ':' + String(e.id) + ':' + date }
+        });
+      }
+    }
+  } catch (e) { console.warn('[followup-reminder] generation failed:', e && e.message ? e.message : e); }
+
+  // Clean up stale pending follow-up reminders when follow-up is completed/rescheduled/out of window
+  try {
+    const enquiries = store.listEnquiries ? await store.listEnquiries() : [];
+    const byId = new Map((Array.isArray(enquiries) ? enquiries : []).map(e => [String(e.id), e]));
+    let removed = false;
+    notifications = notifications.filter(n => {
+      if (!n || String(n.type) !== 'followup.reminder') return true;
+      if (n.dismissed || n.acknowledged) return true; // keep history state
+      const e = byId.get(String(n.targetId || ''));
+      if (!e) return false;
+      if (e.followUpCompletedAt) { removed = true; return false; }
+      const date = String(e.followUpDate || '').slice(0, 10);
+      const metaDate = String((n.meta && n.meta.followUpDate) || '').slice(0, 10);
+      if (metaDate && date !== metaDate) { removed = true; return false; }
+      let bucket = '';
+      if (date < today) bucket = 'overdue';
+      else if (date === today) bucket = 'today';
+      else if (date > today && date <= next7) bucket = 'upcoming';
+      if (!bucket) { removed = true; return false; }
+      const expectedId = 'NTF-FU-' + bucket + '-' + String(e.id) + '-' + date;
+      if (String(n.id) !== expectedId) { removed = true; return false; }
+      return true;
+    });
+    if (removed) changed = true;
+  } catch (e) { /* best effort */ }
+  }
+
   if (changed) {
-    if (notifications.length > 500) notifications.length = 500;
+    // Final dedupe before write
+    const outSeen = new Set();
+    notifications = notifications.filter(n => { const id = String(n && n.id || ''); if (!id || outSeen.has(id)) return false; outSeen.add(id); return true; });
+    notifications = trimNotificationHistory(notifications);
     await store.setAdminCollection('notifications', notifications);
   }
+  };
+  _reminderLock = _reminderLock.then(run, run);
+  return _reminderLock;
 }
 
 app.get('/api/admin/:collection', requireSession, requireRole('staff', 'admin', 'super_admin'), asyncRoute(async (req, res, next) => {
   const collection = String(req.params.collection || '').toLowerCase();
   if (collection === 'store' || collection === 'export') return next();
   if (!isAdminItemCollection(collection)) return next();
+  let notificationCountsOut = null;
+  let notificationStateCountsOut = null;
   if (collection === 'notifications') {
-    try { await ensureLeadReminderNotifications(); } catch (e) { console.warn('[sla] reminder generation failed:', e && e.message ? e.message : e); }
+    const force = String(req.query.refresh || '') === '1';
+    try {
+      const tableReady = store.notificationsTableReady ? await store.notificationsTableReady() : false;
+      const sync = await refreshNotificationData(tableReady, force);
+      res.setHeader('X-Notification-Sync', sync.ran ? sync.reason : 'skipped');
+      if (sync.tableReady && store.syncFollowupReminders && store.listNotifications) {
+        const paging = notificationPaging(req.query);
+        const stateFilter = validate.text(req.query.state, 20).toLowerCase();
+        const unreadFilter = stateFilter === 'unread';
+        const page = await store.listNotifications({
+          limit: paging.limit,
+          offset: paging.offset,
+          state: unreadFilter ? '' : stateFilter,
+          type: validate.text(req.query.type, 60).toLowerCase(),
+          pending: String(req.query.pending || '') === '1' || unreadFilter,
+          unread: unreadFilter
+        });
+        if (page) {
+          res.json({ ok: true, collection, items: page.items, count: page.items.length, total: page.total, limit: page.limit, offset: page.offset, counts: page.counts, stateCounts: page.stateCounts });
+          return;
+        }
+      }
+    } catch (e) { console.warn('[notifications] table path unavailable, using JSON store:', e && e.message ? e.message : e); }
   }
   let items = await readAdminCollection(collection);
+  if (collection === 'notifications') {
+    notificationCountsOut = notificationCounts(items);
+    notificationStateCountsOut = notificationStateCounts(items);
+  }
 
   const q = validate.text(req.query.q, 120).toLowerCase();
   const status = validate.text(req.query.status, 60).toLowerCase();
@@ -1169,6 +1398,16 @@ app.get('/api/admin/:collection', requireSession, requireRole('staff', 'admin', 
   }
   if (type) {
     items = items.filter((it) => String((it && (it.type || it.docType || it.category)) || '').toLowerCase() === type);
+  }
+  if (collection === 'notifications') {
+    const state = validate.text(req.query.state, 20).toLowerCase();
+    if (state === 'unread') {
+      items = items.filter((it) => it && !it.dismissed && !it.acknowledged && !it.read &&
+        !['completed', 'superseded'].includes(notificationStateOf(it)));
+    } else if (state) {
+      items = items.filter((it) => notificationStateOf(it) === state);
+    }
+    if (String(req.query.pending || '') === '1') items = items.filter((it) => notificationStateOf(it) === 'pending');
   }
   if (q) {
     items = items.filter((it) => {
@@ -1194,7 +1433,7 @@ app.get('/api/admin/:collection', requireSession, requireRole('staff', 'admin', 
   offset = Math.max(0, Math.floor(offset));
 
   const paged = hasLimit ? items.slice(offset, offset + limit) : items;
-  res.json({
+  const payload = {
     ok: true,
     collection,
     items: paged,
@@ -1202,7 +1441,12 @@ app.get('/api/admin/:collection', requireSession, requireRole('staff', 'admin', 
     total,
     limit: hasLimit ? limit : total,
     offset: hasLimit ? offset : 0
-  });
+  };
+  if (collection === 'notifications') {
+    payload.counts = notificationCountsOut || notificationCounts(items);
+    payload.stateCounts = notificationStateCountsOut || notificationStateCounts(items);
+  }
+  res.json(payload);
 }));
 
 function applyCollectionRules(collection, item, existing, session) {
@@ -1223,7 +1467,24 @@ function applyCollectionRules(collection, item, existing, session) {
 
   // basic workflow normalization
   if (collection === 'tasks' && typeof out.done !== 'boolean') out.done = Boolean(out.done);
-  if (collection === 'notifications' && typeof out.read !== 'boolean') out.read = Boolean(out.read);
+  if (collection === 'notifications') {
+    if (typeof out.read !== 'boolean') out.read = Boolean(out.read);
+    // Acknowledgement/dismissal history is additive and cannot be cleared by a
+    // generic collection update. State may move forward, never backward.
+    if (existing && (existing.acknowledged || existing.acknowledgedAt)) {
+      out.acknowledged = true;
+      out.acknowledgedAt = existing.acknowledgedAt || new Date().toISOString();
+    }
+    if (existing && (existing.dismissed || existing.dismissedAt)) {
+      out.dismissed = true;
+      out.dismissedAt = existing.dismissedAt || new Date().toISOString();
+    }
+    if (typeof out.acknowledged !== 'boolean') out.acknowledged = false;
+    if (typeof out.dismissed !== 'boolean') out.dismissed = false;
+    if (out.acknowledged || out.dismissed) out.read = true;
+    if (out.acknowledged && !out.acknowledgedAt) out.acknowledgedAt = new Date().toISOString();
+    if (out.dismissed && !out.dismissedAt) out.dismissedAt = new Date().toISOString();
+  }
   if (collection === 'documents' && !out.status) out.status = existing && existing.status ? existing.status : 'Pending';
   if (collection === 'leads' && !out.status) out.status = existing && existing.status ? existing.status : 'New';
 
@@ -1245,10 +1506,143 @@ function applyCollectionRules(collection, item, existing, session) {
   return out;
 }
 
+/* ------------------------- notification pagination / ownership (H2, H4) */
+function notificationStateOf(n) {
+  const state = String((n && (n.state || (n.legacy && n.legacy.state))) || '').toLowerCase();
+  if (n && n.dismissed) return 'dismissed';
+  if (n && n.acknowledged) return 'acknowledged';
+  if (state === 'dismissed' || state === 'acknowledged' || state === 'completed' || state === 'superseded') return state;
+  return 'pending';
+}
+
+function notificationStateCounts(items) {
+  const counts = { all: 0, pending: 0, unread: 0, acknowledged: 0, dismissed: 0, completed: 0, superseded: 0 };
+  (Array.isArray(items) ? items : []).forEach((n) => {
+    if (!n) return;
+    const state = notificationStateOf(n);
+    counts.all++;
+    if (counts[state] !== undefined) counts[state]++;
+    if (state === 'pending' && !n.read) counts.unread++;
+  });
+  return counts;
+}
+
+function notificationCounts(items) {
+  const counts = { overdue: 0, today: 0, upcoming: 0, completed: 0, pending: 0 };
+  (Array.isArray(items) ? items : []).forEach((n) => {
+    if (!n || String(n.type) !== 'followup.reminder') return;
+    if (notificationStateOf(n) === 'completed') counts.completed++;
+    if (notificationStateOf(n) !== 'pending') return;
+    counts.pending++;
+    const bucket = String((n.meta && n.meta.bucket) || '');
+    if (counts[bucket] !== undefined) counts[bucket]++;
+  });
+  return counts;
+}
+
+function notificationPaging(query) {
+  const limitRaw = Number(query && query.limit);
+  let limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.floor(limitRaw) : 50;
+  limit = Math.max(1, Math.min(limit, 500));
+  const offsetRaw = Number(query && query.offset);
+  let offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? Math.floor(offsetRaw) : 0;
+  offset = Math.max(0, offset);
+  return { limit, offset };
+}
+
+function identityKeys(value) {
+  if (value === null || value === undefined) return [];
+  const raw = String(value).trim().toLowerCase();
+  if (!raw) return [];
+  const keys = [raw];
+  const local = raw.split('@')[0];
+  if (local && local !== raw) keys.push(local);
+  return keys;
+}
+
+function sessionIdentityKeys(session) {
+  if (!session) return [];
+  const keys = new Set();
+  [session.email, session.userId, session.name].forEach((v) => identityKeys(v).forEach(k => keys.add(k)));
+  return Array.from(keys);
+}
+
+function ownerValues(record) {
+  if (!record || typeof record !== 'object') return [];
+  const meta = record.meta && typeof record.meta === 'object' ? record.meta : {};
+  const values = [record.owner, record.assignedTo, record.assignee, meta.owner, meta.assignedTo, meta.assignee];
+  const out = [];
+  values.forEach((v) => {
+    if (v === null || v === undefined) return;
+    String(v).split(/[;,|]/).forEach((part) => {
+      const t = part.trim();
+      if (t) out.push(t);
+    });
+  });
+  return out;
+}
+
+function ownersMatch(session, owners) {
+  const actor = new Set(sessionIdentityKeys(session));
+  if (!actor.size) return false;
+  return ownerValues({ owner: owners }).some((owner) => identityKeys(owner).some(k => actor.has(k)));
+}
+
+const NOTIFICATION_TARGET_COLLECTIONS = {
+  lead: 'leads', customer: 'customers', task: 'tasks', document: 'documents', application: 'applications'
+};
+
+async function resolveNotificationOwnership(n) {
+  const direct = ownerValues(n);
+  if (direct.length) return { owner: direct.join(', '), source: 'notification', targetFound: true };
+
+  const targetType = String((n && n.targetType) || '').toLowerCase();
+  const targetId = String((n && n.targetId) || '');
+  if (!targetId) return { owner: '', source: '', targetFound: false };
+
+  let target = null;
+  if (targetType === 'enquiry' && typeof store.findEnquiry === 'function') {
+    target = await store.findEnquiry(targetId);
+  } else {
+    const collection = NOTIFICATION_TARGET_COLLECTIONS[targetType];
+    if (collection) {
+      const items = await readAdminCollection(collection);
+      target = items.find(x => x && String(x.id) === targetId) || null;
+    }
+  }
+  if (!target) return { owner: '', source: '', targetFound: false };
+  const owners = ownerValues(target);
+  return { owner: owners.join(', '), source: targetType || 'target', targetFound: true };
+}
+
+async function authorizeNotificationAction(req, n, action) {
+  const role = req.session.role || 'advisor';
+  if (roleAtLeast(role, 'admin')) return { allowed: true, owner: '', reason: 'admin' };
+  const info = await resolveNotificationOwnership(n);
+  if (!info.targetFound) {
+    audit(req, { type: 'notification.permission_denied', summary: 'Notification ' + action + ' denied: target unavailable', targetType: 'notification', targetId: n && n.id, meta: { action, reason: 'target-unavailable' } });
+    return { allowed: false, owner: info.owner, reason: 'target-unavailable' };
+  }
+  if (info.owner && !ownersMatch(req.session, info.owner)) {
+    audit(req, { type: 'notification.permission_denied', summary: 'Notification ' + action + ' denied: not owner', targetType: 'notification', targetId: n && n.id, meta: { action, reason: 'not-owner', owner: info.owner } });
+    return { allowed: false, owner: info.owner, reason: 'not-owner' };
+  }
+  return { allowed: true, owner: info.owner, reason: info.owner ? 'owner' : 'unassigned' };
+}
+
+function notificationActorMeta(req) {
+  const session = req && req.session ? req.session : {};
+  return {
+    email: String(session.email || ''),
+    userId: String(session.userId || ''),
+    role: String(session.role || '')
+  };
+}
+
 app.post('/api/admin/:collection', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res, next) => {
   const collection = String(req.params.collection || '').toLowerCase();
   if (!isAdminItemCollection(collection)) return next();
-  const items = await readAdminCollection(collection);
+  let items = await readAdminCollection(collection);
   const body = validate.adminItem ? validate.adminItem(req.body || {}) : (req.body || {});
   const now = new Date().toISOString();
   const prefixes = { leads: 'LEAD', products: 'PRD', partners: 'PRT', tasks: 'TSK', customers: 'CUS', documents: 'DOC', notifications: 'NTF' };
@@ -1260,8 +1654,18 @@ app.post('/api/admin/:collection', requireSession, requireRole('staff', 'admin',
   if (!item.createdAt) item.createdAt = now;
   item.updatedAt = now;
   item = applyCollectionRules(collection, item, null, req.session);
+  if (collection === 'leads') markNotificationDataDirty('lead-created');
+  if (collection === 'notifications' && store.notificationsTableReady && typeof store.insertNotificationIdempotent === 'function' && await store.notificationsTableReady()) {
+    const created = await store.insertNotificationIdempotent(Object.assign({}, item, { dedupeKey: 'admin:' + item.id }));
+    const stored = created || (typeof store.getNotification === 'function' ? await store.getNotification(item.id) : null);
+    if (stored) {
+      audit(req, { type: 'notification.created', summary: 'Notification ' + stored.id + ' created', targetType: 'notification', targetId: stored.id, meta: { type: stored.type } });
+      res.status(201).json({ ok: true, collection, item: stored, count: 1, updatedAt: stored.updatedAt });
+      return;
+    }
+  }
   items.unshift(item);
-  if (items.length > 2000) items.length = 2000;
+  if (collection === 'notifications') items = trimNotificationHistory(items);
   const stats = await writeAdminCollection(req, collection, items);
   res.status(201).json({ ok: true, collection, item, count: items.length, updatedAt: stats.updatedAt });
 }));
@@ -1271,6 +1675,10 @@ app.get('/api/admin/:collection/:id', requireSession, requireRole('staff', 'admi
   if (collection === 'store') return next();
   if (!isAdminItemCollection(collection)) return next();
   const id = String(req.params.id || '');
+  if (collection === 'notifications' && store.notificationsTableReady && typeof store.getNotification === 'function' && await store.notificationsTableReady()) {
+    const found = await store.getNotification(id);
+    if (found) { res.json({ ok: true, collection, item: found }); return; }
+  }
   const items = await readAdminCollection(collection);
   const item = items.find((x) => x && String(x.id) === id);
   if (!item) { res.status(404).json({ error: 'Item not found.' }); return; }
@@ -1281,10 +1689,65 @@ app.patch('/api/admin/:collection/:id', requireSession, requireRole('staff', 'ad
   const collection = String(req.params.collection || '').toLowerCase();
   if (!isAdminItemCollection(collection)) return next();
   const id = String(req.params.id || '');
+  const body = req.body && typeof req.body === 'object' ? req.body : {};
+  const allowedStates = ['pending', 'acknowledged', 'dismissed', 'completed', 'superseded'];
+  const requestedState = String(body.state || '').toLowerCase();
+  const state = allowedStates.includes(requestedState) ? requestedState : undefined;
+  const acknowledged = !!body.acknowledged || state === 'acknowledged';
+  const dismissed = !!body.dismissed || state === 'dismissed';
+  const action = acknowledged ? 'notification.acknowledged' : dismissed ? 'notification.dismissed' : 'notification.updated';
+
+  if (collection === 'notifications' && store.notificationsTableReady && typeof store.updateNotificationState === 'function' && await store.notificationsTableReady()) {
+    const existing = typeof store.getNotification === 'function' ? await store.getNotification(id) : null;
+    if (existing) {
+      if (state === 'superseded' && !roleAtLeast(req.session.role || 'advisor', 'admin')) {
+        audit(req, { type: 'notification.permission_denied', summary: 'Notification state change denied', targetType: 'notification', targetId: id, meta: { action, reason: 'admin-only-state' } });
+        res.status(403).json({ error: 'You do not have permission to change this notification state.' });
+        return;
+      }
+      if (acknowledged || dismissed) {
+        const authz = await authorizeNotificationAction(req, existing, action);
+        if (!authz.allowed) {
+          res.status(403).json({ error: 'You do not have permission to update this notification.' });
+          return;
+        }
+      }
+      const updated = await store.updateNotificationState(id, {
+        state,
+        read: typeof body.read === 'boolean' ? body.read : undefined,
+        acknowledged,
+        dismissed,
+        actor: notificationActorMeta(req)
+      });
+      if (updated) {
+        audit(req, { type: action, summary: 'Notification ' + id + ' updated', targetType: 'notification', targetId: id, meta: { state: updated.state, actor: notificationActorMeta(req) } });
+        res.json({ ok: true, collection, item: updated, updatedAt: updated.updatedAt });
+        return;
+      }
+    }
+  }
   const items = await readAdminCollection(collection);
   const idx = items.findIndex((x) => x && String(x.id) === id);
   if (idx === -1) { res.status(404).json({ error: 'Item not found.' }); return; }
   const patch = validate.adminItem ? validate.adminItem(req.body || {}) : (req.body || {});
+  if (collection === 'notifications') {
+    if (state === 'superseded' && !roleAtLeast(req.session.role || 'advisor', 'admin')) {
+      audit(req, { type: 'notification.permission_denied', summary: 'Notification state change denied', targetType: 'notification', targetId: id, meta: { action, reason: 'admin-only-state' } });
+      res.status(403).json({ error: 'You do not have permission to change this notification state.' });
+      return;
+    }
+    if (acknowledged || dismissed) {
+      const authz = await authorizeNotificationAction(req, items[idx], action);
+      if (!authz.allowed) {
+        res.status(403).json({ error: 'You do not have permission to update this notification.' });
+        return;
+      }
+    }
+    const mergedMeta = Object.assign({}, items[idx].meta && typeof items[idx].meta === 'object' ? items[idx].meta : {}, patch.meta && typeof patch.meta === 'object' ? patch.meta : {});
+    if (acknowledged) mergedMeta.acknowledgedBy = notificationActorMeta(req);
+    if (dismissed) mergedMeta.dismissedBy = notificationActorMeta(req);
+    patch.meta = mergedMeta;
+  }
   const now = new Date().toISOString();
   let nextItem = Object.assign({}, items[idx], patch, { id: items[idx].id || id, updatedAt: now });
   if (!nextItem.createdAt && items[idx].createdAt) nextItem.createdAt = items[idx].createdAt;
@@ -1292,7 +1755,11 @@ app.patch('/api/admin/:collection/:id', requireSession, requireRole('staff', 'ad
   nextItem.id = items[idx].id || id; // immutable
   if (!nextItem.createdAt && items[idx].createdAt) nextItem.createdAt = items[idx].createdAt;
   items[idx] = nextItem;
+  if (collection === 'leads') markNotificationDataDirty('lead-updated');
   const stats = await writeAdminCollection(req, collection, items);
+  if (collection === 'notifications') {
+    audit(req, { type: action, summary: 'Notification ' + id + ' updated', targetType: 'notification', targetId: id, meta: { state: notificationStateOf(nextItem), actor: notificationActorMeta(req) } });
+  }
   res.json({ ok: true, collection, item: nextItem, updatedAt: stats.updatedAt });
 }));
 
@@ -1300,10 +1767,48 @@ app.delete('/api/admin/:collection/:id', requireSession, requireRole('staff', 'a
   const collection = String(req.params.collection || '').toLowerCase();
   if (!isAdminItemCollection(collection)) return next();
   const id = String(req.params.id || '');
+  if (collection === 'notifications' && store.notificationsTableReady && typeof store.deleteNotificationState === 'function' && await store.notificationsTableReady()) {
+    const existing = typeof store.getNotification === 'function' ? await store.getNotification(id) : null;
+    if (existing) {
+      const action = String(existing.type) === 'followup.reminder' ? 'notification.dismissed' : 'notification.deleted';
+      const authz = await authorizeNotificationAction(req, existing, action);
+      if (!authz.allowed) {
+        res.status(403).json({ error: 'You do not have permission to update this notification.' });
+        return;
+      }
+    }
+    const result = await store.deleteNotificationState(id, notificationActorMeta(req));
+    if (result === undefined) { res.status(404).json({ error: 'Item not found.' }); return; }
+    if (result) {
+      audit(req, { type: result.dismissed ? 'notification.dismissed' : 'notification.deleted', summary: 'Notification ' + id + (result.dismissed ? ' dismissed' : ' deleted'), targetType: 'notification', targetId: id, meta: { actor: notificationActorMeta(req) } });
+      res.json({ ok: true, collection, id, item: result.item, updatedAt: new Date().toISOString(), dismissed: !!result.dismissed });
+      return;
+    }
+  }
   const items = await readAdminCollection(collection);
   const idx = items.findIndex((x) => x && String(x.id) === id);
   if (idx === -1) { res.status(404).json({ error: 'Item not found.' }); return; }
+  if (collection === 'notifications') {
+    const action = String(items[idx].type) === 'followup.reminder' ? 'notification.dismissed' : 'notification.deleted';
+    const authz = await authorizeNotificationAction(req, items[idx], action);
+    if (!authz.allowed) {
+      res.status(403).json({ error: 'You do not have permission to update this notification.' });
+      return;
+    }
+    const actor = notificationActorMeta(req);
+    // Follow-up reminders should be dismissed, not hard-deleted, to prevent immediate regeneration.
+    if (String(items[idx].type) === 'followup.reminder') {
+      const meta = Object.assign({}, items[idx].meta && typeof items[idx].meta === 'object' ? items[idx].meta : {}, { dismissedBy: actor });
+      items[idx] = Object.assign({}, items[idx], { dismissed: true, read: true, dismissedAt: new Date().toISOString(), updatedAt: new Date().toISOString(), meta });
+      const stats = await writeAdminCollection(req, collection, items);
+      audit(req, { type: 'notification.dismissed', summary: 'Notification ' + id + ' dismissed', targetType: 'notification', targetId: id, meta: { actor } });
+      res.json({ ok: true, collection, id, item: items[idx], updatedAt: stats.updatedAt, dismissed: true });
+      return;
+    }
+    audit(req, { type: 'notification.deleted', summary: 'Notification ' + id + ' deleted', targetType: 'notification', targetId: id, meta: { actor } });
+  }
   items.splice(idx, 1);
+  if (collection === 'leads') markNotificationDataDirty('lead-deleted');
   const stats = await writeAdminCollection(req, collection, items);
   res.json({ ok: true, collection, id, updatedAt: stats.updatedAt });
 }));

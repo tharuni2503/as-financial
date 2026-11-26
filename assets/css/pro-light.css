@@ -2458,3 +2458,141 @@ input:focus,select:focus,textarea:focus{border-color:#b7c8dd;box-shadow:0 0 0 3p
   .btn{font-size:.84rem;padding-inline:12px;}
   .hero2 h1{font-size:1.75rem;}
 }
+
+/* ---------- Homepage typography, image, and spacing polish ---------- */
+body.page-home {
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.65;
+}
+body.page-home h1,
+body.page-home h2,
+body.page-home h3,
+body.page-home h4,
+body.page-home .serif,
+body.page-home .under-one-roof strong,
+body.page-home .profiles h3 {
+  font-family: var(--sans);
+}
+body.page-home .serif {
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--gold-deep);
+}
+body.page-home .hero2 h1 {
+  font-size: clamp(3rem, 4.4vw, 3.5rem);
+  line-height: 1.1;
+}
+body.page-home .section-head h2,
+body.page-home .faq-side h2,
+body.page-home .visit h2,
+body.page-home .sec-cta .cta-card h2 {
+  font-size: clamp(2.125rem, 3.05vw, 2.5rem);
+  line-height: 1.15;
+  letter-spacing: -.025em;
+}
+body.page-home .hero2-lede,
+body.page-home .section-head p,
+body.page-home .faq-side p,
+body.page-home .visit p,
+body.page-home .profiles p,
+body.page-home .lp2-help p {
+  font-size: 1rem;
+  line-height: 1.65;
+}
+body.page-home .eyebrow,
+body.page-home #products .eyebrow,
+body.page-home .pill,
+body.page-home .hero-clean-caption span,
+body.page-home .pgrid .pcard .tag,
+body.page-home .pgrid .pcard-foot > span,
+body.page-home .pgrid .pcard-foot a,
+body.page-home .pgrid .pcard li,
+body.page-home .lp2-stat span,
+body.page-home .lp2-note,
+body.page-home .blog-tag,
+body.page-home .process-step p {
+  font-size: .8125rem;
+}
+body.page-home .hero2-points li {
+  font-size: .875rem;
+}
+body.page-home .hero2 {
+  padding: clamp(48px, 5vw, 72px) 0 clamp(40px, 4.5vw, 64px);
+}
+body.page-home .section {
+  padding: clamp(56px, 5vw, 72px) 0;
+}
+body.page-home .section-head {
+  margin-bottom: clamp(28px, 3vw, 38px);
+}
+body.page-home .pgrid {
+  gap: 20px;
+}
+body.page-home #why-us .split-media,
+body.page-home #why-us .split-media img {
+  height: auto;
+  min-height: 0;
+}
+body.page-home #why-us .split-media img {
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  max-height: 420px;
+}
+
+@media (max-width: 768px) {
+  body.page-home .hero2 h1 {
+    font-size: clamp(2.125rem, 8.6vw, 2.375rem);
+  }
+  body.page-home .section-head h2,
+  body.page-home .faq-side h2,
+  body.page-home .visit h2,
+  body.page-home .sec-cta .cta-card h2 {
+    font-size: clamp(1.75rem, 4.6vw, 1.875rem);
+  }
+  body.page-home .hero2-lede,
+  body.page-home .section-head p,
+  body.page-home .faq-side p,
+  body.page-home .visit p,
+  body.page-home .profiles p,
+  body.page-home .lp2-help p {
+    font-size: .96875rem;
+  }
+  body.page-home .hero2 {
+    padding: 40px 0 36px;
+  }
+  body.page-home .section {
+    padding: 48px 0;
+  }
+}
+@media (max-width: 700px) {
+  body.page-home .pgrid {
+    gap: 16px;
+  }
+  body.page-home .pgrid .pcard-media:not(.icon-only) {
+    aspect-ratio: 16 / 10;
+    max-height: 220px;
+  }
+  body.page-home .pgrid .pcard-media.icon-only {
+    min-height: 96px;
+  }
+}
+@media (max-width: 560px) {
+  body.page-home .hero2 {
+    padding: 32px 0 30px;
+  }
+  body.page-home .section {
+    padding: 42px 0;
+  }
+  body.page-home .eyebrow {
+    letter-spacing: .1em;
+  }
+}
+@media (max-width: 390px) {
+  body.page-home .eyebrow,
+  body.page-home .pill {
+    font-size: .8125rem;
+    letter-spacing: .08em;
+  }
+}

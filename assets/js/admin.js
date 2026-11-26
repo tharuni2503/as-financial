@@ -17,16 +17,14 @@
   };
   const initials = (name) => String(name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const daysAgo = (n) => { const d = new Date(); d.setDate(d.getDate() - n); d.setHours(10 + (n % 8), 15, 0, 0); return d.toISOString(); };
-  const fmtDate = (iso) => {
+  const ASDateFormat = (typeof window !== 'undefined' && window.ASDateFormat) ? window.ASDateFormat : null;
+  const fallbackFmt = (opts) => (iso) => {
     if (!iso) return '—';
     const d = new Date(iso);
-    return isNaN(d) ? '—' : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    return isNaN(d) ? '—' : d.toLocaleDateString('en-IN', opts);
   };
-  const fmtShort = (iso) => {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    return isNaN(d) ? '—' : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-  };
+  const fmtDate = ASDateFormat && ASDateFormat.fmtDate ? ASDateFormat.fmtDate : fallbackFmt({ day: '2-digit', month: 'short', year: 'numeric' });
+  const fmtShort = ASDateFormat && ASDateFormat.fmtShort ? ASDateFormat.fmtShort : fallbackFmt({ day: '2-digit', month: 'short' });
   const fmtDateTimeIST = (iso) => {
     if (!iso) return '—';
     const d = new Date(iso);
@@ -172,6 +170,9 @@
 
   /* ---------------------------------------------------------------- state */
   let leads = [], applications = [], products = [], partners = [], testimonials = [], posts = [], contentImages = {}, gallery = [], tasks = [], customers = [], notifications = [], settings = {};
+  let notificationsLoading = false, notificationsError = '';
+  let notificationPage = 1, notificationPageSize = 50, notificationTotal = 0, notificationCounts = null, notificationStateCounts = null;
+  let notificationStateFilter = 'all';
   let analyticsData = null;
   let apps = applications; // backward compat alias
   let leadPage = 1;
@@ -268,6 +269,107 @@
       })
       .catch(() => { /* backend unavailable or not signed in */ })
       .then(() => { syncingEnquiries = false; });
+  }
+
+  let syncingNotifications = false;
+  let queuedNotificationSync = null;
+  function syncNotifications(page) {
+    const api = window.ASBackend;
+    if (!api || !api.request) return Promise.resolve();
+    const requestedPage = Math.max(1, Number(page) || notificationPage || 1);
+    // A filter change during an in-flight fetch must not be dropped; replay the
+    // latest request after the current one settles so the feed matches the UI.
+    if (syncingNotifications) {
+      queuedNotificationSync = requestedPage;
+      return Promise.resolve();
+    }
+    const offset = (requestedPage - 1) * notificationPageSize;
+    syncingNotifications = true;
+    notificationsLoading = true;
+    notificationsError = '';
+    if (currentView === 'notifications') renderNotifications();
+    // Server-side pagination: fetch one page, not the entire notification history.
+    const stateParam = notificationStateFilter && notificationStateFilter !== 'all'
+      ? '&state=' + encodeURIComponent(notificationStateFilter) : '';
+    return api.request('api/admin/notifications?limit=' + notificationPageSize + '&offset=' + offset + stateParam)
+      .then((data) => {
+        const items = Array.isArray(data) ? data : (data && Array.isArray(data.items) ? data.items : (data && Array.isArray(data.notifications) ? data.notifications : []));
+        if (Array.isArray(items)) {
+          notifications = items;
+          save.notifications();
+        }
+        const total = Number(data && data.total);
+        notificationTotal = Number.isFinite(total) ? Math.max(0, total) : items.length;
+        const limit = Number(data && data.limit);
+        if (Number.isFinite(limit) && limit > 0) notificationPageSize = Math.max(1, Math.min(500, Math.floor(limit)));
+        notificationCounts = data && data.counts && typeof data.counts === 'object' ? data.counts : null;
+        notificationStateCounts = data && data.stateCounts && typeof data.stateCounts === 'object' ? data.stateCounts : null;
+        const pages = Math.max(1, Math.ceil(notificationTotal / notificationPageSize));
+        notificationPage = Math.min(requestedPage, pages);
+        notificationsError = '';
+      })
+      .catch((e) => { notificationsError = (e && e.message) ? e.message : 'Could not load notifications.'; })
+      .then(() => {
+        syncingNotifications = false;
+        notificationsLoading = false;
+        renderAll();
+        if (queuedNotificationSync !== null) {
+          const nextPage = queuedNotificationSync;
+          queuedNotificationSync = null;
+          return syncNotifications(nextPage);
+        }
+      });
+  }
+
+  function unreadNotificationIdsFromServer(api) {
+    const ids = [];
+    const pageSize = 500;
+    let offset = 0;
+    let total = Infinity;
+    function loadPage() {
+      if (offset >= total) return Promise.resolve(ids);
+      return api.request('api/admin/notifications?limit=' + pageSize + '&offset=' + offset + '&state=unread')
+        .then((data) => {
+          const items = Array.isArray(data) ? data : (data && Array.isArray(data.items) ? data.items : (data && Array.isArray(data.notifications) ? data.notifications : []));
+          if (!items.length) return ids;
+          items.forEach((n) => {
+            if (n && n.id && matchesNotificationState(n, 'unread') && ids.indexOf(n.id) === -1) ids.push(n.id);
+          });
+          const reported = Number(data && data.total);
+          total = Number.isFinite(reported) ? Math.max(0, reported) : offset + items.length;
+          offset += items.length;
+          return loadPage();
+        });
+    }
+    return loadPage().catch(() => []);
+  }
+
+  function patchNotificationsRead(api, ids) {
+    const batchSize = 50;
+    let index = 0;
+    function nextBatch() {
+      if (index >= ids.length) return Promise.resolve();
+      const batch = ids.slice(index, index + batchSize);
+      index += batch.length;
+      return Promise.all(batch.map(id => api.request('api/admin/notifications/' + encodeURIComponent(id), {
+        method: 'PATCH',
+        body: { read: true }
+      }))).then(nextBatch);
+    }
+    return nextBatch();
+  }
+
+  function persistNotificationChange(id, body, method) {
+    const api = window.ASBackend;
+    if (!api || !api.request) return Promise.resolve();
+    const opts = { method: method || 'PATCH' };
+    if (body !== undefined) opts.body = body;
+    return api.request('api/admin/notifications/' + encodeURIComponent(id), opts)
+      .then(() => syncNotifications())
+      .catch((e) => {
+        toast((e && e.message) || 'Notification update failed.', 'error');
+        return syncNotifications();
+      });
   }
 
   document.addEventListener('as:sync-enquiries', syncServerEnquiries);
@@ -717,6 +819,7 @@
     loadData();
     renderAll();
     syncServerEnquiries();
+    syncNotifications();
     setView('overview', true);
     loadSessions();
     if (currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin')) { loadUsers(); }
@@ -772,7 +875,7 @@
             (self ? '<span style="color:var(--muted);font-size:.72rem;align-self:center">You</span>' : '<button class="a-btn a-btn-ghost a-btn-sm danger" data-user-action="delete" data-id="' + esc(u.id) + '">Delete</button>') +
           '</div>'
         : '<span style="color:var(--muted);font-size:.75rem">View only</span>';
-      return '<tr><td>' + esc(u.name || '—') + '</td><td>' + esc(u.email || '') + '</td><td>' + esc(roleLabel(u.role)) + '</td><td>' + status + '</td><td>' + actions + '</td></tr>';
+      return '<tr><td data-label="Name">' + esc(u.name || '—') + '</td><td data-label="Email">' + esc(u.email || '') + '</td><td data-label="Role">' + esc(roleLabel(u.role)) + '</td><td data-label="Status">' + status + '</td><td data-label="Actions">' + actions + '</td></tr>';
     }).join('');
   }
 
@@ -802,17 +905,17 @@
       const device = (ua ? ua.slice(0, 60) + (ua.length > 60 ? '…' : '') : 'Unknown device') + (s.ip ? ' · ' + esc(s.ip) : '');
       const status = s.current ? '<span class="badge badge-active">Current</span>' : '<span class="badge">Active</span>';
       const action = s.current ? '<span style="color:var(--muted);font-size:.75rem">This session</span>' : '<button class="a-btn a-btn-light a-btn-sm" data-session-revoke="' + esc(s.id || '') + '">Sign out</button>';
-      return '<tr><td>' + esc(when) + '</td><td title="' + esc(s.userAgent || '') + '">' + device + '</td><td>' + status + '</td><td>' + action + '</td></tr>';
+      return '<tr><td data-label="When">' + esc(when) + '</td><td data-label="Device / IP" title="' + esc(s.userAgent || '') + '">' + device + '</td><td data-label="Status">' + status + '</td><td data-label="Action">' + action + '</td></tr>';
     }).join('');
   }
 
   /* ---------------------------------------------------------------- navigation */
   const VIEW_TITLES = {
-    overview: 'Overview', analytics: 'Website Analytics', funnel: 'Enquiry Funnel', recovery: 'Lead Recovery Centre',
-    leads: 'Enquiries', customers: 'Customers', applications: 'Loan Applications',
-    followups: 'Follow-ups & Reminders', notifications: 'Notifications', marketing: 'Marketing & Campaigns',
-    growth: 'Business Growth', partners: 'Bank partners', reports: 'Reports',
-    health: 'Website Health', audit: 'Admin Activity & Security', content: 'Reviews & Products',
+    overview: 'Dashboard', analytics: 'Analytics & Reports', funnel: 'Enquiry Funnel', recovery: 'Recovery Queue',
+    leads: 'Enquiries', customers: 'Customers', applications: 'Applications',
+    followups: 'Follow-ups', notifications: 'Notifications', marketing: 'Marketing & Campaigns',
+    growth: 'Business Growth', partners: 'Lenders & Products', reports: 'Reports',
+    health: 'Website Health', audit: 'Activity & Security', content: 'Reviews & Content',
     products: 'Loan products', settings: 'Settings'
   };
 
@@ -821,11 +924,19 @@
     currentView = view;
     $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
     $$('.sidebar-link[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
-    $$('.bottom-nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    $$('.view-shortcut[data-view]').forEach(b => {
+      const active = b.dataset.view === view;
+      b.classList.toggle('active', active);
+      if (active) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
     $('#topbar-title').textContent = VIEW_TITLES[view];
     if (!skipHash) history.replaceState(null, '', '#' + view);
     closeSidebar();
     renderView(view);
+    // Fetch on navigation only. renderView() must not call syncNotifications():
+    // syncNotifications() calls renderAll(), which calls renderView(), so doing
+    // it there would start an endless request loop on the notifications view.
+    if (view === 'notifications') syncNotifications();
   }
 
   function syncChartRefs() {
@@ -852,7 +963,6 @@
     else if (view === 'marketing') renderMarketing();
     else if (view === 'growth') renderGrowth();
     else if (view === 'recovery') renderRecovery();
-    else if (view === 'followups') renderFollowups();
     else if (view === 'health') renderHealth();
     else if (view === 'audit') renderAudit();
     syncChartRefs();
@@ -863,6 +973,7 @@
     const now = Date.now();
     const dismissed = (() => { try { return new Set(JSON.parse(localStorage.getItem('as_sla_dismissed')||'[]')); } catch(e){ return new Set(); }})();
     const existing = new Set((notifications||[]).map(n => String(n && n.id || '')));
+    const isoToday = ASDateFormat && ASDateFormat.todayISO ? ASDateFormat.todayISO(new Date(now)) : '';
     let changed = false;
     (leads||[]).forEach(lead => {
       if (!lead || !lead.id) return;
@@ -871,7 +982,7 @@
       const created = new Date(lead.createdAt || lead.receivedAt || 0).getTime();
       if (!created) return;
       const ageHrs = (now - created) / 36e5;
-      const followUpDue = lead.followUpDate ? (new Date(lead.followUpDate + 'T23:59:59').getTime() < now) : false;
+      const followUpDue = lead.followUpDate ? (isoToday ? String(lead.followUpDate).slice(0,10) < isoToday : (new Date(lead.followUpDate + 'T23:59:59').getTime() < now)) : false;
       const rules = [];
       if (status === 'New' && ageHrs >= 24) rules.push({ rule:'new-24h', title:'New lead not contacted', message:[lead.name,lead.phone,lead.product].filter(Boolean).join(' • ').slice(0,220)+' has been waiting over 24 hours.' });
       if (status === 'Contacted' && ageHrs >= 72) rules.push({ rule:'contacted-72h', title:'Follow-up needed', message:[lead.name,lead.phone,lead.product].filter(Boolean).join(' • ').slice(0,220)+' needs follow-up (72+ hours).' });
@@ -899,16 +1010,21 @@
     const open = leads.filter(l => ['New', 'Contacted'].includes(l.status)).length;
     const el = $('#nav-lead-count');
     if (el) el.textContent = open;
-    const today = new Date(); const todayISO = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    const todayISO = window.ASDateFormat && typeof window.ASDateFormat.todayISO === 'function'
+      ? window.ASDateFormat.todayISO()
+      : new Date().toISOString().slice(0, 10);
     const fuDue = leads.filter(l => !l.followUpCompletedAt && l.followUpDate && String(l.followUpDate).slice(0,10) <= todayISO).length;
     const fuEl = $('#nav-followup-count'); if (fuEl) fuEl.textContent = String(fuDue);
-    const unread = Array.isArray(notifications) ? notifications.filter(n => n && !n.read).length : 0;
+    const visibleNotifs = Array.isArray(notifications) ? notifications.filter(n => n && !n.dismissed) : [];
+    const pendingReminders = visibleNotifs.filter(n => n.type === 'followup.reminder' && !n.acknowledged).length;
+    const unread = visibleNotifs.filter(n => !n.read && !n.acknowledged).length;
+    const badge = pendingReminders || unread;
     const nel = $('#nav-notif-count');
-    if (nel) { nel.textContent = unread; nel.style.display = unread ? '' : 'none'; }
+    if (nel) { nel.textContent = badge; nel.style.display = badge ? '' : 'none'; }
     const dot = document.querySelector('#notif-btn .notif-dot');
-    if (dot) dot.style.display = unread ? '' : 'none';
+    if (dot) dot.style.display = badge ? '' : 'none';
     const menuCount = $('#notif-menu-count');
-    if (menuCount) menuCount.textContent = unread ? (unread + ' unread') : 'No new alerts';
+    if (menuCount) menuCount.textContent = pendingReminders ? (pendingReminders + ' pending') : (unread ? (unread + ' unread') : 'No new alerts');
   }
 
   function populateFilters() {
@@ -1063,9 +1179,23 @@
       const recent = (leads||[]).slice().sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,5);
       const badgeCls = (s) => ({New:'b-blue',Contacted:'b-amber',Accepted:'b-green',Declined:'b-red'}[String(s||'New')]||'b-gray');
       recentHost.innerHTML = recent.length ? recent.map(l =>
-        '<tr><td><b style="color:var(--navy)">'+esc(l.name||'—')+'</b></td><td>'+esc(l.product||l.loanType||'—')+'</td><td>'+esc(timeAgo(l.createdAt))+'</td><td><span class="badge '+badgeCls(l.status)+'">'+esc(l.status||'New')+'</span></td></tr>'
+        '<tr><td data-label="Customer"><b style="color:var(--navy)">'+esc(l.name||'—')+'</b></td><td data-label="Loan type">'+esc(l.product||l.loanType||'—')+'</td><td data-label="Date">'+esc(timeAgo(l.createdAt))+'</td><td data-label="Status"><span class="badge '+badgeCls(l.status)+'">'+esc(l.status||'New')+'</span></td></tr>'
       ).join('') : '<tr><td colspan="4" class="table-empty">No enquiries yet.</td></tr>';
     }
+    renderPriorityBoard();
+  }
+
+  function renderPriorityBoard() {
+    const setText = (id, val) => { const el = $('#' + id); if (el) el.textContent = String(val); };
+    const isoToday = ASDateFormat && ASDateFormat.todayISO ? ASDateFormat.todayISO() : '';
+    const open = (leads || []).filter(l => ['New', 'Contacted', 'In Progress'].includes(l.status)).length;
+    const pending = (leads || []).filter(l => !l.followUpCompletedAt && l.followUpDate && String(l.followUpDate).slice(0, 10));
+    const overdue = isoToday ? pending.filter(l => String(l.followUpDate).slice(0, 10) < isoToday).length : 0;
+    const today = isoToday ? pending.filter(l => String(l.followUpDate).slice(0, 10) === isoToday).length : 0;
+    setText('ov-priority-enquiries', open);
+    setText('ov-priority-overdue', overdue);
+    setText('ov-priority-today', today);
+    setText('ov-priority-updated', isoToday ? ('As of ' + fmtShort(isoToday)) : 'Live');
   }
 
     async function renderOverview() {
@@ -1137,7 +1267,7 @@
         const visitor = rawVisitor ? 'Visitor ' + esc(rawVisitor.slice(-6).toUpperCase()) : 'Unknown visitor';
         const page = esc(e.page || '/');
         const badgeCls = eventLabel.includes('page view') ? 'b-blue' : eventLabel.includes('success') ? 'b-green' : eventLabel.includes('fail') ? 'b-red' : 'b-amber';
-        return '<tr><td title="' + esc(fmtDate(e.at)) + '">' + esc(timeAgo(e.at)) + '</td><td title="' + esc(rawVisitor || 'Unknown') + '">' + visitor + '</td><td><b style="color:var(--navy)">' + page + '</b></td><td><span class="badge ' + badgeCls + '">' + esc(eventLabel) + '</span></td></tr>';
+        return '<tr><td data-label="When" title="' + esc(fmtDate(e.at)) + '">' + esc(timeAgo(e.at)) + '</td><td data-label="Visitor" title="' + esc(rawVisitor || 'Unknown') + '">' + visitor + '</td><td data-label="Page"><b style="color:var(--navy)">' + page + '</b></td><td data-label="Event"><span class="badge ' + badgeCls + '">' + esc(eventLabel) + '</span></td></tr>';
       }).join('') : '<tr><td colspan="4" class="table-empty">No website activity yet.</td></tr>';
 
       setText('ov-cta-clicks', Number(s.ctaClicks || 0));
@@ -1276,7 +1406,7 @@
       const reason = l.status === 'New' ? (ageHrs>24?'New lead not contacted >24h':'New lead awaiting contact') : (ageHrs>72?'Contacted but no progress >72h':'Contacted follow-up');
       return { l, ageHrs, reason };
     }).sort((a,b)=>b.ageHrs-a.ageHrs).slice(0,20);
-    body.innerHTML = items.length ? items.map(x => '<tr><td><b style="color:var(--navy)">'+esc(x.l.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(x.l.phone||'')+'</div></td><td>'+esc(x.l.status||'')+'</td><td>'+Math.floor(x.ageHrs/24)+'d '+Math.floor(x.ageHrs%24)+'h</td><td>'+esc(x.reason)+'</td></tr>').join('') : '<tr><td colspan="4" class="table-empty">No recovery items detected yet.</td></tr>';
+    body.innerHTML = items.length ? items.map(x => '<tr><td data-label="Lead"><b style="color:var(--navy)">'+esc(x.l.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(x.l.phone||'')+'</div></td><td data-label="Status">'+esc(x.l.status||'')+'</td><td data-label="Age">'+Math.floor(x.ageHrs/24)+'d '+Math.floor(x.ageHrs%24)+'h</td><td data-label="Reason">'+esc(x.reason)+'</td></tr>').join('') : '<tr><td colspan="4" class="table-empty">No recovery items detected yet.</td></tr>';
     const note = $('#recovery-note');
     if (note) {
       const api = window.ASBackend;
@@ -1286,23 +1416,6 @@
       const sns = Math.max(0, Number(s.formStarts||0) - Number(s.formSubmits||0));
       note.textContent = 'Anonymous abandon events (7d): ' + abandon + ' | Started not submitted: ' + sns;
     }
-  }
-
-  function renderFollowups() {
-    const body = $('#followups-body');
-    if (!body) return;
-    const now = Date.now();
-    const items = [...leads].filter(l => ['New','Contacted'].includes(l.status)).map(l => {
-      const ageH = (now - new Date(l.createdAt||l.receivedAt||0).getTime())/36e5;
-      const followUpDue = l.followUpDate ? (new Date(l.followUpDate+'T23:59:59').getTime() < now) : false;
-      const overdue = followUpDue || (l.status==='New'&&ageH>=24)||(l.status==='Contacted'&&ageH>=72);
-      return { l, ageH, overdue, followUpDue };
-    }).sort((a,b)=> (b.overdue-a.overdue) || (b.followUpDue-a.followUpDue) || (b.ageH-a.ageH)).slice(0,20);
-    body.innerHTML = items.length ? items.map(x => {
-      const l = x.l;
-      const due = l.followUpDate ? '<div style="font-size:.72rem;color:'+(x.followUpDue?'var(--red)':'var(--muted)')+'">Due '+esc(fmtShort(l.followUpDate))+'</div>' : '';
-      return '<tr><td><b style="color:var(--navy)">'+esc(l.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(l.product||'')+'</div></td><td><span class="badge badge-'+String(l.status).toLowerCase()+'">'+esc(l.status||'')+'</span></td><td>'+esc(l.priority||'Medium')+'</td><td>'+esc(fmtShort(l.createdAt))+due+'</td><td><button type="button" class="a-btn a-btn-light a-btn-sm" data-view-link="leads">Open</button></td></tr>';
-    }).join('') : '<tr><td colspan="5" class="table-empty">No follow-ups found.</td></tr>';
   }
 
   async function renderHealth() {
@@ -1324,7 +1437,7 @@
       try {
         const d = await api.request('api/audit');
         const items = Array.isArray(d) ? d : (Array.isArray(d.items) ? d.items : Array.isArray(d.logs) ? d.logs : []);
-        body.innerHTML = items.length ? items.slice(0,30).map(a => '<tr><td title="'+esc(fmtDate(a.at||a.createdAt))+'">'+esc(timeAgo(a.at||a.createdAt))+'</td><td>'+esc(a.actorEmail||a.actor||'-')+'</td><td>'+esc(a.type||a.action||'-')+'</td><td>'+esc(a.summary||a.targetId||'-')+'</td></tr>').join('') : '<tr><td colspan="4" class="table-empty">No audit logs found.</td></tr>';
+        body.innerHTML = items.length ? items.slice(0,30).map(a => '<tr><td data-label="Time" title="'+esc(fmtDate(a.at||a.createdAt))+'">'+esc(timeAgo(a.at||a.createdAt))+'</td><td data-label="Actor">'+esc(a.actorEmail||a.actor||'-')+'</td><td data-label="Action">'+esc(a.type||a.action||'-')+'</td><td data-label="Target">'+esc(a.summary||a.targetId||'-')+'</td></tr>').join('') : '<tr><td colspan="4" class="table-empty">No audit logs found.</td></tr>';
       } catch(e) { body.innerHTML = '<tr><td colspan="4" class="table-empty">Could not load audit logs.</td></tr>'; }
     }
     const sBody = $('#audit-sessions-body');
@@ -1333,7 +1446,7 @@
       try {
         const d = await api.request('api/sessions');
         const items = Array.isArray(d) ? d : (Array.isArray(d.sessions) ? d.sessions : Array.isArray(d.items) ? d.items : []);
-        sBody.innerHTML = items.length ? items.slice(0,20).map(s => '<tr><td>'+esc(s.email||s.user||'-')+'</td><td>'+esc(s.role||'-')+'</td><td>'+esc(timeAgo(s.lastSeenAt||s.lastSeen||s.createdAt))+'</td><td title="'+esc(s.userAgent||'')+'">'+esc(s.ip||'-')+'</td></tr>').join('') : '<tr><td colspan="4" class="table-empty">No active sessions found.</td></tr>';
+        sBody.innerHTML = items.length ? items.slice(0,20).map(s => '<tr><td data-label="User">'+esc(s.email||s.user||'-')+'</td><td data-label="Role">'+esc(s.role||'-')+'</td><td data-label="Last seen">'+esc(timeAgo(s.lastSeenAt||s.lastSeen||s.createdAt))+'</td><td data-label="IP / UA" title="'+esc(s.userAgent||'')+'">'+esc(s.ip||'-')+'</td></tr>').join('') : '<tr><td colspan="4" class="table-empty">No active sessions found.</td></tr>';
       } catch(e) { sBody.innerHTML = '<tr><td colspan="4" class="table-empty">Could not load sessions.</td></tr>'; }
     }
   }
@@ -1399,8 +1512,10 @@
       toast((e && e.message) ? e.message : 'Could not load follow-ups.', 'error');
     }
     // Fallback: compute from local leads
-    const today = new Date(); const y=today.getFullYear(), m=String(today.getMonth()+1).padStart(2,'0'), d=String(today.getDate()).padStart(2,'0');
-    const todayISO = y + '-' + m + '-' + d;
+    const todayISO = ASDateFormat && ASDateFormat.todayISO ? ASDateFormat.todayISO() : (() => {
+      const t = new Date();
+      return t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
+    })();
     const addDays = (iso, n) => { const mm=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||''); if(!mm) return ''; const dt=new Date(Date.UTC(+mm[1],+mm[2]-1,+mm[3]+n)); return dt.toISOString().slice(0,10); };
     const end7 = addDays(todayISO,7); const end30 = addDays(todayISO,30); const tomorrow = addDays(todayISO,1);
     const all = leads.filter(l => l.followUpDate || l.followUpCompletedAt);
@@ -1447,11 +1562,11 @@
       const date = l.followUpDate ? fmtShort(l.followUpDate) : 'Not set';
       const overdue = b === 'overdue';
       return '<tr>' +
-        '<td><div class="cust"><span class="cust-avatar">' + initials(l.name) + '</span><span><b>' + esc(l.name) + '</b><span>' + esc(l.phone || '') + '</span></span></div></td>' +
-        '<td>' + esc(l.product || '—') + '<div style="font-size:.68rem;color:#5b6b7e"><span class="' + statusBadgeClass(l.status) + '">' + esc(l.status || 'New') + '</span></div></td>' +
-        '<td><b style="color:' + (overdue ? 'var(--red)' : 'var(--navy)') + '">' + esc(date) + '</b></td>' +
-        '<td><span class="badge ' + followupBucketClass(b) + '">' + esc(followupBucketLabel(b)) + '</span></td>' +
-        '<td><div class="row-actions">' +
+        '<td data-label="Customer"><div class="cust"><span class="cust-avatar">' + initials(l.name) + '</span><span><b>' + esc(l.name) + '</b><span>' + esc(l.phone || '') + '</span></span></div></td>' +
+        '<td data-label="Loan / Status">' + esc(l.product || '—') + '<div style="font-size:.68rem;color:#5b6b7e"><span class="' + statusBadgeClass(l.status) + '">' + esc(l.status || 'New') + '</span></div></td>' +
+        '<td data-label="Follow-up date"><b style="color:' + (overdue ? 'var(--red)' : 'var(--navy)') + '">' + esc(date) + '</b></td>' +
+        '<td data-label="Bucket"><span class="badge ' + followupBucketClass(b) + '">' + esc(followupBucketLabel(b)) + '</span></td>' +
+        '<td data-label="Actions"><div class="row-actions">' +
           '<button class="a-btn-icon" data-action="fu-view" data-id="' + esc(l.id) + '" title="View"><svg class="icon" aria-hidden="true"><use href="#i-eye"></use></svg></button>' +
           '<button class="a-btn-icon" data-action="fu-reschedule" data-id="' + esc(l.id) + '" title="Reschedule"><svg class="icon" aria-hidden="true"><use href="#i-calendar"></use></svg></button>' +
           (b !== 'completed' ? '<button class="a-btn-icon" data-action="fu-complete" data-id="' + esc(l.id) + '" title="Mark completed"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg></button>' : '') +
@@ -1487,14 +1602,14 @@
 
     $('#leads-body').innerHTML = pageItems.length ? pageItems.map(l =>
       '<tr>' +
-      '<td><div class="cust"><span class="cust-avatar">' + initials(l.name) + '</span><span><b>' + esc(l.name) + '</b><span>' + esc(l.id) + '</span></span></div></td>' +
-      '<td>' + esc(l.phone) + '</td>' +
-      '<td>' + esc(l.product) + '<div style="font-size:.66rem;color:#5b6b7e">' + esc(l.city || 'Hyderabad') + '</div></td>' +
-      '<td class="num">' + compact(amountToNumber(l.amount)) + '</td>' +
-      '<td><span class="' + statusBadgeClass(l.status) + '">' + esc(l.status) + '</span></td>' +
-      '<td><span class="badge badge-' + String(l.priority || 'medium').toLowerCase() + '">' + esc(l.priority || 'Medium') + '</span></td>' +
-      '<td title="' + fmtDate(l.createdAt) + '">' + fmtShort(l.createdAt) + (l.followUpDate ? '<div style="font-size:.68rem;color:' + (new Date(l.followUpDate+"T23:59:59").getTime() < Date.now() ? "var(--red)" : "var(--muted)") + '">Follow-up ' + esc(fmtShort(l.followUpDate)) + '</div>' : '') + '</td>' +
-      '<td><div class="row-actions">' +
+      '<td data-label="Customer"><div class="cust"><span class="cust-avatar">' + initials(l.name) + '</span><span><b>' + esc(l.name) + '</b><span>' + esc(l.id) + '</span></span></div></td>' +
+      '<td data-label="Phone">' + esc(l.phone) + '</td>' +
+      '<td data-label="Loan type">' + esc(l.product) + '<div style="font-size:.66rem;color:#5b6b7e">' + esc(l.city || 'Hyderabad') + '</div></td>' +
+      '<td class="num" data-label="Amount">' + compact(amountToNumber(l.amount)) + '</td>' +
+      '<td data-label="Status"><span class="' + statusBadgeClass(l.status) + '">' + esc(l.status) + '</span></td>' +
+      '<td data-label="Priority"><span class="badge badge-' + String(l.priority || 'medium').toLowerCase() + '">' + esc(l.priority || 'Medium') + '</span></td>' +
+      '<td data-label="Date" title="' + fmtDate(l.createdAt) + '">' + fmtShort(l.createdAt) + (l.followUpDate ? '<div style="font-size:.68rem;color:' + ((ASDateFormat && ASDateFormat.todayISO ? String(l.followUpDate).slice(0,10) < ASDateFormat.todayISO() : new Date(l.followUpDate+"T23:59:59").getTime() < Date.now()) ? "var(--red)" : "var(--muted)") + '">Follow-up ' + esc(fmtShort(l.followUpDate)) + '</div>' : '') + '</td>' +
+      '<td data-label="Actions"><div class="row-actions">' +
         '<a class="a-btn-icon" href="https://wa.me/' + esc(String(l.phone || "").replace(/\D/g, "").replace(/^0/, "91").slice(-12)) + '" target="_blank" rel="noopener noreferrer" title="WhatsApp"><svg class="icon" aria-hidden="true"><use href="#i-whatsapp"></use></svg></a>' +
         '<button class="a-btn-icon" data-action="edit-lead" data-id="' + esc(l.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
         '<button class="a-btn-icon danger" data-action="delete-lead" data-id="' + esc(l.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
@@ -1702,7 +1817,7 @@
         '<div class="detail-box"><small>Next follow-up</small><b>' + esc(lead.followUpDate ? fmtShort(lead.followUpDate) : 'Not set') + '</b></div>' +
         '<div class="detail-box"><small>Consent</small><b>' + (lead.consent ? 'Recorded' : 'Not recorded') + '</b></div>' +
       '</div>' +
-      '<div class="drawer-section"><h3>Update status</h3><select id="drawer-status" style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:.8rem">' + statusOptions + '</select></div>' +
+      '<div class="drawer-section"><h3>Update status</h3><select id="drawer-status" style="width:100%;min-height:44px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;font-size:.8rem">' + statusOptions + '</select></div>' +
       '<div class="drawer-section"><h3>Contact</h3>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
           '<a class="a-btn a-btn-light a-btn-sm" href="tel:' + esc(lead.phone) + '"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg> Call</a>' +
@@ -1794,13 +1909,13 @@
     $('#products-body').innerHTML = products.map(p => {
       const leadCount = leads.filter(l => l.product === p.name).length;
       return '<tr>' +
-        '<td><div class="product-cell"><span class="p-ic"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-' + esc(p.icon || 'doc') + '"></use></svg></span><span><b>' + esc(p.name) + '</b><span>' + esc(p.category) + '</span></span></div></td>' +
-        '<td class="num">' + (p.rate ? p.rate.toFixed(2) + '%' : '—') + '</td>' +
-        '<td>' + (p.maxAmount ? compact(p.maxAmount) : '—') + '</td>' +
-        '<td>' + esc(p.tenure) + '</td>' +
-        '<td>' + leadCount + '</td>' +
-        '<td><label class="switch"><input type="checkbox" data-toggle="product" data-id="' + esc(p.id) + '" ' + (p.visible ? 'checked' : '') + '><span></span></label></td>' +
-        '<td><div class="row-actions">' +
+        '<td data-label="Product"><div class="product-cell"><span class="p-ic"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-' + esc(p.icon || 'doc') + '"></use></svg></span><span><b>' + esc(p.name) + '</b><span>' + esc(p.category) + '</span></span></div></td>' +
+        '<td class="num" data-label="Rate">' + (p.rate ? p.rate.toFixed(2) + '%' : '—') + '</td>' +
+        '<td data-label="Max amount">' + (p.maxAmount ? compact(p.maxAmount) : '—') + '</td>' +
+        '<td data-label="Tenure">' + esc(p.tenure) + '</td>' +
+        '<td data-label="Enquiries">' + leadCount + '</td>' +
+        '<td data-label="Visible"><label class="switch"><input type="checkbox" data-toggle="product" data-id="' + esc(p.id) + '" ' + (p.visible ? 'checked' : '') + '><span></span></label></td>' +
+        '<td data-label="Actions"><div class="row-actions">' +
           '<button class="a-btn-icon" data-action="edit-product" data-id="' + esc(p.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
           '<button class="a-btn-icon danger" data-action="delete-product" data-id="' + esc(p.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
         '</div></td></tr>';
@@ -2511,13 +2626,13 @@
     const rows = customers.slice().sort((a,b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
     body.innerHTML = rows.map(c =>
       '<tr>' +
-      '<td><div class="cust"><span class="cust-avatar">' + initials(c.name || '?') + '</span><span><b>' + esc(c.name || 'Unnamed') + '</b><span>' + esc(c.id || '') + '</span></span></div></td>' +
-      '<td>' + esc(c.phone || '—') + '</td>' +
-      '<td>' + esc(c.email || '—') + '</td>' +
-      '<td>' + esc(c.product || c.interest || '—') + '</td>' +
-      '<td><span class="badge badge-' + String(c.status || 'new').toLowerCase().replace(/[^a-z]/g,'') + '">' + esc(c.status || 'New') + '</span></td>' +
-      '<td>' + esc(c.city || '—') + '</td>' +
-      '<td><div class="row-actions">' +
+      '<td data-label="Customer"><div class="cust"><span class="cust-avatar">' + initials(c.name || '?') + '</span><span><b>' + esc(c.name || 'Unnamed') + '</b><span>' + esc(c.id || '') + '</span></span></div></td>' +
+      '<td data-label="Phone">' + esc(c.phone || '—') + '</td>' +
+      '<td data-label="Email">' + esc(c.email || '—') + '</td>' +
+      '<td data-label="Product interest">' + esc(c.product || c.interest || '—') + '</td>' +
+      '<td data-label="Status"><span class="badge badge-' + String(c.status || 'new').toLowerCase().replace(/[^a-z]/g,'') + '">' + esc(c.status || 'New') + '</span></td>' +
+      '<td data-label="City">' + esc(c.city || '—') + '</td>' +
+      '<td data-label="Actions"><div class="row-actions">' +
         '<button class="a-btn-icon" data-action="edit-customer" data-id="' + esc(c.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
         '<button class="a-btn-icon danger" data-action="delete-customer" data-id="' + esc(c.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
       '</div></td></tr>'
@@ -2579,13 +2694,13 @@
     set('app-hold', rows.filter(a=>['Rejected','On Hold'].includes(a.stage)).length);
     body.innerHTML = rows.length ? rows.map(a =>
       '<tr>' +
-      '<td><b style="color:var(--navy)">'+esc(a.applicant||a.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(a.id||'')+'</div></td>' +
-      '<td>'+esc(a.product||'—')+'</td>' +
-      '<td class="num">'+(a.amount?compact(amountToNumber(a.amount)):'—')+'</td>' +
-      '<td><span class="badge badge-'+String(a.stage||'new').toLowerCase().replace(/[^a-z]/g,'')+'">'+esc(a.stage||'New')+'</span></td>' +
-      '<td>'+esc(a.owner||'—')+'</td>' +
-      '<td title="'+esc(fmtDate(a.updatedAt||a.createdAt))+'">'+esc(fmtShort(a.updatedAt||a.createdAt))+'</td>' +
-      '<td><div class="row-actions"><button class="a-btn-icon" data-action="edit-application" data-id="'+esc(a.id)+'" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="a-btn-icon danger" data-action="delete-application" data-id="'+esc(a.id)+'" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button></div></td>' +
+      '<td data-label="Applicant"><b style="color:var(--navy)">'+esc(a.applicant||a.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(a.id||'')+'</div></td>' +
+      '<td data-label="Product">'+esc(a.product||'—')+'</td>' +
+      '<td class="num" data-label="Amount">'+(a.amount?compact(amountToNumber(a.amount)):'—')+'</td>' +
+      '<td data-label="Stage"><span class="badge badge-'+String(a.stage||'new').toLowerCase().replace(/[^a-z]/g,'')+'">'+esc(a.stage||'New')+'</span></td>' +
+      '<td data-label="Owner">'+esc(a.owner||'—')+'</td>' +
+      '<td data-label="Updated" title="'+esc(fmtDate(a.updatedAt||a.createdAt))+'">'+esc(fmtShort(a.updatedAt||a.createdAt))+'</td>' +
+      '<td data-label="Actions"><div class="row-actions"><button class="a-btn-icon" data-action="edit-application" data-id="'+esc(a.id)+'" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="a-btn-icon danger" data-action="delete-application" data-id="'+esc(a.id)+'" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button></div></td>' +
       '</tr>'
     ).join('') : '<tr><td colspan="7" class="table-empty">No applications yet. Add one to start tracking.</td></tr>';
   }
@@ -2635,47 +2750,150 @@
   }
 
   /* ---------------------------------------------------------------- notifications */
+  function isPendingReminder(n) { return n && n.type === 'followup.reminder' && !n.dismissed && !n.acknowledged; }
+  function notificationState(n) {
+    if (!n) return 'read';
+    const state = String((n.state || (n.legacy && n.legacy.state) || '')).toLowerCase();
+    if (n.dismissed) return 'dismissed';
+    if (n.acknowledged) return 'acknowledged';
+    if (state === 'dismissed' || state === 'acknowledged' || state === 'superseded' || state === 'completed') return state;
+    if (isPendingReminder(n)) return 'pending';
+    return n.read ? 'read' : 'unread';
+  }
+  function matchesNotificationState(n, filter) {
+    if (!filter || filter === 'all') return true;
+    if (filter === 'unread') {
+      const state = notificationState(n);
+      return !!n && !n.dismissed && !n.acknowledged && !n.read && state !== 'completed' && state !== 'superseded';
+    }
+    return notificationState(n) === filter;
+  }
+  function reminderBucket(n) { return String((n && n.meta && n.meta.bucket) || ''); }
+  function notificationPagerHtml() {
+    const pages = Math.max(1, Math.ceil(notificationTotal / notificationPageSize));
+    if (pages <= 1) return '';
+    const prev = notificationPage > 1 ? '<button class="a-btn a-btn-light a-btn-sm" data-action="notification-page" data-page="' + (notificationPage - 1) + '" aria-label="Previous notification page">Previous</button>' : '<span></span>';
+    const next = notificationPage < pages ? '<button class="a-btn a-btn-light a-btn-sm" data-action="notification-page" data-page="' + (notificationPage + 1) + '" aria-label="Next notification page">Next</button>' : '<span></span>';
+    return '<div class="notif-pager">' +
+      prev + '<span>Page ' + notificationPage + ' of ' + pages + ' · ' + notificationTotal + ' notifications</span>' + next +
+    '</div>';
+  }
   function renderNotifications() {
     const host = $('#notifications-list');
-    const items = Array.isArray(notifications) ? notifications.slice().sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) : [];
+    const all = Array.isArray(notifications) ? notifications.slice().sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) : [];
+    const visible = all; // keep acknowledged/dismissed in history, distinguished in UI
+    const feed = all.filter(n => matchesNotificationState(n, notificationStateFilter));
+    const pendingReminders = all.filter(isPendingReminder);
+    let counts = { overdue:0, today:0, upcoming:0, pending: pendingReminders.length };
+    pendingReminders.forEach(n => { const b = reminderBucket(n); if (counts[b] !== undefined) counts[b]++; });
+    if (notificationCounts && Number.isFinite(Number(notificationCounts.pending))) {
+      counts = {
+        overdue: Number(notificationCounts.overdue) || 0,
+        today: Number(notificationCounts.today) || 0,
+        upcoming: Number(notificationCounts.upcoming) || 0,
+        pending: Number(notificationCounts.pending) || 0
+      };
+    }
+    const localStateCounts = {
+      all: all.length,
+      pending: all.filter(n => notificationState(n) === 'pending').length,
+      unread: all.filter(n => matchesNotificationState(n, 'unread')).length,
+      acknowledged: all.filter(n => notificationState(n) === 'acknowledged').length,
+      dismissed: all.filter(n => notificationState(n) === 'dismissed').length,
+      completed: all.filter(n => notificationState(n) === 'completed').length,
+      superseded: all.filter(n => notificationState(n) === 'superseded').length
+    };
+    // Counts describe the whole server history, not just the current page.
+    // Fall back to local counts only when a server response is unavailable.
+    const stateCounts = Object.assign({}, localStateCounts, notificationStateCounts || {});
+    $$('.notif-state-tab').forEach(tab => {
+      const active = tab.dataset.notifState === notificationStateFilter;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
+      const countEl = $('#notif-tab-count-' + tab.dataset.notifState);
+      if (countEl) countEl.textContent = String(stateCounts[tab.dataset.notifState] || 0);
+    });
+    const navNotif = $('#nav-notif-count');
+    if (navNotif) {
+      navNotif.textContent = String(counts.pending || 0);
+      navNotif.style.display = counts.pending ? '' : 'none';
+    }
 
-    // Bell dropdown (always rendered)
     const menu = $('#notif-menu');
     if (menu) {
-      const unread = items.filter(n => !n.read).length;
-      const head = '<div class="notif-head"><strong>Notifications</strong><div style="display:flex;align-items:center;gap:8px"><span id="notif-menu-count">' + (unread ? (unread + ' unread') : 'No new alerts') + '</span><button type="button" class="icon-btn notif-refresh-btn" aria-label="Refresh notifications" style="width:32px;height:32px;min-width:32px"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-refresh"></use></svg></button></div></div>';
-      if (!items.length) {
-        menu.innerHTML = head + '<div class="notif-item"><span><b>No notifications</b><span>New alerts will appear here.</span></span></div>';
+      const unread = visible.filter(n => !n.read && !n.acknowledged).length;
+      const head = '<div class="notif-head"><strong>Notifications</strong><div style="display:flex;align-items:center;gap:8px"><span id="notif-menu-count">' + (counts.pending ? (counts.pending + ' pending') : (unread ? (unread + ' unread') : 'No new alerts')) + '</span><button type="button" class="icon-btn" data-action="refresh-notifications" aria-label="Refresh notifications"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-refresh"></use></svg></button></div></div>';
+      if (!visible.length) {
+        menu.innerHTML = head + '<div class="notif-item"><span><b>No notifications</b><span>Follow-up reminders and alerts will appear here.</span></span></div>';
       } else {
-        menu.innerHTML = head + items.slice(0, 8).map(n => {
+        menu.innerHTML = head + visible.slice(0, 8).map(n => {
           const when = n.createdAt ? timeAgo(n.createdAt) : '';
-          return '<button type="button" class="notif-item" data-action="open-notification" data-id="' + esc(n.id) + '" style="width:100%;text-align:left;background:none;border:0;cursor:pointer;' + (!n.read ? 'background:rgba(201,162,39,.06);' : '') + '">' +
-            '<span><b>' + esc(n.title || 'Notification') + '</b><span>' + esc(n.message || '') + (when ? ' · ' + esc(when) : '') + '</span></span>' +
+          const pending = isPendingReminder(n);
+          return '<button type="button" class="notif-item" data-action="open-notification" data-id="' + esc(n.id) + '" style="width:100%;text-align:left;background:none;border:0;cursor:pointer;' + (pending || !n.read ? 'background:rgba(201,162,39,.06);' : '') + '">' +
+            '<span><b>' + esc(n.title || 'Notification') + '</b><span>' + esc(n.message || '') + (when ? ' \u00b7 ' + esc(when) : '') + '</span></span>' +
           '</button>';
         }).join('') + '<div style="padding:10px 12px;border-top:1px solid #f2eee4"><button type="button" class="a-btn a-btn-light a-btn-sm" data-action="go-notifications">View all notifications</button></div>';
       }
     }
 
     if (!host) return;
-    if (!items.length) {
-      host.innerHTML = '<div class="empty-state" style="padding:24px"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg><h3>No notifications</h3><p>New website enquiries will appear here automatically.</p></div>';
+    if (notificationsError) {
+      host.innerHTML = '<div class="feed-state error-state"><svg class="icon" aria-hidden="true"><use href="#i-alert"></use></svg><h3>Could not load notifications</h3><p>' + esc(notificationsError) + '</p><button class="a-btn a-btn-light a-btn-sm" data-action="refresh-notifications">Retry</button></div>';
       return;
     }
-    host.innerHTML = items.map(n => {
+    if (notificationsLoading) {
+      host.innerHTML = '<div class="feed-state loading-state"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg><h3>Loading notifications</h3><p>Fetching the latest notification history\u2026</p></div>';
+      return;
+    }
+    const summary = '<div class="fu-stats" style="margin-bottom:14px">' +
+      '<div class="mini-stat"><b>' + counts.overdue + '</b><span>Overdue</span></div>' +
+      '<div class="mini-stat"><b>' + counts.today + '</b><span>Today</span></div>' +
+      '<div class="mini-stat"><b>' + counts.upcoming + '</b><span>Upcoming (7 days)</span></div>' +
+      '<div class="mini-stat"><b>' + counts.pending + '</b><span>Pending reminders</span></div>' +
+    '</div>';
+    if (!feed.length) {
+      const emptyTitle = notificationStateFilter === 'all' ? 'No notifications' : 'No ' + notificationStateFilter + ' notifications';
+      const emptyCopy = notificationStateFilter === 'all'
+        ? 'Follow-up reminders and alerts will appear here.'
+        : 'Nothing matches this state on the current page. Acknowledged and dismissed history is kept.';
+      host.innerHTML = summary + '<div class="feed-state"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg><h3>' + esc(emptyTitle) + '</h3><p>' + esc(emptyCopy) + '</p></div>';
+      return;
+    }
+    host.innerHTML = summary + feed.map(n => {
       const unread = !n.read;
-      const when = n.createdAt ? (fmtShort(n.createdAt) + ' · ' + timeAgo(n.createdAt)) : '';
-      return '<div class="notif-row" style="display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #f2eee4;' + (unread ? 'background:rgba(201,162,39,.06);margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:10px;' : '') + '">' +
-        '<span class="n-icon" style="width:32px;height:32px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:var(--blue-soft);color:var(--blue)"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-bell"></use></svg></span>' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b style="font-size:.82rem;color:var(--navy);display:block">' + esc(n.title || 'Notification') + '</b>' +
-            '<span style="font-size:.68rem;color:var(--muted);white-space:nowrap">' + esc(when) + '</span></div>' +
-          '<div style="font-size:.76rem;color:var(--muted);margin-top:2px;line-height:1.45">' + esc(n.message || '') + '</div>' +
-          '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">' +
-            '<button class="a-btn a-btn-light a-btn-sm" data-action="toggle-notification" data-id="' + esc(n.id) + '">' + (unread ? 'Mark read' : 'Mark unread') + '</button>' +
-            '<button class="a-btn a-btn-ghost a-btn-sm danger" data-action="delete-notification" data-id="' + esc(n.id) + '">Dismiss</button>' +
+      const pending = isPendingReminder(n);
+      const state = notificationState(n);
+      const when = n.createdAt ? (fmtShort(n.createdAt) + ' \u00b7 ' + timeAgo(n.createdAt)) : '';
+      const meta = n.meta || {};
+      const fuDate = meta.followUpDate ? fmtShort(meta.followUpDate) : '';
+      const bucket = reminderBucket(n);
+      const bucketLabel = bucket === 'overdue' ? 'Overdue' : bucket === 'today' ? 'Today' : bucket === 'upcoming' ? 'Upcoming' : '';
+      const bucketClass = bucket === 'overdue' ? 'badge-rejected' : bucket === 'today' ? 'badge-medium' : bucket === 'upcoming' ? 'badge-contacted' : 'badge-low';
+      const stateLabels = { pending: 'Pending', acknowledged: 'Acknowledged', dismissed: 'Dismissed', completed: 'Completed', superseded: 'Superseded', unread: 'Unread', read: 'Read' };
+      const stateLabel = stateLabels[state] || '';
+      const metaLine = [
+        n.targetId ? 'Ref: ' + esc(n.targetId) : '',
+        fuDate ? 'Follow-up: ' + esc(fuDate) : '',
+        meta.enquiryStatus ? 'Status: ' + esc(meta.enquiryStatus) : ''
+      ].filter(Boolean).join(' \u00b7 ');
+      const canAcknowledge = n.type === 'followup.reminder' && !n.acknowledged && !n.dismissed && state !== 'completed' && state !== 'superseded';
+      const isNew = state === 'pending' || (state === 'unread' && !n.read);
+      return '<div class="notif-row state-' + esc(state) + (isNew ? ' is-new' : '') + '">' +
+        '<span class="n-icon"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-bell"></use></svg></span>' +
+        '<div>' +
+          '<div class="notif-row-head"><div><b>' + esc(n.title || 'Notification') + '</b>' +
+            '<div class="notif-badges">' + (bucketLabel ? '<span class="badge ' + bucketClass + '">' + esc(bucketLabel) + '</span>' : '') + (stateLabel ? '<span class="badge badge-state-' + esc(state) + '">' + esc(stateLabel) + '</span>' : '') + '</div>' +
+          '</div><time>' + esc(when) + '</time></div>' +
+          '<p class="notif-message">' + esc(n.message || '') + '</p>' +
+          (metaLine ? '<div class="notif-meta">' + metaLine + '</div>' : '') +
+          '<div class="notif-actions">' +
+            ((n.targetType === 'enquiry' || n.targetType === 'lead') && n.targetId ? '<button class="a-btn a-btn-light a-btn-sm" data-action="open-notification" data-id="' + esc(n.id) + '">Open enquiry</button>' : '') +
+            (canAcknowledge ? '<button class="a-btn a-btn-light a-btn-sm" data-action="ack-notification" data-id="' + esc(n.id) + '">Acknowledge</button>' : '') +
+            (!n.dismissed ? '<button class="a-btn a-btn-light a-btn-sm" data-action="toggle-notification" data-id="' + esc(n.id) + '">' + (unread ? 'Mark read' : 'Mark unread') + '</button>' : '') +
+            (!n.dismissed ? '<button class="a-btn a-btn-ghost a-btn-sm danger" data-action="delete-notification" data-id="' + esc(n.id) + '">Dismiss</button>' : '') +
           '</div>' +
         '</div></div>';
-    }).join('');
+    }).join('') + notificationPagerHtml();
   }
 
   /* ---------------------------------------------------------------- reports */
@@ -2722,7 +2940,7 @@
     const lenderBody = $('#lender-body');
     if (lenderBody) lenderBody.innerHTML = prodRows.length ? prodRows.map(([name, count]) => {
       const acc = leads.filter(l => String(l.product||'Unspecified')===name && l.status==='Accepted').length;
-      return '<tr><td><b style="font-weight:700;color:var(--navy)">' + esc(name) + '</b></td><td>Product</td><td>' + count + '</td><td class="num">' + acc + '</td><td>—</td><td><span class="badge badge-' + (count && acc/count>=0.3?'active':'inactive') + '">' + (count?Math.round(acc/count*100):0) + '%</span></td></tr>';
+      return '<tr><td data-label="Product"><b style="font-weight:700;color:var(--navy)">' + esc(name) + '</b></td><td data-label="Type">Product</td><td data-label="Enquiries">' + count + '</td><td class="num" data-label="Accepted">' + acc + '</td><td data-label="Value">—</td><td data-label="Conversion"><span class="badge badge-' + (count && acc/count>=0.3?'active':'inactive') + '">' + (count?Math.round(acc/count*100):0) + '%</span></td></tr>';
     }).join('') : '<tr><td colspan="6" class="table-empty">No lead data yet.</td></tr>';
     const lenderHead = document.querySelector('#view-reports .card:last-of-type .card-head h3');
     if (lenderHead) lenderHead.textContent = 'Product interest performance';
@@ -3122,10 +3340,14 @@
 
     // nav
     $$('.sidebar-link[data-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
-    $$('.bottom-nav-item[data-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
+    $$('.view-shortcut[data-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
     document.addEventListener('click', (e) => {
       const link = e.target.closest('[data-view-link]');
-      if (link) { e.preventDefault(); setView(link.dataset.viewLink); }
+      if (!link) return;
+      const bucket = link.dataset.followupBucket;
+      if (bucket) { followupFilters.bucket = bucket; followupPage = 1; syncFollowupFilterUI(); }
+      e.preventDefault();
+      setView(link.dataset.viewLink);
     });
 
     // mobile sidebar
@@ -3250,21 +3472,44 @@
 
     const markAllNotifsBtn = $('#mark-all-notifs-read');
     if (markAllNotifsBtn) markAllNotifsBtn.addEventListener('click', () => {
-      let changed = false;
-      notifications.forEach(n => { if (n && !n.read) { n.read = true; changed = true; } });
-      if (changed) { save.notifications(); renderAll(); toast('All notifications marked as read.'); }
-      else toast('No unread notifications.');
+      const api = window.ASBackend;
+      if (!api || !api.request) {
+        const unread = (Array.isArray(notifications) ? notifications : []).filter(n => matchesNotificationState(n, 'unread'));
+        if (!unread.length) { toast('No unread notifications.'); return; }
+        unread.forEach(n => { n.read = true; });
+        save.notifications();
+        renderAll();
+        toast('All notifications marked as read.');
+        return;
+      }
+      markAllNotifsBtn.disabled = true;
+      markAllNotifsBtn.setAttribute('aria-busy', 'true');
+      const finish = () => {
+        markAllNotifsBtn.disabled = false;
+        markAllNotifsBtn.removeAttribute('aria-busy');
+      };
+      unreadNotificationIdsFromServer(api).then((ids) => {
+        if (!ids.length) { toast('No unread notifications.'); return null; }
+        return patchNotificationsRead(api, ids).then(() => {
+          toast('All notifications marked as read.');
+          return syncNotifications();
+        });
+      }).catch((error) => {
+        toast((error && error.message) || 'Could not mark notifications as read.', 'error');
+        return syncNotifications();
+      }).then(finish);
     });
     const clearNotifsBtn = $('#clear-notifs-btn');
     if (clearNotifsBtn) clearNotifsBtn.addEventListener('click', () => {
-      if (!notifications.length) { toast('No notifications to clear.'); return; }
-      confirmDialog('Clear all notifications?', 'This will remove all in-app notifications.', () => {
-        notifications = [];
-        save.notifications();
-        renderAll();
-        toast('Notifications cleared.');
-      });
+      notificationStateFilter = 'all';
+      syncNotifications(1);
+      toast('Notification history reloaded.');
     });
+    $$('.notif-state-tab').forEach(tab => tab.addEventListener('click', () => {
+      notificationStateFilter = tab.dataset.notifState || 'all';
+      renderNotifications();
+      syncNotifications(1);
+    }));
 
     // exports
     $('#export-leads-btn').addEventListener('click', exportLeads);
@@ -3330,7 +3575,7 @@
     $('#drawer-overlay').addEventListener('click', closeDrawer);
 
     // dropdowns
-    $('#notif-btn').addEventListener('click', (e) => { e.stopPropagation(); $('#notif-menu').classList.toggle('open'); $('#profile-menu').classList.remove('open'); });
+    $('#notif-btn').addEventListener('click', (e) => { e.stopPropagation(); $('#notif-menu').classList.toggle('open'); $('#profile-menu').classList.remove('open'); if ($('#notif-menu').classList.contains('open')) syncNotifications(); });
     document.addEventListener('click', (e) => {
       const rb = e.target.closest('#notif-refresh-btn, .notif-refresh-btn');
       if (rb) { e.preventDefault(); e.stopPropagation(); syncSlaNotifications(); updateCounts(); renderNotifications(); if (typeof toast === 'function') toast('Notifications refreshed.'); }
@@ -3448,6 +3693,7 @@
       if (!btn) return;
       const id = btn.dataset.id;
       const action = btn.dataset.action;
+      if (action === 'notification-page') { syncNotifications(Number(btn.dataset.page || id)); return; }
       if (action === 'view-lead') openDrawer(id);
       if (action === 'edit-lead') leadModal(id);
       if (action === 'delete-lead') {
@@ -3519,28 +3765,53 @@
       }
       if (action === 'toggle-notification') {
         const n = notifications.find(x => x.id === id);
-        if (n) { n.read = !n.read; save.notifications(); renderAll(); }
+        if (n) {
+          n.read = !n.read; save.notifications(); renderAll();
+          persistNotificationChange(id, { read: n.read }, 'PATCH');
+        }
+      }
+      if (action === 'ack-notification') {
+        const n = notifications.find(x => x.id === id);
+        if (n) {
+          n.acknowledged = true; n.read = true; save.notifications(); renderAll();
+          persistNotificationChange(id, { acknowledged: true, read: true }, 'PATCH');
+          toast('Reminder acknowledged.');
+        }
       }
       if (action === 'delete-notification') {
         if (String(id).indexOf('NTF-SLA-') === 0) {
           try { const d = new Set(JSON.parse(localStorage.getItem('as_sla_dismissed')||'[]')); d.add(String(id)); localStorage.setItem('as_sla_dismissed', JSON.stringify(Array.from(d))); } catch(e) {}
         }
-        notifications = notifications.filter(x => x.id !== id);
-        save.notifications();
-        renderAll();
+        const n = notifications.find(x => x.id === id);
+        if (n && n.type === 'followup.reminder') {
+          n.dismissed = true; n.read = true; save.notifications(); renderAll();
+          persistNotificationChange(id, { dismissed: true, read: true }, 'PATCH');
+        } else {
+          notifications = notifications.filter(x => x.id !== id);
+          save.notifications(); renderAll();
+          persistNotificationChange(id, undefined, 'DELETE');
+        }
       }
       if (action === 'open-notification') {
         const n = notifications.find(x => x.id === id);
-        if (n && !n.read) { n.read = true; n.readAt = nowISO(); save.notifications(); }
+        if (n && !n.read) {
+          n.read = true; n.readAt = new Date().toISOString(); save.notifications();
+          persistNotificationChange(id, { read: true }, 'PATCH');
+        }
         const notifMenu = $('#notif-menu');
         if (notifMenu) notifMenu.classList.remove('open');
-        showView('notifications');
+        if (n && (n.targetType === 'enquiry' || n.targetType === 'lead') && n.targetId) {
+          const lead = leads.find(l => String(l.id) === String(n.targetId));
+          if (lead) { setView('leads'); openDrawer(lead.id); renderAll(); return; }
+        }
+        setView('notifications');
         renderAll();
       }
+      if (action === 'refresh-notifications') { syncNotifications(); return; }
       if (action === 'go-notifications') {
         const notifMenu = $('#notif-menu');
         if (notifMenu) notifMenu.classList.remove('open');
-        showView('notifications');
+        setView('notifications');
       }
       // application actions removed
       if (action === 'edit-product') productModal(id);
