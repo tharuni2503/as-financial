@@ -25,6 +25,16 @@
   const telLink = 'tel:+' + phoneDigits;
 
   function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function safeHref(href) {
+    const value = String(href || '');
+    if (/^tel:\+?\d{8,15}$/.test(value)) return value;
+    if (/^https:\/\/wa\.me\/\d{8,15}(\?|$)/.test(value)) return value;
+    if (/^contact\.html#contact-form$/.test(value)) return value;
+    return 'contact.html#contact-form';
+  }
+
+  messages.setAttribute('aria-live', 'polite');
+  messages.setAttribute('aria-relevant', 'additions');
 
   function addMsg(text, who, html) {
     const div = document.createElement('div');
@@ -48,18 +58,18 @@
 
   function contactCta() {
     return '<div class="as-cta-row">' +
-      '<a class="as-cta" href="' + esc(telLink) + '">Call now</a>' +
-      '<a class="as-cta" href="' + esc(waLink) + '" target="_blank" rel="noopener">WhatsApp</a>' +
-      '<a class="as-cta" href="contact.html#contact-form">Contact form</a>' +
+      '<a class="as-cta" href="' + esc(safeHref(telLink)) + '">Call now</a>' +
+      '<a class="as-cta" href="' + esc(safeHref(waLink)) + '" target="_blank" rel="noopener noreferrer">WhatsApp</a>' +
+      '<a class="as-cta" href="' + esc(safeHref('contact.html#contact-form')) + '">Contact form</a>' +
       '</div>';
   }
 
   function leadCapture() {
     addMsg('If you\'d like, share your details and our team will contact you. You can also apply directly.', 'bot');
     addMsg('<form class="as-lead-form" id="as-lead-mini">' +
-      '<input name="name" type="text" placeholder="Your name" required maxlength="80">' +
-      '<input name="phone" type="tel" placeholder="Mobile number" required maxlength="20">' +
-      '<select name="product"><option value="General enquiry">Loan type</option><option>Home Loan</option><option>Personal Loan</option><option>Business Loan</option><option>Loan Against Property</option><option>Vehicle Loan</option><option>Balance Transfer</option></select>' +
+      '<input name="name" type="text" placeholder="Your name" aria-label="Your name" required maxlength="80">' +
+      '<input name="phone" type="tel" placeholder="Mobile number" aria-label="Mobile number" inputmode="tel" autocomplete="tel" required maxlength="20">' +
+      '<select name="product" aria-label="Loan type"><option value="General enquiry">Loan type</option><option>Home Loan</option><option>Personal Loan</option><option>Business Loan</option><option>Loan Against Property</option><option>Vehicle Loan</option><option>Balance Transfer</option></select>' +
       '<button type="submit">Request callback</button>' +
       '</form>' + contactCta(), 'bot', true);
     const mini = document.getElementById('as-lead-mini');
@@ -68,9 +78,11 @@
       const fd = new FormData(mini);
       const name = String(fd.get('name')||'').trim();
       const phone = String(fd.get('phone')||'').trim();
-      const digits = phone.replace(/\D/g,'');
+      let digits = phone.replace(/\D/g,'');
+      if ((digits.length === 12 || digits.length === 13) && digits.indexOf('91') === 0) digits = digits.slice(2);
+      if (digits.length === 13 && digits.indexOf('091') === 0) digits = digits.slice(3);
       if (name.length < 2) { addMsg('Please enter your name.', 'bot'); return; }
-      if (digits.length < 10) { addMsg('Please enter a valid mobile number.', 'bot'); return; }
+      if (!/^[6-9]\d{9}$/.test(digits)) { addMsg('Please enter a valid 10-digit Indian mobile number.', 'bot'); return; }
       const payload = { name, phone, email:'', product: fd.get('product')||'General enquiry', amount:'', income:'', employment:'', city:'Hyderabad', message:'Callback requested from AI assistant', source:'AI Assistant', consent:true, website:'' };
       try {
         const api = window.ASBackend;
@@ -135,6 +147,12 @@
     setQuick(['Request callback','Call now','WhatsApp']);
   }
 
+  function closePanel(restoreFocus) {
+    if (panel.hasAttribute('hidden')) return;
+    panel.setAttribute('hidden', '');
+    launcher.setAttribute('aria-expanded', 'false');
+    if (restoreFocus) launcher.focus();
+  }
   launcher.addEventListener('click', () => {
     const open = panel.hasAttribute('hidden');
     if (open) {
@@ -143,15 +161,17 @@
       if (!messages.dataset.init) {
         messages.dataset.init = '1';
         addMsg('Hi! I\'m the AS Financial assistant. Ask me about loans, eligibility, documents, rates, or the application process.', 'bot');
-        addMsg('<span style="font-size:.78rem;color:#5a6b7f">Informational only — not financial advice, not a loan approval, and rates/terms vary by lender and profile.</span>', 'bot', true);
+        addMsg('<span style="font-size:.78rem;color:#667085">General information only — not financial advice or a loan approval. Rates and terms vary by lender and profile.</span>', 'bot', true);
         setQuick(['Loan products','Eligibility','Documents needed','Request callback']);
       }
       setTimeout(() => input.focus(), 50);
     } else {
-      panel.setAttribute('hidden', '');
-      launcher.setAttribute('aria-expanded', 'false');
+      closePanel(false);
     }
   });
-  closeBtn && closeBtn.addEventListener('click', () => { panel.setAttribute('hidden', ''); launcher.setAttribute('aria-expanded', 'false'); launcher.focus(); });
+  closeBtn && closeBtn.addEventListener('click', () => closePanel(true));
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !panel.hasAttribute('hidden')) closePanel(true);
+  });
   form.addEventListener('submit', (e) => { e.preventDefault(); handleUser(input.value); });
 })();

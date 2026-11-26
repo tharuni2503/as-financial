@@ -87,6 +87,15 @@
     if (LEGACY_STATUS_MAP[raw]) return LEGACY_STATUS_MAP[raw];
     return handled ? 'Contacted' : 'New';
   }
+  // Always compare lead statuses after normalisation. Legacy values such as
+  // Accepted/Declined are stored by older clients, but the CRM uses the
+  // canonical Approved/Rejected vocabulary for counts, filters and exports.
+  function leadStatus(lead) {
+    return normalizeStatus(lead && lead.status, lead && lead.handled);
+  }
+  function hasLeadStatus(lead, status) {
+    return leadStatus(lead) === status;
+  }
   function statusBadgeClass(status) {
     return 'badge badge-' + String(status || 'new').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   }
@@ -271,6 +280,29 @@
       .then(() => { syncingEnquiries = false; });
   }
 
+  // Follow-ups can arrive from the server feed before the enquiry list has
+  // loaded. Try a narrow server lookup by id before reporting a dead link.
+  function findOrFetchLead(id) {
+    const key = String(id || '');
+    if (!key) return Promise.resolve(null);
+    const local = leads.find(l => String(l.id) === key);
+    if (local) return Promise.resolve(local);
+    const api = window.ASBackend;
+    if (!api || !api.request) return Promise.resolve(null);
+    return api.request('api/enquiries?q=' + encodeURIComponent(key) + '&limit=50')
+      .then((data) => {
+        const list = Array.isArray(data) ? data
+          : (data && Array.isArray(data.enquiries) ? data.enquiries : []);
+        const match = list.find(e => e && String(e.id) === key);
+        if (!match) return null;
+        const lead = mapServerEnquiry(match);
+        if (!leads.some(l => String(l.id) === key)) { leads.unshift(lead); save.leads(); }
+        renderAll();
+        return leads.find(l => String(l.id) === key) || lead;
+      })
+      .catch(() => null);
+  }
+
   let syncingNotifications = false;
   let queuedNotificationSync = null;
   function syncNotifications(page) {
@@ -403,14 +435,22 @@
   }
 
   function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+  function prefersReducedMotion() {
+    return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
   function animateChart(canvas, duration, draw){
     if(!canvas) return;
     if(canvas._animFrame) cancelAnimationFrame(canvas._animFrame);
+    canvas._animFrame = 0;
+    // Respect the OS setting: render the final frame immediately instead of
+    // animating through requestAnimationFrame.
+    if (prefersReducedMotion()) { draw(1); return; }
     const start = performance.now();
     const step = (now) => {
       const p = Math.min(1, (now - start) / duration);
       draw(easeOutCubic(p));
       if(p < 1) canvas._animFrame = requestAnimationFrame(step);
+      else canvas._animFrame = 0;
     };
     canvas._animFrame = requestAnimationFrame(step);
   }
@@ -640,19 +680,11 @@
     });
   }
 
-  const MIX_COLORS = ['#0d2b4e', '#c9a227', '#2b6cb0', '#137a5b', '#6b4fa0', '#b2651c'];
   const SOURCE_COLORS = ['#0d2b4e', '#c9a227', '#2b6cb0', '#137a5b', '#6b4fa0', '#b3423a'];
 
   function redrawCharts() {
-    if (currentView === 'overview') {
-      const trend = leadTrend(8);
-      if (charts.leads) drawLineChart(charts.leads, trend.labels, trend.leads, trend.sanctions);
-      if (charts.mix) renderMixChart();
-    }
-    if (currentView === 'reports') {
-      drawBarChart(charts.disb, monthLabels(6), monthlyDisbursements(), '#c9a227');
-      renderSourceChart();
-    }
+    // Overview and reports canvases are redrawn by their renderers; replaying
+    // stale chart definitions here used to overwrite the current chart state.
     if (currentView === 'analytics' && analyticsData) {
       const d = analyticsData || {};
       const s = d.summary || {};
@@ -703,21 +735,6 @@
     return out;
   }
 
-  function mixData() {
-    const map = {};
-    apps.filter(a => a.stage === 'Sanctioned' || a.stage === 'Disbursed').forEach(a => {
-      map[a.product] = (map[a.product] || 0) + Number(a.amount || 0);
-    });
-    const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
-    return sorted.map(([label, value], i) => ({ label, value, color: MIX_COLORS[i % MIX_COLORS.length] }));
-  }
-
-  function renderMixChart() {
-    const data = mixData();
-    drawDonut(charts.mix, data);
-    $('#mix-legend').innerHTML = data.map(d => '<div class="donut-legend-item"><i style="background:' + d.color + '"></i><span>' + esc(d.label) + '</span><b>' + compact(d.value) + '</b></div>').join('');
-  }
-
   function sourceData() {
     const map = {};
     leads.forEach(l => { map[l.source || 'Website form'] = (map[l.source || 'Website form'] || 0) + 1; });
@@ -741,9 +758,17 @@
     if (reset) reset.classList.toggle('hidden', which !== 'reset');
   }
 
+  function updateSkipLink() {
+    const link = $('.skip-link');
+    if (!link) return;
+    const appVisible = !$('#admin-app') || !$('#admin-app').classList.contains('hidden');
+    link.setAttribute('href', appVisible ? '#admin-app' : '#login-email');
+    link.textContent = appVisible ? 'Skip to dashboard' : 'Skip to sign in';
+  }
   function showLogin(message) {
     $('#login-screen').classList.remove('hidden');
     $('#admin-app').classList.add('hidden');
+    updateSkipLink();
     document.body.style.overflow = '';
     showLoginPanel(pendingResetToken ? 'reset' : 'login');
     const err = $('#login-error');
@@ -797,6 +822,7 @@
     const display = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1) : 'Admin';
     $('#login-screen').classList.add('hidden');
     $('#admin-app').classList.remove('hidden');
+    updateSkipLink();
     $('#login-error').classList.remove('show');
     $('#sidebar-user-name').textContent = display;
     $('#topbar-user').textContent = display;
@@ -923,7 +949,11 @@
     if (!VIEW_TITLES[view]) view = 'overview';
     currentView = view;
     $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
-    $$('.sidebar-link[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    $$('.sidebar-link[data-view]').forEach(b => {
+      const active = b.dataset.view === view;
+      b.classList.toggle('active', active);
+      if (active) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
     $$('.view-shortcut[data-view]').forEach(b => {
       const active = b.dataset.view === view;
       b.classList.toggle('active', active);
@@ -940,8 +970,10 @@
   }
 
   function syncChartRefs() {
-    charts.leads = document.getElementById('chart-leads');
-    charts.mix = document.getElementById('chart-mix');
+    // Only canvases that still exist in the admin shell are tracked. The old
+    // chart-leads/chart-mix canvases were removed with the legacy overview.
+    charts.leads = null;
+    charts.mix = null;
     charts.disb = document.getElementById('chart-disbursement');
     charts.source = document.getElementById('chart-source');
   }
@@ -977,7 +1009,7 @@
     let changed = false;
     (leads||[]).forEach(lead => {
       if (!lead || !lead.id) return;
-      const status = String(lead.status || 'New');
+      const status = leadStatus(lead);
       if (!['New','Contacted'].includes(status)) return;
       const created = new Date(lead.createdAt || lead.receivedAt || 0).getTime();
       if (!created) return;
@@ -1006,8 +1038,12 @@
     renderNotifications();
   }
 
+  function serverPendingCount() {
+    const pending = notificationCounts && Number(notificationCounts.pending);
+    return Number.isFinite(pending) ? Math.max(0, pending) : null;
+  }
   function updateCounts() {
-    const open = leads.filter(l => ['New', 'Contacted'].includes(l.status)).length;
+    const open = leads.filter(l => ['New', 'Contacted'].includes(leadStatus(l))).length;
     const el = $('#nav-lead-count');
     if (el) el.textContent = open;
     const todayISO = window.ASDateFormat && typeof window.ASDateFormat.todayISO === 'function'
@@ -1016,15 +1052,20 @@
     const fuDue = leads.filter(l => !l.followUpCompletedAt && l.followUpDate && String(l.followUpDate).slice(0,10) <= todayISO).length;
     const fuEl = $('#nav-followup-count'); if (fuEl) fuEl.textContent = String(fuDue);
     const visibleNotifs = Array.isArray(notifications) ? notifications.filter(n => n && !n.dismissed) : [];
-    const pendingReminders = visibleNotifs.filter(n => n.type === 'followup.reminder' && !n.acknowledged).length;
-    const unread = visibleNotifs.filter(n => !n.read && !n.acknowledged).length;
-    const badge = pendingReminders || unread;
+    const localPending = visibleNotifs.filter(isPendingReminder).length;
+    const localUnread = visibleNotifs.filter(n => matchesNotificationState(n, 'unread')).length;
+    // The server's pending count is authoritative; the local count is only a
+    // fallback for offline/first paint. Keep the menu copy in sync with it.
+    const serverPending = serverPendingCount();
+    const badge = serverPending !== null ? serverPending : (localPending || localUnread);
     const nel = $('#nav-notif-count');
-    if (nel) { nel.textContent = badge; nel.style.display = badge ? '' : 'none'; }
+    if (nel) { nel.textContent = String(badge); nel.style.display = badge ? '' : 'none'; }
     const dot = document.querySelector('#notif-btn .notif-dot');
     if (dot) dot.style.display = badge ? '' : 'none';
     const menuCount = $('#notif-menu-count');
-    if (menuCount) menuCount.textContent = pendingReminders ? (pendingReminders + ' pending') : (unread ? (unread + ' unread') : 'No new alerts');
+    if (menuCount) menuCount.textContent = badge && (serverPending !== null || localPending)
+      ? (badge + ' pending')
+      : (localUnread ? (localUnread + ' unread') : 'No new alerts');
   }
 
   function populateFilters() {
@@ -1058,10 +1099,10 @@
     const inLast30 = (d) => { const t = new Date(d || 0).getTime(); return t >= now - 30 * 864e5; };
     const inPrev30 = (d) => { const t = new Date(d || 0).getTime(); return t >= now - 60 * 864e5 && t < now - 30 * 864e5; };
     const openStatuses = ['New', 'Contacted'];
-    const openLeads = leads.filter(l => openStatuses.includes(l.status)).length;
-    const acceptedLeads = leads.filter(l => l.status === 'Accepted').length;
-    const declinedLeads = leads.filter(l => l.status === 'Declined').length;
-    const newLeads = leads.filter(l => l.status === 'New').length;
+    const openLeads = leads.filter(l => openStatuses.includes(leadStatus(l))).length;
+    const acceptedLeads = leads.filter(l => hasLeadStatus(l, 'Approved')).length;
+    const declinedLeads = leads.filter(l => hasLeadStatus(l, 'Rejected')).length;
+    const newLeads = leads.filter(l => hasLeadStatus(l, 'New')).length;
     const pipelineValue = leads.reduce((sum, l) => sum + (typeof amountToNumber === 'function' ? amountToNumber(l.amount) : 0), 0);
     setText('ov-open-leads', openLeads);
     setText('ov-accepted-leads', acceptedLeads);
@@ -1076,7 +1117,7 @@
     setChip('ov-enquiries-chip', pctChange(last30Enq, prev30Enq));
 
     const processedApps = (applications || []).filter(a => /disburs|approved|sanction|processed|closed/i.test(String(a.stage || a.status || '')));
-    const processedLeads = leads.filter(l => /accepted|disburs|approved|processed/i.test(String(l.status || '')));
+    const processedLeads = leads.filter(l => hasLeadStatus(l, 'Approved'));
     const loansProcessed = processedApps.length + processedLeads.length;
     const last30Proc = processedApps.filter(a => inLast30(a.updatedAt || a.createdAt)).length + processedLeads.filter(l => inLast30(l.updatedAt || l.createdAt)).length;
     const prev30Proc = processedApps.filter(a => inPrev30(a.updatedAt || a.createdAt)).length + processedLeads.filter(l => inPrev30(l.updatedAt || l.createdAt)).length;
@@ -1085,7 +1126,7 @@
     setChip('ov-processed-chip', pctChange(last30Proc, prev30Proc));
 
     const disbursedAmt = processedApps.reduce((s,a)=> s + (typeof amountToNumber==='function'?amountToNumber(a.amount):Number(a.amount||0)), 0)
-      + leads.filter(l=>/disburs/i.test(String(l.status||''))).reduce((s,l)=> s + (typeof amountToNumber==='function'?amountToNumber(l.amount):0), 0);
+      + leads.filter(l=>hasLeadStatus(l, 'Approved')).reduce((s,l)=> s + (typeof amountToNumber==='function'?amountToNumber(l.amount):0), 0);
     const last30Disb = processedApps.filter(a=>/disburs/i.test(String(a.stage||a.status||'')) && inLast30(a.updatedAt||a.createdAt)).reduce((s,a)=>s+(typeof amountToNumber==='function'?amountToNumber(a.amount):0),0);
     const prev30Disb = processedApps.filter(a=>/disburs/i.test(String(a.stage||a.status||'')) && inPrev30(a.updatedAt||a.createdAt)).reduce((s,a)=>s+(typeof amountToNumber==='function'?amountToNumber(a.amount):0),0);
     setText('ov-total-disbursed', typeof compact === 'function' ? compact(disbursedAmt) : ('₹' + disbursedAmt));
@@ -1104,9 +1145,9 @@
       const total = Math.max(leads.length, 1);
       const rows = [
         { label: 'New', count: newLeads, color: '#2b6cb0' },
-        { label: 'Contacted', count: leads.filter(l => l.status === 'Contacted').length, color: '#c9a227' },
-        { label: 'Accepted', count: acceptedLeads, color: '#137a5b' },
-        { label: 'Declined', count: declinedLeads, color: '#b3423a' }
+        { label: 'Contacted', count: leads.filter(l => hasLeadStatus(l, 'Contacted')).length, color: '#c9a227' },
+        { label: 'Approved', count: acceptedLeads, color: '#137a5b' },
+        { label: 'Rejected', count: declinedLeads, color: '#b3423a' }
       ];
       pipelineHost.innerHTML = leads.length ? rows.map(r =>
         '<div class="pipeline-row"><div class="p-top"><span>' + esc(r.label) + '</span><b>' + r.count + '</b></div><div class="pipeline-track"><span style="width:' + Math.round((r.count / total) * 100) + '%;background:' + r.color + '"></span></div></div>'
@@ -1119,8 +1160,9 @@
       const urgent = [];
       leads.forEach(l => {
         const ageHrs = (now - new Date(l.createdAt || 0).getTime()) / 36e5;
-        if (l.status === 'New') urgent.push({ level: ageHrs > 24 ? 'high' : 'medium', title: 'New enquiry needs contact', detail: (l.name || 'Unknown') + ' · ' + (l.product || 'Enquiry'), time: l.createdAt, id: l.id });
-        else if (l.status === 'Contacted' && ageHrs > 72) urgent.push({ level: 'medium', title: 'Follow-up overdue', detail: (l.name || 'Unknown') + ' · contacted ' + Math.floor(ageHrs/24) + 'd ago', time: l.createdAt, id: l.id });
+        const status = leadStatus(l);
+        if (status === 'New') urgent.push({ level: ageHrs > 24 ? 'high' : 'medium', title: 'New enquiry needs contact', detail: (l.name || 'Unknown') + ' · ' + (l.product || 'Enquiry'), time: l.createdAt, id: l.id });
+        else if (status === 'Contacted' && ageHrs > 72) urgent.push({ level: 'medium', title: 'Follow-up overdue', detail: (l.name || 'Unknown') + ' · contacted ' + Math.floor(ageHrs/24) + 'd ago', time: l.createdAt, id: l.id });
       });
       urgent.sort((a,b)=> (a.level==='high'?0:1)-(b.level==='high'?0:1) || new Date(b.time)-new Date(a.time));
       const top = urgent.slice(0,6);
@@ -1177,9 +1219,9 @@
     const recentHost = $('#ov-recent-enquiries');
     if (recentHost) {
       const recent = (leads||[]).slice().sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,5);
-      const badgeCls = (s) => ({New:'b-blue',Contacted:'b-amber',Accepted:'b-green',Declined:'b-red'}[String(s||'New')]||'b-gray');
+      const badgeCls = (l) => ({New:'b-blue',Contacted:'b-amber',Approved:'b-green',Rejected:'b-red'}[leadStatus(l)]||'b-gray');
       recentHost.innerHTML = recent.length ? recent.map(l =>
-        '<tr><td data-label="Customer"><b style="color:var(--navy)">'+esc(l.name||'—')+'</b></td><td data-label="Loan type">'+esc(l.product||l.loanType||'—')+'</td><td data-label="Date">'+esc(timeAgo(l.createdAt))+'</td><td data-label="Status"><span class="badge '+badgeCls(l.status)+'">'+esc(l.status||'New')+'</span></td></tr>'
+        '<tr><td data-label="Customer"><b style="color:var(--navy)">'+esc(l.name||'—')+'</b></td><td data-label="Loan type">'+esc(l.product||l.loanType||'—')+'</td><td data-label="Date">'+esc(timeAgo(l.createdAt))+'</td><td data-label="Status"><span class="badge '+badgeCls(l)+'">'+esc(leadStatus(l))+'</span></td></tr>'
       ).join('') : '<tr><td colspan="4" class="table-empty">No enquiries yet.</td></tr>';
     }
     renderPriorityBoard();
@@ -1188,7 +1230,7 @@
   function renderPriorityBoard() {
     const setText = (id, val) => { const el = $('#' + id); if (el) el.textContent = String(val); };
     const isoToday = ASDateFormat && ASDateFormat.todayISO ? ASDateFormat.todayISO() : '';
-    const open = (leads || []).filter(l => ['New', 'Contacted', 'In Progress'].includes(l.status)).length;
+    const open = (leads || []).filter(l => ['New', 'Contacted', 'In Progress'].includes(leadStatus(l))).length;
     const pending = (leads || []).filter(l => !l.followUpCompletedAt && l.followUpDate && String(l.followUpDate).slice(0, 10));
     const overdue = isoToday ? pending.filter(l => String(l.followUpDate).slice(0, 10) < isoToday).length : 0;
     const today = isoToday ? pending.filter(l => String(l.followUpDate).slice(0, 10) === isoToday).length : 0;
@@ -1328,7 +1370,7 @@
     const api = window.ASBackend; if (api && !analyticsData) { try { analyticsData = await api.request('api/admin/analytics'); } catch(e) {} }
     const s = (analyticsData && analyticsData.summary) || {};
     const total = leads.length;
-    const accepted = leads.filter(l=>l.status==='Accepted').length;
+    const accepted = leads.filter(l=>hasLeadStatus(l, 'Approved')).length;
     const set=(id,v)=>{ const el=$('#'+id); if(el) el.textContent=v; };
     set('gr-total', total);
     set('gr-accepted', accepted);
@@ -1401,12 +1443,12 @@
     const body = $('#recovery-body');
     if (!body) return;
     const now = Date.now();
-    const items = leads.filter(l => ['New','Contacted'].includes(l.status)).map(l => {
+    const items = leads.filter(l => ['New','Contacted'].includes(leadStatus(l))).map(l => {
       const ageHrs = (now - new Date(l.createdAt||0).getTime())/36e5;
-      const reason = l.status === 'New' ? (ageHrs>24?'New lead not contacted >24h':'New lead awaiting contact') : (ageHrs>72?'Contacted but no progress >72h':'Contacted follow-up');
+      const reason = hasLeadStatus(l, 'New') ? (ageHrs>24?'New lead not contacted >24h':'New lead awaiting contact') : (ageHrs>72?'Contacted but no progress >72h':'Contacted follow-up');
       return { l, ageHrs, reason };
     }).sort((a,b)=>b.ageHrs-a.ageHrs).slice(0,20);
-    body.innerHTML = items.length ? items.map(x => '<tr><td data-label="Lead"><b style="color:var(--navy)">'+esc(x.l.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(x.l.phone||'')+'</div></td><td data-label="Status">'+esc(x.l.status||'')+'</td><td data-label="Age">'+Math.floor(x.ageHrs/24)+'d '+Math.floor(x.ageHrs%24)+'h</td><td data-label="Reason">'+esc(x.reason)+'</td></tr>').join('') : '<tr><td colspan="4" class="table-empty">No recovery items detected yet.</td></tr>';
+    body.innerHTML = items.length ? items.map(x => '<tr><td data-label="Lead"><b style="color:var(--navy)">'+esc(x.l.name||'Unknown')+'</b><div style="font-size:.75rem;color:var(--muted)">'+esc(x.l.phone||'')+'</div></td><td data-label="Status">'+esc(leadStatus(x.l))+'</td><td data-label="Age">'+Math.floor(x.ageHrs/24)+'d '+Math.floor(x.ageHrs%24)+'h</td><td data-label="Reason">'+esc(x.reason)+'</td></tr>').join('') : '<tr><td colspan="4" class="table-empty">No recovery items detected yet.</td></tr>';
     const note = $('#recovery-note');
     if (note) {
       const api = window.ASBackend;
@@ -1457,7 +1499,7 @@
     return leads.filter(l => {
       if (q && !(l.name + ' ' + l.phone + ' ' + l.email + ' ' + l.id).toLowerCase().includes(q)) return false;
       if (filters.leadProduct && l.product !== filters.leadProduct) return false;
-      if (filters.leadStatus && l.status !== filters.leadStatus) return false;
+      if (filters.leadStatus && !hasLeadStatus(l, filters.leadStatus)) return false;
       return true;
     }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
@@ -1535,10 +1577,10 @@
     else if (bucket === 'next7' || bucket === 'upcoming') followups = followups.filter(l => !l.followUpCompletedAt && String(l.followUpDate||'').slice(0,10) > todayISO && String(l.followUpDate||'').slice(0,10) <= end7);
     else if (bucket === 'next30') followups = followups.filter(l => !l.followUpCompletedAt && String(l.followUpDate||'').slice(0,10) > todayISO && String(l.followUpDate||'').slice(0,10) <= end30);
     else if (bucket && bucket !== 'all') followups = followups.filter(l => l.followUpBucket === bucket);
-    if (followupFilters.status) followups = followups.filter(l => l.status === followupFilters.status);
+    if (followupFilters.status) followups = followups.filter(l => hasLeadStatus(l, followupFilters.status));
     if (followupFilters.from) followups = followups.filter(l => String(l.followUpDate||'').slice(0,10) >= followupFilters.from);
     if (followupFilters.to) followups = followups.filter(l => String(l.followUpDate||'').slice(0,10) <= followupFilters.to);
-    if (followupFilters.q) { const q = followupFilters.q.toLowerCase(); followups = followups.filter(l => [l.name,l.phone,l.email,l.product,l.status,l.followUpDate,l.id].filter(Boolean).join(' ').toLowerCase().includes(q)); }
+    if (followupFilters.q) { const q = followupFilters.q.toLowerCase(); followups = followups.filter(l => [l.name,l.phone,l.email,l.product,leadStatus(l),l.followUpDate,l.id].filter(Boolean).join(' ').toLowerCase().includes(q)); }
     const total = followups.length;
     const start = (followupPage - 1) * PAGE_SIZE;
     followups = followups.slice(start, start + PAGE_SIZE);
@@ -1563,13 +1605,13 @@
       const overdue = b === 'overdue';
       return '<tr>' +
         '<td data-label="Customer"><div class="cust"><span class="cust-avatar">' + initials(l.name) + '</span><span><b>' + esc(l.name) + '</b><span>' + esc(l.phone || '') + '</span></span></div></td>' +
-        '<td data-label="Loan / Status">' + esc(l.product || '—') + '<div style="font-size:.68rem;color:#5b6b7e"><span class="' + statusBadgeClass(l.status) + '">' + esc(l.status || 'New') + '</span></div></td>' +
+        '<td data-label="Loan / Status">' + esc(l.product || '—') + '<div style="font-size:.68rem;color:#5b6b7e"><span class="' + statusBadgeClass(leadStatus(l)) + '">' + esc(leadStatus(l)) + '</span></div></td>' +
         '<td data-label="Follow-up date"><b style="color:' + (overdue ? 'var(--red)' : 'var(--navy)') + '">' + esc(date) + '</b></td>' +
         '<td data-label="Bucket"><span class="badge ' + followupBucketClass(b) + '">' + esc(followupBucketLabel(b)) + '</span></td>' +
         '<td data-label="Actions"><div class="row-actions">' +
-          '<button class="a-btn-icon" data-action="fu-view" data-id="' + esc(l.id) + '" title="View"><svg class="icon" aria-hidden="true"><use href="#i-eye"></use></svg></button>' +
-          '<button class="a-btn-icon" data-action="fu-reschedule" data-id="' + esc(l.id) + '" title="Reschedule"><svg class="icon" aria-hidden="true"><use href="#i-calendar"></use></svg></button>' +
-          (b !== 'completed' ? '<button class="a-btn-icon" data-action="fu-complete" data-id="' + esc(l.id) + '" title="Mark completed"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg></button>' : '') +
+          '<button class="a-btn-icon" data-action="fu-view" data-id="' + esc(l.id) + '" title="View" aria-label="View follow-up for ' + esc(l.name || l.id) + '"><svg class="icon" aria-hidden="true"><use href="#i-eye"></use></svg></button>' +
+          '<button class="a-btn-icon" data-action="fu-reschedule" data-id="' + esc(l.id) + '" title="Reschedule" aria-label="Reschedule follow-up for ' + esc(l.name || l.id) + '"><svg class="icon" aria-hidden="true"><use href="#i-calendar"></use></svg></button>' +
+          (b !== 'completed' ? '<button class="a-btn-icon" data-action="fu-complete" data-id="' + esc(l.id) + '" title="Mark completed" aria-label="Mark follow-up completed for ' + esc(l.name || l.id) + '"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg></button>' : '') +
         '</div></td></tr>';
     }).join('') : '<tr><td colspan="5" class="table-empty"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg><br>No follow-ups found for this filter.<br><button class="a-btn a-btn-light a-btn-sm" style="margin-top:10px" id="fu-empty-reset">Clear All Filters</button></td></tr>';
     renderPagination('#followups-pagination', total, followupPage, (p) => { followupPage = p; loadFollowups(); }, PAGE_SIZE);
@@ -1596,8 +1638,8 @@
     const pageItems = list.slice(start, start + PAGE_SIZE);
 
     $('#leads-count-label').textContent = list.length;
-    $('#leads-open').textContent = leads.filter(l => ['New', 'Contacted', 'In Progress'].includes(l.status)).length;
-    $('#leads-converted').textContent = leads.filter(l => ['Approved', 'Accepted'].includes(l.status)).length;
+    $('#leads-open').textContent = leads.filter(l => ['New', 'Contacted', 'In Progress'].includes(leadStatus(l))).length;
+    $('#leads-converted').textContent = leads.filter(l => hasLeadStatus(l, 'Approved')).length;
     $('#leads-value').textContent = compact(leads.reduce((s, l) => s + amountToNumber(l.amount), 0));
 
     $('#leads-body').innerHTML = pageItems.length ? pageItems.map(l =>
@@ -1606,13 +1648,13 @@
       '<td data-label="Phone">' + esc(l.phone) + '</td>' +
       '<td data-label="Loan type">' + esc(l.product) + '<div style="font-size:.66rem;color:#5b6b7e">' + esc(l.city || 'Hyderabad') + '</div></td>' +
       '<td class="num" data-label="Amount">' + compact(amountToNumber(l.amount)) + '</td>' +
-      '<td data-label="Status"><span class="' + statusBadgeClass(l.status) + '">' + esc(l.status) + '</span></td>' +
+      '<td data-label="Status"><span class="' + statusBadgeClass(leadStatus(l)) + '">' + esc(leadStatus(l)) + '</span></td>' +
       '<td data-label="Priority"><span class="badge badge-' + String(l.priority || 'medium').toLowerCase() + '">' + esc(l.priority || 'Medium') + '</span></td>' +
       '<td data-label="Date" title="' + fmtDate(l.createdAt) + '">' + fmtShort(l.createdAt) + (l.followUpDate ? '<div style="font-size:.68rem;color:' + ((ASDateFormat && ASDateFormat.todayISO ? String(l.followUpDate).slice(0,10) < ASDateFormat.todayISO() : new Date(l.followUpDate+"T23:59:59").getTime() < Date.now()) ? "var(--red)" : "var(--muted)") + '">Follow-up ' + esc(fmtShort(l.followUpDate)) + '</div>' : '') + '</td>' +
       '<td data-label="Actions"><div class="row-actions">' +
-        '<a class="a-btn-icon" href="https://wa.me/' + esc(String(l.phone || "").replace(/\D/g, "").replace(/^0/, "91").slice(-12)) + '" target="_blank" rel="noopener noreferrer" title="WhatsApp"><svg class="icon" aria-hidden="true"><use href="#i-whatsapp"></use></svg></a>' +
-        '<button class="a-btn-icon" data-action="edit-lead" data-id="' + esc(l.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
-        '<button class="a-btn-icon danger" data-action="delete-lead" data-id="' + esc(l.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
+        '<a class="a-btn-icon" href="https://wa.me/' + esc(String(l.phone || "").replace(/\D/g, "").replace(/^0/, "91").slice(-12)) + '" target="_blank" rel="noopener noreferrer" title="WhatsApp" aria-label="Message ' + esc(l.name || l.id) + ' on WhatsApp"><svg class="icon" aria-hidden="true"><use href="#i-whatsapp"></use></svg></a>' +
+        '<button class="a-btn-icon" data-action="edit-lead" data-id="' + esc(l.id) + '" title="Edit" aria-label="Edit enquiry ' + esc(l.name || l.id) + '"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
+        '<button class="a-btn-icon danger" data-action="delete-lead" data-id="' + esc(l.id) + '" title="Delete" aria-label="Delete enquiry ' + esc(l.name || l.id) + '"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
       '</div></td></tr>'
     ).join('') : '<tr><td colspan="8" class="table-empty"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg><br>No leads match these filters.<br><button class="a-btn a-btn-light a-btn-sm" style="margin-top:10px" data-action="clear-filters">Clear filters</button></td></tr>';
 
@@ -1734,21 +1776,36 @@
   }
 
   /* ---------------------------------------------------------------- drawer */
+  let drawerLastFocus = null;
   function openDrawer(id) {
     const lead = leads.find(l => l.id === id);
     if (!lead) return;
+    const drawer = $('#lead-drawer');
+    if (drawer && !drawer.classList.contains('open')) {
+      drawerLastFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
     activeLeadId = id;
     renderDrawer();
     $('#drawer-overlay').classList.add('open');
-    $('#lead-drawer').classList.add('open');
+    drawer.classList.add('open');
     document.body.style.overflow = 'hidden';
+    const close = $('#drawer-close');
+    if (close) close.focus();
   }
 
   function closeDrawer() {
+    const drawer = $('#lead-drawer');
+    const wasOpen = !!drawer && drawer.classList.contains('open');
     $('#drawer-overlay').classList.remove('open');
-    $('#lead-drawer').classList.remove('open');
+    if (drawer) drawer.classList.remove('open');
     document.body.style.overflow = '';
     activeLeadId = null;
+    if (wasOpen && drawerLastFocus && typeof drawerLastFocus.focus === 'function') {
+      const f = drawerLastFocus; drawerLastFocus = null;
+      setTimeout(() => { try { f.focus(); } catch (e) {} }, 0);
+    } else {
+      drawerLastFocus = null;
+    }
   }
 
   function buildActivityTimeline(lead) {
@@ -1805,7 +1862,8 @@
     if (!lead) return;
     $('#drawer-title').textContent = lead.name;
     $('#drawer-sub').textContent = lead.id + ' · Added ' + fmtDate(lead.createdAt);
-    const statusOptions = STATUSES.map(s => '<option ' + (lead.status === s ? 'selected' : '') + '>' + s + '</option>').join('');
+    const currentStatus = leadStatus(lead);
+    const statusOptions = STATUSES.map(s => '<option ' + (currentStatus === s ? 'selected' : '') + '>' + s + '</option>').join('');
     $('#drawer-body').innerHTML =
       '<div class="detail-grid-2">' +
         '<div class="detail-box"><small>Loan type</small><b>' + esc(lead.product) + '</b></div>' +
@@ -1850,7 +1908,7 @@
       '<button class="a-btn a-btn-danger" id="drawer-delete" aria-label="Delete lead"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>';
 
     $('#drawer-status').addEventListener('change', (e) => {
-      const prev = lead.status;
+      const prev = leadStatus(lead);
       lead.status = e.target.value;
       lead.timeline = Array.isArray(lead.timeline) ? lead.timeline : [];
       if (prev !== lead.status) lead.timeline.unshift({ at: new Date().toISOString(), event: 'status_changed', detail: 'Status: ' + prev + ' → ' + lead.status });
@@ -1916,8 +1974,8 @@
         '<td data-label="Enquiries">' + leadCount + '</td>' +
         '<td data-label="Visible"><label class="switch"><input type="checkbox" data-toggle="product" data-id="' + esc(p.id) + '" ' + (p.visible ? 'checked' : '') + '><span></span></label></td>' +
         '<td data-label="Actions"><div class="row-actions">' +
-          '<button class="a-btn-icon" data-action="edit-product" data-id="' + esc(p.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
-          '<button class="a-btn-icon danger" data-action="delete-product" data-id="' + esc(p.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
+          '<button class="a-btn-icon" data-action="edit-product" data-id="' + esc(p.id) + '" title="Edit" aria-label="Edit product ' + esc(p.name || p.id) + '"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
+          '<button class="a-btn-icon danger" data-action="delete-product" data-id="' + esc(p.id) + '" title="Delete" aria-label="Delete product ' + esc(p.name || p.id) + '"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
         '</div></td></tr>';
     }).join('');
     renderContentImages();
@@ -2043,8 +2101,8 @@
       '</div>';
       return '<div class="partner-tile-admin" style="gap:6px">' +
         '<div class="tile-actions">' +
-          '<button class="a-btn-icon" data-action="edit-partner" data-id="' + esc(p.id) + '" title="Edit"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
-          '<button class="a-btn-icon danger" data-action="delete-partner" data-id="' + esc(p.id) + '" title="Delete"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
+          '<button class="a-btn-icon" data-action="edit-partner" data-id="' + esc(p.id) + '" title="Edit" aria-label="Edit lender ' + esc(p.name || p.id) + '"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
+          '<button class="a-btn-icon danger" data-action="delete-partner" data-id="' + esc(p.id) + '" title="Delete" aria-label="Remove lender ' + esc(p.name || p.id) + '"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
         '</div>' +
         '<div style="display:flex;gap:10px;align-items:center;padding-right:44px">' + logoHtml +
           '<div style="min-width:0"><b style="display:block;font-size:.9rem">' + esc(p.name) + '</b><span>' + esc(p.type || '') + '</span></div>' +
@@ -2452,8 +2510,8 @@
           '<div class="ci-meta"><span>' + esc(t.product) + '</span><span>' + esc(t.location) + '</span><span>' + fmtShort(t.date) + '</span><span class="badge badge-' + (t.published ? 'active' : 'inactive') + '">' + (t.published ? 'Published' : 'Hidden') + '</span></div></div>' +
           '<div class="ci-actions">' +
             '<label class="switch" title="Show this review on the homepage"><input type="checkbox" data-toggle="testimonial" data-id="' + esc(t.id) + '" aria-label="Show review from ' + esc(t.name) + ' on the homepage" ' + (t.published ? 'checked' : '') + '><span></span></label>' +
-            '<button class="a-btn-icon" data-action="edit-testimonial" data-id="' + esc(t.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
-            '<button class="a-btn-icon danger" data-action="delete-testimonial" data-id="' + esc(t.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
+            '<button class="a-btn-icon" data-action="edit-testimonial" data-id="' + esc(t.id) + '" title="Edit" aria-label="Edit testimonial from ' + esc(t.name || t.id) + '"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
+            '<button class="a-btn-icon danger" data-action="delete-testimonial" data-id="' + esc(t.id) + '" title="Delete" aria-label="Delete testimonial from ' + esc(t.name || t.id) + '"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
           '</div></div>'
       ).join('') : '<div class="empty-state"><h4>No testimonials yet</h4><p>Add client reviews to build trust on the homepage.</p></div>';
     }
@@ -2479,7 +2537,7 @@
           thumb +
           '<div class="ci-main"><b>' + esc(p.name) + '</b><p>' + esc(p.description || 'No description') + '</p>' +
           '<div class="ci-meta"><span>' + esc(p.category || 'Product') + '</span><span>' + (p.rate ? Number(p.rate).toFixed(2) + '% p.a.' : 'Rate N/A') + '</span><span class="badge badge-' + (p.visible ? 'active' : 'inactive') + '">' + (p.visible ? 'Visible' : 'Hidden') + '</span></div></div>' +
-          '<div class="ci-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' + uploadBtn + '<button class="a-btn-icon" data-action="edit-product" data-id="' + esc(p.id) + '" title="Edit product"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button></div>' +
+          '<div class="ci-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' + uploadBtn + '<button class="a-btn-icon" data-action="edit-product" data-id="' + esc(p.id) + '" title="Edit product" aria-label="Edit product ' + esc(p.name || p.id) + '"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button></div>' +
         '</div>';
       }).join('') : '<div class="empty-state"><h4>No products yet</h4><p>Add products in the Loan products section.</p></div>';
     }
@@ -2633,8 +2691,8 @@
       '<td data-label="Status"><span class="badge badge-' + String(c.status || 'new').toLowerCase().replace(/[^a-z]/g,'') + '">' + esc(c.status || 'New') + '</span></td>' +
       '<td data-label="City">' + esc(c.city || '—') + '</td>' +
       '<td data-label="Actions"><div class="row-actions">' +
-        '<button class="a-btn-icon" data-action="edit-customer" data-id="' + esc(c.id) + '" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
-        '<button class="a-btn-icon danger" data-action="delete-customer" data-id="' + esc(c.id) + '" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
+        '<button class="a-btn-icon" data-action="edit-customer" data-id="' + esc(c.id) + '" title="Edit" aria-label="Edit customer ' + esc(c.name || c.id) + '"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button>' +
+        '<button class="a-btn-icon danger" data-action="delete-customer" data-id="' + esc(c.id) + '" title="Delete" aria-label="Delete customer ' + esc(c.name || c.id) + '"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button>' +
       '</div></td></tr>'
     ).join('');
   }
@@ -2700,7 +2758,7 @@
       '<td data-label="Stage"><span class="badge badge-'+String(a.stage||'new').toLowerCase().replace(/[^a-z]/g,'')+'">'+esc(a.stage||'New')+'</span></td>' +
       '<td data-label="Owner">'+esc(a.owner||'—')+'</td>' +
       '<td data-label="Updated" title="'+esc(fmtDate(a.updatedAt||a.createdAt))+'">'+esc(fmtShort(a.updatedAt||a.createdAt))+'</td>' +
-      '<td data-label="Actions"><div class="row-actions"><button class="a-btn-icon" data-action="edit-application" data-id="'+esc(a.id)+'" title="Edit"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="a-btn-icon danger" data-action="delete-application" data-id="'+esc(a.id)+'" title="Delete"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button></div></td>' +
+      '<td data-label="Actions"><div class="row-actions"><button class="a-btn-icon" data-action="edit-application" data-id="'+esc(a.id)+'" title="Edit" aria-label="Edit application '+esc(a.applicant||a.id)+'"><svg class="icon" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="a-btn-icon danger" data-action="delete-application" data-id="'+esc(a.id)+'" title="Delete" aria-label="Delete application '+esc(a.applicant||a.id)+'"><svg class="icon" aria-hidden="true"><use href="#i-trash"></use></svg></button></div></td>' +
       '</tr>'
     ).join('') : '<tr><td colspan="7" class="table-empty">No applications yet. Add one to start tracking.</td></tr>';
   }
@@ -2806,6 +2864,8 @@
     // Counts describe the whole server history, not just the current page.
     // Fall back to local counts only when a server response is unavailable.
     const stateCounts = Object.assign({}, localStateCounts, notificationStateCounts || {});
+    const panel = $('#notifications-list');
+    if (panel) panel.setAttribute('aria-labelledby', 'notif-tab-' + notificationStateFilter);
     $$('.notif-state-tab').forEach(tab => {
       const active = tab.dataset.notifState === notificationStateFilter;
       tab.classList.toggle('active', active);
@@ -2821,7 +2881,7 @@
 
     const menu = $('#notif-menu');
     if (menu) {
-      const unread = visible.filter(n => !n.read && !n.acknowledged).length;
+      const unread = visible.filter(n => matchesNotificationState(n, 'unread')).length;
       const head = '<div class="notif-head"><strong>Notifications</strong><div style="display:flex;align-items:center;gap:8px"><span id="notif-menu-count">' + (counts.pending ? (counts.pending + ' pending') : (unread ? (unread + ' unread') : 'No new alerts')) + '</span><button type="button" class="icon-btn" data-action="refresh-notifications" aria-label="Refresh notifications"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-refresh"></use></svg></button></div></div>';
       if (!visible.length) {
         menu.innerHTML = head + '<div class="notif-item"><span><b>No notifications</b><span>Follow-up reminders and alerts will appear here.</span></span></div>';
@@ -2899,10 +2959,10 @@
   /* ---------------------------------------------------------------- reports */
   function renderReports() {
     const totalLeads = leads.length;
-    const accepted = leads.filter(l => l.status === 'Accepted').length;
-    const contacted = leads.filter(l => l.status === 'Contacted').length;
-    const newLeads = leads.filter(l => l.status === 'New').length;
-    const declined = leads.filter(l => l.status === 'Declined').length;
+    const accepted = leads.filter(l => hasLeadStatus(l, 'Approved')).length;
+    const contacted = leads.filter(l => hasLeadStatus(l, 'Contacted')).length;
+    const newLeads = leads.filter(l => hasLeadStatus(l, 'New')).length;
+    const declined = leads.filter(l => hasLeadStatus(l, 'Rejected')).length;
     const activePartners = partners.filter(p => p.active).length;
     const conversion = totalLeads ? Math.round((accepted / totalLeads) * 100) : 0;
     const contactRate = totalLeads ? Math.round(((contacted + accepted + declined) / totalLeads) * 100) : 0;
@@ -2917,15 +2977,15 @@
     // relabel KPI cards if present
     const labels = $$('#view-reports .kpi-label');
     if (labels[0]) labels[0].textContent = 'Total enquiries';
-    if (labels[1]) labels[1].textContent = 'Accepted conversion';
-    if (labels[2]) labels[2].textContent = 'Accepted enquiries';
+    if (labels[1]) labels[1].textContent = 'Approved conversion';
+    if (labels[2]) labels[2].textContent = 'Approved enquiries';
     if (labels[3]) labels[3].textContent = 'Active lending partners';
 
     const funnel = [
       ['Enquiries received', totalLeads],
       ['Contacted', contacted + accepted + declined],
-      ['Accepted', accepted],
-      ['Declined', declined],
+      ['Approved', accepted],
+      ['Rejected', declined],
     ];
     const maxF = Math.max(...funnel.map(f => f[1]), 1);
     const funnelHost = $('#funnel-list');
@@ -2939,13 +2999,13 @@
     const prodRows = Object.entries(prodMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
     const lenderBody = $('#lender-body');
     if (lenderBody) lenderBody.innerHTML = prodRows.length ? prodRows.map(([name, count]) => {
-      const acc = leads.filter(l => String(l.product||'Unspecified')===name && l.status==='Accepted').length;
-      return '<tr><td data-label="Product"><b style="font-weight:700;color:var(--navy)">' + esc(name) + '</b></td><td data-label="Type">Product</td><td data-label="Enquiries">' + count + '</td><td class="num" data-label="Accepted">' + acc + '</td><td data-label="Value">—</td><td data-label="Conversion"><span class="badge badge-' + (count && acc/count>=0.3?'active':'inactive') + '">' + (count?Math.round(acc/count*100):0) + '%</span></td></tr>';
+      const acc = leads.filter(l => String(l.product||'Unspecified')===name && hasLeadStatus(l, 'Approved')).length;
+      return '<tr><td data-label="Product"><b style="font-weight:700;color:var(--navy)">' + esc(name) + '</b></td><td data-label="Type">Product</td><td data-label="Enquiries">' + count + '</td><td class="num" data-label="Approved">' + acc + '</td><td data-label="Value">—</td><td data-label="Conversion"><span class="badge badge-' + (count && acc/count>=0.3?'active':'inactive') + '">' + (count?Math.round(acc/count*100):0) + '%</span></td></tr>';
     }).join('') : '<tr><td colspan="6" class="table-empty">No lead data yet.</td></tr>';
     const lenderHead = document.querySelector('#view-reports .card:last-of-type .card-head h3');
     if (lenderHead) lenderHead.textContent = 'Product interest performance';
     const lenderSub = document.querySelector('#view-reports .card:last-of-type .card-head p');
-    if (lenderSub) lenderSub.textContent = 'Enquiries and accepted outcomes by product (real lead data)';
+    if (lenderSub) lenderSub.textContent = 'Enquiries and approved outcomes by product (real lead data)';
 
     // Charts: replace disbursement/source charts with lead trends if chart funcs exist
     const disbCanvas = $('#chart-disbursement');
@@ -2954,11 +3014,11 @@
       const byMonth = {};
       leads.forEach(l => { const k = String(l.createdAt||'').slice(0,7); if(!k) return; byMonth[k]=(byMonth[k]||0)+1; });
       const keys = Object.keys(byMonth).sort().slice(-6);
-      drawLineChart(disbCanvas, keys.length?keys:['—'], keys.length?keys.map(k=>byMonth[k]):[0], keys.length?keys.map(k=>leads.filter(l=>String(l.createdAt||'').startsWith(k)&&l.status==='Accepted').length):[0]);
+      drawLineChart(disbCanvas, keys.length?keys:['—'], keys.length?keys.map(k=>byMonth[k]):[0], keys.length?keys.map(k=>leads.filter(l=>String(l.createdAt||'').startsWith(k)&&hasLeadStatus(l, 'Approved')).length):[0]);
       const disbTitle = disbCanvas.closest('.card')?.querySelector('.card-head h3');
       if (disbTitle) disbTitle.textContent = 'Monthly enquiries';
       const disbSub = disbCanvas.closest('.card')?.querySelector('.card-head p');
-      if (disbSub) disbSub.textContent = 'Enquiries vs accepted (real data)';
+      if (disbSub) disbSub.textContent = 'Enquiries vs approved (real data)';
     }
     if (srcCanvas && typeof drawBarChart === 'function') {
       const srcMap = {};
@@ -2987,6 +3047,28 @@
   /* ---------------------------------------------------------------- modal */
   let modalSubmitHandler = null;
   let modalLastFocus = null;
+  const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  function focusableIn(container) {
+    if (!container) return [];
+    return Array.prototype.slice.call(container.querySelectorAll(FOCUSABLE_SELECTOR))
+      .filter(el => el.offsetParent !== null || el === document.activeElement);
+  }
+  // Shared trap used by the confirm dialog, modal, lead drawer and sidebar.
+  // When focus is outside the open surface, Tab enters it at the appropriate
+  // edge instead of leaking back to the page behind.
+  function trapFocus(container, e) {
+    const focusables = focusableIn(container);
+    if (!focusables.length) { e.preventDefault(); return; }
+    const first = focusables[0], last = focusables[focusables.length - 1];
+    if (!container.contains(document.activeElement)) {
+      e.preventDefault();
+      (e.shiftKey ? last : first).focus();
+      return;
+    }
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
 
   function openModal(opts) {
     modalLastFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -3037,17 +3119,7 @@
     const overlay = $('#modal-overlay');
     if (!overlay || !overlay.classList.contains('open')) return;
     if (e.key === 'Escape') { e.preventDefault(); closeModal(); return; }
-    if (e.key === 'Tab') {
-      const focusables = Array.prototype.slice.call(overlay.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
-        .filter(el => el.offsetParent !== null || overlay.contains(document.activeElement));
-      if (!focusables.length) { e.preventDefault(); return; }
-      const first = focusables[0], last = focusables[focusables.length - 1];
-      if (e.shiftKey) {
-        if (document.activeElement === first || !overlay.contains(document.activeElement)) { e.preventDefault(); last.focus(); }
-      } else if (document.activeElement === last) {
-        e.preventDefault(); first.focus();
-      }
-    }
+    if (e.key === 'Tab') trapFocus(overlay, e);
   });
   const _modalOverlay = $('#modal-overlay');
   if (_modalOverlay) _modalOverlay.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });
@@ -3062,6 +3134,8 @@
     document.body.style.overflow = 'hidden';
     $('#modal-cancel').addEventListener('click', closeModal);
     $('#modal-confirm').addEventListener('click', () => { closeModal(); onConfirm(); });
+    const cancel = $('#modal-cancel');
+    if (cancel) cancel.focus();
   }
 
   function taskModal() {
@@ -3098,25 +3172,25 @@
   function exportLeads() {
     downloadCSV('as-financial-leads.csv', [
       ['ID', 'Name', 'Phone', 'Email', 'Product', 'Amount', 'Source', 'Status', 'Priority', 'City', 'Created'],
-      ...filteredLeads().map(l => [l.id, l.name, l.phone, l.email, l.product, amountToNumber(l.amount), l.source, l.status, l.priority, l.city, fmtDate(l.createdAt)])
+      ...filteredLeads().map(l => [l.id, l.name, l.phone, l.email, l.product, amountToNumber(l.amount), l.source, leadStatus(l), l.priority, l.city, fmtDate(l.createdAt)])
     ]);
     toast('Leads exported as CSV.');
   }
 
   function exportSummary() {
     const total = leads.length;
-    const accepted = leads.filter(l => l.status === 'Accepted').length;
-    const contacted = leads.filter(l => l.status === 'Contacted').length;
-    const declined = leads.filter(l => l.status === 'Declined').length;
+    const accepted = leads.filter(l => hasLeadStatus(l, 'Approved')).length;
+    const contacted = leads.filter(l => hasLeadStatus(l, 'Contacted')).length;
+    const declined = leads.filter(l => hasLeadStatus(l, 'Rejected')).length;
     const s = (analyticsData && analyticsData.summary) || {};
     downloadCSV('as-financial-performance.csv', [
       ['Metric', 'Value'],
       ['Total enquiries', total],
-      ['New enquiries', leads.filter(l => l.status === 'New').length],
+      ['New enquiries', leads.filter(l => hasLeadStatus(l, 'New')).length],
       ['Contacted enquiries', contacted],
-      ['Accepted enquiries', accepted],
-      ['Declined enquiries', declined],
-      ['Accepted conversion %', total ? ((accepted/total)*100).toFixed(1) : '0.0'],
+      ['Approved enquiries', accepted],
+      ['Rejected enquiries', declined],
+      ['Approved conversion %', total ? ((accepted/total)*100).toFixed(1) : '0.0'],
       ['Active partners', partners.filter(p => p.active).length],
       ['Total page views (analytics)', Number(s.totalPageViews||0)],
       ['Unique visitors (analytics)', Number(s.uniqueVisitors||0)],
@@ -3128,19 +3202,38 @@
   }
 
   /* ---------------------------------------------------------------- sidebar */
+  let sidebarLastFocus = null;
+  function setBurgerExpanded(open) {
+    const burger = $('#admin-burger');
+    if (burger) burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
   function openSidebar() {
-    $('#admin-sidebar').classList.add('open');
+    const sidebar = $('#admin-sidebar');
+    if (sidebar && !sidebar.classList.contains('open')) {
+      sidebarLastFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
+    if (sidebar) sidebar.classList.add('open');
+    // One scrim drives the mobile drawer; the legacy overlay id is kept only
+    // as a hidden alias for any external code that still looks it up.
     const scrim = document.getElementById('sidebar-scrim');
-    const overlay = document.getElementById('sidebar-overlay');
     if (scrim) scrim.classList.add('open');
-    if (overlay) overlay.classList.add('open');
+    setBurgerExpanded(true);
+    const close = $('#sidebar-close');
+    if (close) close.focus();
   }
   function closeSidebar() {
-    $('#admin-sidebar').classList.remove('open');
+    const sidebar = $('#admin-sidebar');
+    const wasOpen = !!sidebar && sidebar.classList.contains('open');
+    if (sidebar) sidebar.classList.remove('open');
     const scrim = document.getElementById('sidebar-scrim');
-    const overlay = document.getElementById('sidebar-overlay');
     if (scrim) scrim.classList.remove('open');
-    if (overlay) overlay.classList.remove('open');
+    setBurgerExpanded(false);
+    if (wasOpen && sidebarLastFocus && typeof sidebarLastFocus.focus === 'function') {
+      const f = sidebarLastFocus; sidebarLastFocus = null;
+      setTimeout(() => { try { f.focus(); } catch (e) {} }, 0);
+    } else {
+      sidebarLastFocus = null;
+    }
   }
 
   /* ---------------------------------------------------------------- events */
@@ -3355,8 +3448,6 @@
     $('#sidebar-close').addEventListener('click', closeSidebar);
     const sidebarScrim = document.getElementById('sidebar-scrim');
     if (sidebarScrim) sidebarScrim.addEventListener('click', closeSidebar);
-    const sidebarOverlay = document.getElementById('sidebar-overlay');
-    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
     document.addEventListener('click', (e) => {
       const sb = document.getElementById('admin-sidebar');
       if (!sb || !sb.classList.contains('open')) return;
@@ -3509,6 +3600,16 @@
       notificationStateFilter = tab.dataset.notifState || 'all';
       renderNotifications();
       syncNotifications(1);
+    }));
+    const notifTabs = $$('.notif-state-tab');
+    notifTabs.forEach((tab, i) => tab.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'Home' && e.key !== 'End') return;
+      e.preventDefault();
+      const next = e.key === 'Home' ? 0
+        : e.key === 'End' ? notifTabs.length - 1
+        : (i + (e.key === 'ArrowRight' ? 1 : -1) + notifTabs.length) % notifTabs.length;
+      notifTabs[next].focus();
+      notifTabs[next].click();
     }));
 
     // exports
@@ -3710,14 +3811,19 @@
       if (action === 'fu-view') {
         const inLeads = leads.find(x => x.id === id);
         if (inLeads) openDrawer(id);
-        else { toast('Open Enquiries and refresh to view full details.', 'error'); }
+        else {
+          findOrFetchLead(id).then((lead) => {
+            if (lead) { setView('leads'); openDrawer(lead.id); renderAll(); return; }
+            toast('Open Enquiries and refresh to view full details.', 'error');
+          });
+        }
       }
       if (action === 'fu-reschedule') {
         const item = followups.find(x => x.id === id) || leads.find(x => x.id === id);
         const current = item && item.followUpDate ? String(item.followUpDate).slice(0,10) : '';
         openModal({
           title: 'Reschedule follow-up',
-          sub: (item && item.name ? item.name : 'Enquiry') + ' �?" set the next follow-up date.',
+          sub: (item && item.name ? item.name : 'Enquiry') + '  — set the next follow-up date.',
           body: '<div class="form-row one"><div class="a-field"><label>Next follow-up date <span class="req">*</span></label><input id="fu-reschedule-date" type="date" value="' + esc(current) + '"></div></div>' +
                 '<div class="form-row one"><div class="a-field"><label>Internal note (optional)</label><textarea id="fu-reschedule-note" placeholder="Reason for rescheduling"></textarea></div></div>',
           submitLabel: 'Save follow-up',
@@ -3803,6 +3909,12 @@
         if (n && (n.targetType === 'enquiry' || n.targetType === 'lead') && n.targetId) {
           const lead = leads.find(l => String(l.id) === String(n.targetId));
           if (lead) { setView('leads'); openDrawer(lead.id); renderAll(); return; }
+          findOrFetchLead(n.targetId).then((fresh) => {
+            if (fresh) { setView('leads'); openDrawer(fresh.id); renderAll(); return; }
+            setView('notifications');
+            renderAll();
+          });
+          return;
         }
         setView('notifications');
         renderAll();
@@ -3878,6 +3990,16 @@
         $('#profile-menu').classList.remove('open');
         closeSidebar();
       }
+      if (e.key === 'Tab') {
+        // The modal owns focus while open; otherwise trap in the topmost
+        // surface (drawer, then sidebar) so focus cannot leak behind it.
+        const modalOpen = !!$('#modal-overlay') && $('#modal-overlay').classList.contains('open');
+        if (modalOpen) return;
+        const drawer = $('#lead-drawer');
+        if (drawer && drawer.classList.contains('open')) { trapFocus(drawer, e); return; }
+        const sidebar = $('#admin-sidebar');
+        if (sidebar && sidebar.classList.contains('open') && window.innerWidth <= 1024) { trapFocus(sidebar, e); }
+      }
     });
 
     // hash routing
@@ -3891,6 +4013,7 @@
       renderTasks();
       redrawCharts();
       if (currentView === 'overview') renderOverview();
+      if (currentView === 'reports') renderReports();
     }, 200));
 
     window.addEventListener('load', redrawCharts);
@@ -3942,6 +4065,7 @@
     clearSampleDataOnce();
     loadData();
     bindEvents();
+    updateSkipLink();
     const api = window.ASBackend;
     if (api && api.request && !api.__admin401Wrapped) {
       const orig = api.request.bind(api);

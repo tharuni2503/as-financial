@@ -17,15 +17,15 @@
   <meta name="twitter:description" content="Compare buying (EMI + maintenance) and renting costs with an indicative calculator.">
   <meta name="twitter:image" content="https://as-financial.vercel.app/assets/img/hero-family-home.jpg">
   <meta name="twitter:image:alt" content="AS Financial Services and Solutions">
-  <meta name="theme-color" content="#10294B">
+  <meta name="theme-color" content="#101F38">
   <meta name="color-scheme" content="light">
   <link rel="canonical" href="https://as-financial.vercel.app/buy-vs-rent-calculator.html">
   <link rel="icon" href="assets/img/brand/favicon.png" type="image/png">
   <link rel="alternate icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/img/brand/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261123g57"><link rel="stylesheet" href="assets/css/pro-light.css?v=20261123g57">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261126e"><link rel="stylesheet" href="assets/css/pro-light.css?v=20261126e">
 
 <script type="application/ld+json">
 {
@@ -180,7 +180,7 @@
         <div class="range-field"><div class="top"><label for="br-maint">Monthly maintenance</label><output id="br-maint-out">₹ 3,000</output></div><input id="br-maint" type="range" min="0" max="100000" step="500" value="3000"></div>
         <div class="range-field"><div class="top"><label for="br-rent">Monthly rent</label><output id="br-rent-out">₹ 25,000</output></div><input id="br-rent" type="range" min="0" max="300000" step="500" value="25000"></div>
       </div>
-      <div class="result-box" aria-live="polite"><div style="font-size:.8rem;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">Monthly comparison</div><div class="result-big" id="res-diff">—</div><div class="result-kv"><div class="row"><span>Buying cost (EMI + maintenance)</span><b id="res-buy">₹ 0</b></div><div class="row"><span>Rent</span><b id="res-rent">₹ 0</b></div><div class="row"><span>Home loan EMI</span><b id="res-emi">₹ 0</b></div></div><div class="calc-note-box">Indicative only. Estimates are based on values entered and may exclude fees, charges, taxes, or other costs unless shown. Actual figures depend on lender policy and your profile. This simplified comparison excludes appreciation, tax benefits, opportunity costs, and other factors.</div><button type="button" class="btn btn-gold btn-block" data-popup-open="apply-popup" style="margin-top:16px">Talk to an advisor</button></div>
+      <div class="result-box" aria-live="polite"><div style="font-size:.8rem;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">Monthly comparison</div><div class="result-big" id="res-diff">Buying costs ₹ 20,418 more/mo</div><div class="result-kv"><div class="row"><span>Buying cost (EMI + maintenance)</span><b id="res-buy">₹ 45,418</b></div><div class="row"><span>Rent</span><b id="res-rent">₹ 25,000</b></div><div class="row"><span>Home loan EMI</span><b id="res-emi">₹ 42,418</b></div></div><div class="calc-note-box">Indicative only. Estimates are based on values entered and may exclude fees, charges, taxes, or other costs unless shown. Actual figures depend on lender policy and your profile. This simplified comparison excludes appreciation, tax benefits, opportunity costs, and other factors.</div><button type="button" class="btn btn-gold btn-block" data-popup-open="apply-popup" style="margin-top:16px">Talk to an advisor</button></div>
     </div></section>
     <section class="section section-white">
       <div class="container">
@@ -230,8 +230,8 @@
     <div class="popup-overlay" id="apply-popup" role="dialog" aria-modal="true" aria-labelledby="apply-title">
     <div class="popup">
       <button type="button" class="popup-close" data-popup-close aria-label="Close"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-close"></use></svg></button>
-      <span class="pill pill-gold" style="margin-bottom:12px"><span class="dot"></span> Free eligibility check</span>
-      <h3 id="apply-title">Let's find your best loan.</h3>
+      <span class="pill pill-gold" style="margin-bottom:12px"><span class="dot"></span> Indicative eligibility guidance</span>
+      <h3 id="apply-title">Let's explore your loan options.</h3>
       <p>Share a few details and an advisor will call you back during business hours with indicative options.</p>
       <form data-lead-form data-source="Buy vs rent calculator">
         <input type="text" name="website" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0" aria-label="Website">
@@ -276,9 +276,9 @@
       </form>
     </div>
   </div>
-<script src="assets/js/icons.js?v=20261120z40" defer></script>
-  <script src="assets/js/backend.js?v=20261120z40" defer></script>
-  <script src="assets/js/main.js?v=20261123g57" defer></script>
+<script src="assets/js/icons.js?v=20261126e" defer></script>
+  <script src="assets/js/backend.js?v=20261126e" defer></script>
+  <script src="assets/js/main.js?v=20261126e" defer></script>
 
   <script>(function(){const inr=n=>'₹ '+Math.round(n).toLocaleString('en-IN');function emi(P,rY,n){const r=rY/12/100;if(r===0)return P/n;return P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1)}const ids=['br-price','br-down','br-rate','br-years','br-maint','br-rent'];function g(id){return document.getElementById(id)}function calc(){const price=+g('br-price').value,down=Math.min(+g('br-down').value,price),rate=+g('br-rate').value,years=+g('br-years').value,maint=+g('br-maint').value,rent=+g('br-rent').value;g('br-price-out').textContent=inr(price);g('br-down-out').textContent=inr(down);g('br-rate-out').textContent=rate.toFixed(2)+'%';g('br-years-out').textContent=years+' years';g('br-maint-out').textContent=inr(maint);g('br-rent-out').textContent=inr(rent);const loan=Math.max(0,price-down),e=emi(loan,rate,years*12),buy=e+maint,diff=buy-rent;g('res-emi').textContent=inr(e);g('res-buy').textContent=inr(buy);g('res-rent').textContent=inr(rent);g('res-diff').textContent=diff>=0?('Buying costs '+inr(diff)+' more/mo'):('Renting costs '+inr(Math.abs(diff))+' more/mo');}ids.forEach(id=>g(id).addEventListener('input',calc));calc();})();</script>
 

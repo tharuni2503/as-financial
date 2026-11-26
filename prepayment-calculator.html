@@ -17,15 +17,15 @@
   <meta name="twitter:description" content="See how a lump-sum part payment can reduce interest and loan tenure.">
   <meta name="twitter:image" content="https://as-financial.vercel.app/assets/img/hero-family-home.jpg">
   <meta name="twitter:image:alt" content="AS Financial Services and Solutions">
-  <meta name="theme-color" content="#10294B">
+  <meta name="theme-color" content="#101F38">
   <meta name="color-scheme" content="light">
   <link rel="canonical" href="https://as-financial.vercel.app/prepayment-calculator.html">
   <link rel="icon" href="assets/img/brand/favicon.png" type="image/png">
   <link rel="alternate icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/img/brand/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261123g57"><link rel="stylesheet" href="assets/css/pro-light.css?v=20261123g57">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261126e"><link rel="stylesheet" href="assets/css/pro-light.css?v=20261126e">
 
 <script type="application/ld+json">
 {
@@ -178,7 +178,7 @@
         <div class="range-field"><div class="top"><label for="pp-months">Remaining tenure (months)</label><output id="pp-months-out">120 months</output></div><input id="pp-months" type="range" min="6" max="360" step="1" value="120"></div>
         <div class="range-field"><div class="top"><label for="pp-part">Part prepayment amount</label><output id="pp-part-out">₹ 2,00,000</output></div><input id="pp-part" type="range" min="0" max="10000000" step="10000" value="200000"></div>
       </div>
-      <div class="result-box" aria-live="polite"><div style="font-size:.8rem;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">Estimated interest saving</div><div class="result-big" id="res-save">₹ 0</div><div class="result-kv"><div class="row"><span>Current EMI</span><b id="res-emi">₹ 0</b></div><div class="row"><span>New balance after prepayment</span><b id="res-bal">₹ 0</b></div><div class="row"><span>New tenure (approx., same EMI)</span><b id="res-tenure">—</b></div><div class="row"><span>Months reduced</span><b id="res-red">—</b></div></div><p class="calc-note" style="margin-top:14px">Indicative only. Estimates are based on values entered and may exclude fees, charges, taxes, or other costs unless shown. Actual figures depend on lender policy and your profile.</p><button type="button" class="btn btn-gold btn-block" data-popup-open="apply-popup" style="margin-top:16px">Talk to an advisor</button></div>
+      <div class="result-box" aria-live="polite"><div style="font-size:.8rem;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">Estimated interest saving</div><div class="result-big" id="res-save">₹ 2,60,918</div><div class="result-kv"><div class="row"><span>Current EMI</span><b id="res-emi">₹ 25,607</b></div><div class="row"><span>New balance after prepayment</span><b id="res-bal">₹ 18,00,000</b></div><div class="row"><span>New tenure (approx., same EMI)</span><b id="res-tenure">~ 102 months</b></div><div class="row"><span>Months reduced</span><b id="res-red">~ 18 months</b></div></div><p class="calc-note" style="margin-top:14px">Indicative only. Estimates are based on values entered and may exclude fees, charges, taxes, or other costs unless shown. Actual figures depend on lender policy and your profile.</p><button type="button" class="btn btn-gold btn-block" data-popup-open="apply-popup" style="margin-top:16px">Talk to an advisor</button></div>
     </div></section>
     <section class="section section-white">
       <div class="container">
@@ -228,8 +228,8 @@
     <div class="popup-overlay" id="apply-popup" role="dialog" aria-modal="true" aria-labelledby="apply-title">
     <div class="popup">
       <button type="button" class="popup-close" data-popup-close aria-label="Close"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-close"></use></svg></button>
-      <span class="pill pill-gold" style="margin-bottom:12px"><span class="dot"></span> Free eligibility check</span>
-      <h3 id="apply-title">Let's find your best loan.</h3>
+      <span class="pill pill-gold" style="margin-bottom:12px"><span class="dot"></span> Indicative eligibility guidance</span>
+      <h3 id="apply-title">Let's explore your loan options.</h3>
       <p>Share a few details and an advisor will call you back during business hours with indicative options.</p>
       <form data-lead-form data-source="Prepayment calculator">
         <input type="text" name="website" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0" aria-label="Website">
@@ -274,9 +274,9 @@
       </form>
     </div>
   </div>
-<script src="assets/js/icons.js?v=20261120z40" defer></script>
-  <script src="assets/js/backend.js?v=20261120z40" defer></script>
-  <script src="assets/js/main.js?v=20261123g57" defer></script>
+<script src="assets/js/icons.js?v=20261126e" defer></script>
+  <script src="assets/js/backend.js?v=20261126e" defer></script>
+  <script src="assets/js/main.js?v=20261126e" defer></script>
 
   <script>(function(){const inr=n=>'₹ '+Math.round(n).toLocaleString('en-IN');function emi(P,rY,n){const r=rY/12/100; if(r===0) return P/n; return P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1)} const B=document.getElementById('pp-bal'),R=document.getElementById('pp-rate'),M=document.getElementById('pp-months'),P=document.getElementById('pp-part');
     function calc(){const bal=+B.value,rate=+R.value,months=Math.max(1,Math.round(+M.value)),part=Math.min(Math.max(0,+P.value),bal);document.getElementById('pp-bal-out').textContent=inr(bal);document.getElementById('pp-rate-out').textContent=rate.toFixed(2)+'%';document.getElementById('pp-months-out').textContent=months+' months';document.getElementById('pp-part-out').textContent=inr(part);const e=emi(bal,rate,months),P2=Math.max(0,bal-part),r=rate/12/100;let m=0,feasible=true;if(P2<=0){m=0;feasible=true;}else if(r===0){m=e>0?Math.ceil(P2/e):0;feasible=m>0&&isFinite(m);}else if(e<=P2*r){m=0;feasible=false;}else{m=Math.ceil(Math.log(e/(e-P2*r))/Math.log(1+r));feasible=m>0&&isFinite(m);}const oldInt=Math.max(0,e*months-bal),newInt=(feasible&&m>0)?Math.max(0,e*m-P2):0,save=(feasible||P2<=0)?Math.max(0,oldInt-newInt):0;document.getElementById('res-emi').textContent=inr(e);document.getElementById('res-bal').textContent=inr(P2);if(P2<=0){document.getElementById('res-tenure').textContent='Fully repaid';document.getElementById('res-red').textContent='~ '+months+' months';document.getElementById('res-save').textContent=inr(oldInt);}else if(!feasible){document.getElementById('res-tenure').textContent='Not feasible at this EMI';document.getElementById('res-red').textContent='—';document.getElementById('res-save').textContent='—';}else{document.getElementById('res-tenure').textContent='~ '+m+' months';document.getElementById('res-red').textContent='~ '+Math.max(0,months-m)+' months';document.getElementById('res-save').textContent=inr(save);}} [B,R,M,P].forEach(x=>x.addEventListener('input',calc)); calc();})();</script>

@@ -6,7 +6,7 @@
   <title>Admin Dashboard | AS Financial Services and Solutions</title>
   <meta name="description" content="Private admin dashboard for AS Financial Services and Solutions.">
   <meta name="robots" content="noindex, nofollow">
-  <meta name="theme-color" content="#10294B">
+  <meta name="theme-color" content="#101F38">
   <meta name="color-scheme" content="light">
   <link rel="icon" href="assets/img/brand/favicon.png" type="image/png">
   <link rel="alternate icon" href="favicon.svg" type="image/svg+xml">
@@ -14,11 +14,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261125b">
-  <link rel="stylesheet" href="assets/css/admin.css?v=20261125e">
+  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261126e">
+  <link rel="stylesheet" href="assets/css/admin.css?v=20261126e">
 </head>
 <body>
-  <a class="skip-link" href="#login-screen">Skip to content</a>
+  <a class="skip-link" href="#login-email">Skip to sign in</a>
 
   <!-- ============================ LOGIN ============================ -->
   <div class="login-screen" id="login-screen">
@@ -114,7 +114,7 @@
   </div>
 
   <!-- ============================ APP ============================ -->
-  <div class="admin-app hidden" id="admin-app">
+  <div class="admin-app hidden" id="admin-app" tabindex="-1">
     <div class="sidebar-scrim" id="sidebar-scrim"></div>
 
     <aside class="admin-sidebar" id="admin-sidebar">
@@ -126,7 +126,7 @@
 
       <nav class="sidebar-nav" aria-label="Admin navigation">
         <div class="sidebar-label">Main</div>
-        <button type="button" class="sidebar-link active" data-view="overview"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg> Dashboard</button>
+        <button type="button" class="sidebar-link active" data-view="overview" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg> Dashboard</button>
         <button type="button" class="sidebar-link" data-view="leads"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg> Enquiries <span class="badge-count" id="nav-lead-count">0</span></button>
         <button type="button" class="sidebar-link" data-view="followups"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg> Follow-ups <span class="badge-count" id="nav-followup-count">0</span></button>
         <button type="button" class="sidebar-link" data-view="notifications"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg> Notifications <span class="badge-count" id="nav-notif-count" style="display:none">0</span></button>
@@ -156,11 +156,12 @@
         <button type="button" id="sidebar-logout" aria-label="Sign out"><svg class="icon" aria-hidden="true"><use href="#i-logout"></use></svg></button>
       </div>
     </aside>
-    <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
+    <!-- Legacy id kept as a hidden alias; #sidebar-scrim is the single scrim. -->
+    <div id="sidebar-overlay" aria-hidden="true" hidden></div>
 
-    <div class="admin-main" role="main" aria-label="Dashboard">
+    <main class="admin-main" id="admin-main">
       <header class="admin-topbar">
-        <button type="button" class="admin-burger" id="admin-burger" aria-label="Open menu"><svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg></button>
+        <button type="button" class="admin-burger" id="admin-burger" aria-label="Open menu" aria-expanded="false" aria-controls="admin-sidebar"><svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg></button>
         <div class="topbar-title">
           <h2 id="topbar-title">Dashboard</h2>
           <span id="topbar-date">—</span>
@@ -283,12 +284,12 @@
               <div class="card-head"><div><h3>Website Traffic</h3><p>Visitor count and growth trend</p></div><span class="live-badge"><i></i> LIVE</span></div>
               <div class="card-body">
                 <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px"><b id="ov-traffic-total" style="font-size:1.5rem;color:var(--navy)">0</b><span style="font-size:.8125rem;color:var(--muted)">visitors</span><span id="ov-traffic-growth" class="kpi-chip up" style="margin-left:auto">0%</span></div>
-                <div class="chart-wrap" style="height:240px"><canvas id="ov-trend-chart"></canvas></div>
+                <div class="chart-wrap" style="height:240px"><canvas id="ov-trend-chart" role="img" aria-label="Website traffic trend"></canvas></div>
               </div>
             </div>
             <div class="card">
               <div class="card-head"><div><h3>Recent Enquiries</h3><p>Latest customer enquiries</p></div><button type="button" class="a-btn a-btn-ghost a-btn-sm" data-view-link="leads">View all</button></div>
-              <div class="card-body" style="padding:0"><div class="table-wrap" style="border:0;border-radius:0"><table class="a-table responsive-cards"><thead><tr><th>Customer</th><th>Loan type</th><th>Date</th><th>Status</th></tr></thead><tbody id="ov-recent-enquiries"><tr><td colspan="4" class="table-empty">No enquiries yet.</td></tr></tbody></table></div></div>
+              <div class="card-body" style="padding:0"><div class="table-wrap" style="border:0;border-radius:0"><table class="a-table responsive-cards"><thead><tr><th scope="col">Customer</th><th scope="col">Loan type</th><th scope="col">Date</th><th scope="col">Status</th></tr></thead><tbody id="ov-recent-enquiries"><tr><td colspan="4" class="table-empty">No enquiries yet.</td></tr></tbody></table></div></div>
             </div>
           </div>
 
@@ -536,20 +537,20 @@
 
           <div class="kpi-grid">
             <div class="kpi"><div class="kpi-top"><span class="kpi-icon green"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg></span><span class="kpi-chip" id="report-disbursed-chip">Live</span></div><div class="kpi-value" id="report-disbursed">&#8377;0</div><div class="kpi-label">Total enquiries</div></div>
-            <div class="kpi"><div class="kpi-top"><span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-percent"></use></svg></span><span class="kpi-chip" id="report-conversion-chip">Live</span></div><div class="kpi-value" id="report-conversion">0%</div><div class="kpi-label">Accepted conversion</div></div>
-            <div class="kpi"><div class="kpi-top"><span class="kpi-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-wallet"></use></svg></span></div><div class="kpi-value" id="report-ticket">&#8377;0</div><div class="kpi-label">Accepted enquiries</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon blue"><svg class="icon" aria-hidden="true"><use href="#i-percent"></use></svg></span><span class="kpi-chip" id="report-conversion-chip">Live</span></div><div class="kpi-value" id="report-conversion">0%</div><div class="kpi-label">Approved conversion</div></div>
+            <div class="kpi"><div class="kpi-top"><span class="kpi-icon gold"><svg class="icon" aria-hidden="true"><use href="#i-wallet"></use></svg></span></div><div class="kpi-value" id="report-ticket">&#8377;0</div><div class="kpi-label">Approved enquiries</div></div>
             <div class="kpi"><div class="kpi-top"><span class="kpi-icon purple"><svg class="icon" aria-hidden="true"><use href="#i-handshake"></use></svg></span></div><div class="kpi-value" id="report-lenders">0</div><div class="kpi-label">Active lending partners</div></div>
           </div>
 
           <div class="dash-grid">
             <div class="card">
-              <div class="card-head"><div><h3>Monthly enquiries</h3><p>Enquiries vs accepted (real data)</p></div></div>
-              <div class="card-body"><div class="chart-wrap chart-tall"><canvas id="chart-disbursement" role="img" aria-label="Monthly disbursements"></canvas></div></div>
+              <div class="card-head"><div><h3>Monthly enquiries</h3><p>Enquiries vs approved (real data)</p></div></div>
+              <div class="card-body"><div class="chart-wrap chart-tall"><canvas id="chart-disbursement" role="img" aria-label="Monthly enquiries and approved enquiries"></canvas></div></div>
             </div>
             <div class="card">
               <div class="card-head"><div><h3>Lead sources</h3><p>Where enquiries come from</p></div></div>
               <div class="card-body">
-                <div class="chart-wrap chart-medium" style="height:180px"><canvas id="chart-source" role="img" aria-label="Lead sources"></canvas></div>
+                <div class="chart-wrap chart-medium" style="height:180px"><canvas id="chart-source" role="img" aria-label="Lead sources by count"></canvas></div>
                 <div class="donut-legend" id="source-legend"></div>
               </div>
             </div>
@@ -561,10 +562,10 @@
           </div>
 
           <div class="card">
-            <div class="card-head"><div><h3>Product interest performance</h3><p>Enquiries and accepted outcomes by product (real lead data)</p></div></div>
+            <div class="card-head"><div><h3>Product interest performance</h3><p>Enquiries and approved outcomes by product (real lead data)</p></div></div>
             <div class="table-wrap">
               <table class="a-table responsive-cards">
-                <thead><tr><th scope="col">Product</th><th scope="col">Type</th><th scope="col">Enquiries</th><th scope="col">Accepted</th><th scope="col">Note</th><th scope="col">Accept rate</th></tr></thead>
+                <thead><tr><th scope="col">Product</th><th scope="col">Type</th><th scope="col">Enquiries</th><th scope="col">Approved</th><th scope="col">Value</th><th scope="col">Conversion</th></tr></thead>
                 <tbody id="lender-body"></tbody>
               </table>
             </div>
@@ -600,15 +601,15 @@
           <div class="card">
             <div class="card-head"><div><h3>Notification feed</h3><p>Pending, acknowledged and dismissed alerts stay in one history</p></div></div>
             <div class="notif-state-tabs" role="tablist" aria-label="Notification states">
-              <button type="button" class="notif-state-tab active" data-notif-state="all" role="tab" aria-selected="true">All <span id="notif-tab-count-all">0</span></button>
-              <button type="button" class="notif-state-tab" data-notif-state="pending" role="tab" aria-selected="false">Pending <span id="notif-tab-count-pending">0</span></button>
-              <button type="button" class="notif-state-tab" data-notif-state="unread" role="tab" aria-selected="false">Unread <span id="notif-tab-count-unread">0</span></button>
-              <button type="button" class="notif-state-tab" data-notif-state="acknowledged" role="tab" aria-selected="false">Acknowledged <span id="notif-tab-count-acknowledged">0</span></button>
-              <button type="button" class="notif-state-tab" data-notif-state="dismissed" role="tab" aria-selected="false">Dismissed <span id="notif-tab-count-dismissed">0</span></button>
-              <button type="button" class="notif-state-tab" data-notif-state="completed" role="tab" aria-selected="false">Completed <span id="notif-tab-count-completed">0</span></button>
-              <button type="button" class="notif-state-tab" data-notif-state="superseded" role="tab" aria-selected="false">Superseded <span id="notif-tab-count-superseded">0</span></button>
+              <button type="button" class="notif-state-tab active" id="notif-tab-all" data-notif-state="all" role="tab" aria-selected="true" aria-controls="notifications-list">All <span id="notif-tab-count-all">0</span></button>
+              <button type="button" class="notif-state-tab" id="notif-tab-pending" data-notif-state="pending" role="tab" aria-selected="false" aria-controls="notifications-list">Pending <span id="notif-tab-count-pending">0</span></button>
+              <button type="button" class="notif-state-tab" id="notif-tab-unread" data-notif-state="unread" role="tab" aria-selected="false" aria-controls="notifications-list">Unread <span id="notif-tab-count-unread">0</span></button>
+              <button type="button" class="notif-state-tab" id="notif-tab-acknowledged" data-notif-state="acknowledged" role="tab" aria-selected="false" aria-controls="notifications-list">Acknowledged <span id="notif-tab-count-acknowledged">0</span></button>
+              <button type="button" class="notif-state-tab" id="notif-tab-dismissed" data-notif-state="dismissed" role="tab" aria-selected="false" aria-controls="notifications-list">Dismissed <span id="notif-tab-count-dismissed">0</span></button>
+              <button type="button" class="notif-state-tab" id="notif-tab-completed" data-notif-state="completed" role="tab" aria-selected="false" aria-controls="notifications-list">Completed <span id="notif-tab-count-completed">0</span></button>
+              <button type="button" class="notif-state-tab" id="notif-tab-superseded" data-notif-state="superseded" role="tab" aria-selected="false" aria-controls="notifications-list">Superseded <span id="notif-tab-count-superseded">0</span></button>
             </div>
-            <div class="card-body" id="notifications-list"></div>
+            <div class="card-body" id="notifications-list" role="tabpanel" aria-labelledby="notif-tab-all" tabindex="0"></div>
           </div>
         </section>
 
@@ -629,22 +630,22 @@
           <div class="dash-grid equal">
             <div class="card">
               <div class="card-head"><div><h3>Traffic sources</h3><p>Where page views came from (30 days)</p></div><span class="live-badge"><i></i> LIVE</span></div>
-              <div class="card-body"><div class="chart-wrap" style="height:210px"><canvas id="anly-sources-chart"></canvas></div><div class="donut-legend" id="anly-sources-legend"></div></div>
+              <div class="card-body"><div class="chart-wrap" style="height:210px"><canvas id="anly-sources-chart" role="img" aria-label="Traffic sources"></canvas></div><div class="donut-legend" id="anly-sources-legend"></div></div>
             </div>
             <div class="card">
               <div class="card-head"><div><h3>Devices</h3><p>Page views by device type</p></div></div>
-              <div class="card-body"><div class="chart-wrap" style="height:210px"><canvas id="anly-devices-chart"></canvas></div><div class="donut-legend" id="anly-devices-legend"></div></div>
+              <div class="card-body"><div class="chart-wrap" style="height:210px"><canvas id="anly-devices-chart" role="img" aria-label="Page views by device"></canvas></div><div class="donut-legend" id="anly-devices-legend"></div></div>
             </div>
           </div>
 
           <div class="dash-grid equal" style="margin-top:18px">
-            <div class="card"><div class="card-head"><div><h3>Top landing pages</h3><p>First page visitors entered on</p></div></div><div class="card-body"><div class="chart-wrap" style="height:230px"><canvas id="anly-landings-chart"></canvas></div></div></div>
-            <div class="card"><div class="card-head"><div><h3>UTM campaigns</h3><p>Campaign-tagged page views</p></div></div><div class="card-body"><div class="chart-wrap" style="height:230px"><canvas id="anly-utms-chart"></canvas></div></div></div>
+            <div class="card"><div class="card-head"><div><h3>Top landing pages</h3><p>First page visitors entered on</p></div></div><div class="card-body"><div class="chart-wrap" style="height:230px"><canvas id="anly-landings-chart" role="img" aria-label="Top landing pages"></canvas></div></div></div>
+            <div class="card"><div class="card-head"><div><h3>UTM campaigns</h3><p>Campaign-tagged page views</p></div></div><div class="card-body"><div class="chart-wrap" style="height:230px"><canvas id="anly-utms-chart" role="img" aria-label="UTM campaigns"></canvas></div></div></div>
           </div>
 
           <div class="card" style="margin-top:18px">
             <div class="card-head"><div><h3>Engagement clicks</h3><p>CTA, phone, WhatsApp and email clicks</p></div></div>
-            <div class="card-body"><div class="chart-wrap" style="height:220px"><canvas id="anly-engagement-chart"></canvas></div></div>
+            <div class="card-body"><div class="chart-wrap" style="height:220px"><canvas id="anly-engagement-chart" role="img" aria-label="Engagement clicks"></canvas></div></div>
           </div>
         </section>
 
@@ -658,7 +659,7 @@
 
         <section class="view" id="view-recovery">
           <div class="page-head"><div><h2>Lead Recovery Centre</h2><p>Find incomplete enquiries, uncontacted leads, and missed follow-ups.</p></div></div>
-          <div class="card"><div class="card-head"><div><h3>Recovery queue</h3><p>Leads that need immediate follow-up</p></div><div id="recovery-note" style="font-size:.8125rem;color:var(--muted)"></div></div><div class="table-wrap"><table class="a-table responsive-cards"><thead><tr><th>Lead</th><th>Status</th><th>Age</th><th>Reason</th></tr></thead><tbody id="recovery-body"><tr><td colspan="4" class="table-empty">No recovery items detected yet.</td></tr></tbody></table></div></div>
+          <div class="card"><div class="card-head"><div><h3>Recovery queue</h3><p>Leads that need immediate follow-up</p></div><div id="recovery-note" style="font-size:.8125rem;color:var(--muted)"></div></div><div class="table-wrap"><table class="a-table responsive-cards"><thead><tr><th scope="col">Lead</th><th scope="col">Status</th><th scope="col">Age</th><th scope="col">Reason</th></tr></thead><tbody id="recovery-body"><tr><td colspan="4" class="table-empty">No recovery items detected yet.</td></tr></tbody></table></div></div>
         </section>
 
         <section class="view" id="view-applications">
@@ -676,7 +677,7 @@
             <div class="card-head"><div><h3>Applications</h3><p>Additive application pipeline (real data only)</p></div></div>
             <div class="table-wrap">
               <table class="a-table responsive-cards">
-                <thead><tr><th>Applicant</th><th>Product</th><th>Amount</th><th>Stage</th><th>Owner</th><th>Updated</th><th>Actions</th></tr></thead>
+                <thead><tr><th scope="col">Applicant</th><th scope="col">Product</th><th scope="col">Amount</th><th scope="col">Stage</th><th scope="col">Owner</th><th scope="col">Updated</th><th scope="col">Actions</th></tr></thead>
                 <tbody id="applications-body"><tr><td colspan="7" class="table-empty">No applications yet.</td></tr></tbody>
               </table>
             </div>
@@ -710,8 +711,8 @@
 
         <section class="view" id="view-audit">
           <div class="page-head"><div><h2>Admin Activity & Security</h2><p>Review audit logs, sessions, and sensitive admin actions.</p></div></div>
-          <div class="card" style="margin-bottom:18px"><div class="card-head"><div><h3>Recent audit activity</h3><p>Latest recorded admin actions</p></div><button type="button" class="a-btn a-btn-light a-btn-sm" id="audit-refresh-btn">Refresh</button></div><div class="table-wrap"><table class="a-table responsive-cards"><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th></tr></thead><tbody id="audit-body"><tr><td colspan="4" class="table-empty">No audit logs loaded.</td></tr></tbody></table></div></div>
-          <div class="card"><div class="card-head"><div><h3>Active sessions</h3><p>Current authenticated sessions</p></div><button type="button" class="a-btn a-btn-light a-btn-sm" id="sessions-refresh-btn">Refresh</button></div><div class="table-wrap"><table class="a-table responsive-cards"><thead><tr><th>User</th><th>Role</th><th>Last seen</th><th>IP/UA</th></tr></thead><tbody id="audit-sessions-body"><tr><td colspan="4" class="table-empty">No session data loaded.</td></tr></tbody></table></div></div>
+          <div class="card" style="margin-bottom:18px"><div class="card-head"><div><h3>Recent audit activity</h3><p>Latest recorded admin actions</p></div><button type="button" class="a-btn a-btn-light a-btn-sm" id="audit-refresh-btn">Refresh</button></div><div class="table-wrap"><table class="a-table responsive-cards"><thead><tr><th scope="col">Time</th><th scope="col">Actor</th><th scope="col">Action</th><th scope="col">Target</th></tr></thead><tbody id="audit-body"><tr><td colspan="4" class="table-empty">No audit logs loaded.</td></tr></tbody></table></div></div>
+          <div class="card"><div class="card-head"><div><h3>Active sessions</h3><p>Current authenticated sessions</p></div><button type="button" class="a-btn a-btn-light a-btn-sm" id="sessions-refresh-btn">Refresh</button></div><div class="table-wrap"><table class="a-table responsive-cards"><thead><tr><th scope="col">User</th><th scope="col">Role</th><th scope="col">Last seen</th><th scope="col">IP/UA</th></tr></thead><tbody id="audit-sessions-body"><tr><td colspan="4" class="table-empty">No session data loaded.</td></tr></tbody></table></div></div>
         </section>
 
         <section class="view" id="view-settings">
@@ -808,7 +809,7 @@
                   <div><button type="submit" class="a-btn a-btn-primary a-btn-sm">Create user</button></div>
                 </form>
                 <div id="users-msg" class="demo-note" style="display:none;margin:0"></div>
-                <div class="table-wrap"><table class="table responsive-cards"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody id="users-table-body"><tr><td colspan="5" class="table-empty">No users loaded.</td></tr></tbody></table></div>
+                <div class="table-wrap"><table class="table responsive-cards"><thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead><tbody id="users-table-body"><tr><td colspan="5" class="table-empty">No users loaded.</td></tr></tbody></table></div>
               </div>
             </div>
             <div class="card" id="users-access-note">
@@ -821,18 +822,18 @@
               <div class="card-head"><div><h3>Active sessions</h3><p>Devices and browsers signed in to your account</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="a-btn a-btn-light a-btn-sm" id="refresh-sessions-btn" type="button">Refresh</button><button class="a-btn a-btn-light a-btn-sm" id="revoke-other-sessions-btn" type="button">Sign out others</button></div></div>
               <div class="card-body" style="display:grid;gap:10px">
                 <div id="sessions-msg" class="demo-note" style="display:none;margin:0"></div>
-                <div class="table-wrap"><table class="table responsive-cards"><thead><tr><th>When</th><th>Device / IP</th><th>Status</th><th>Action</th></tr></thead><tbody id="sessions-table-body"><tr><td colspan="4" class="table-empty">No sessions loaded.</td></tr></tbody></table></div>
+                <div class="table-wrap"><table class="table responsive-cards"><thead><tr><th scope="col">When</th><th scope="col">Device / IP</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead><tbody id="sessions-table-body"><tr><td colspan="4" class="table-empty">No sessions loaded.</td></tr></tbody></table></div>
               </div>
             </div>
           </div>
         </section>
 
       </div>
-    </div>
+    </main>
 
     <!-- Lead drawer -->
     <div class="drawer-overlay" id="drawer-overlay"></div>
-    <aside class="drawer" id="lead-drawer" aria-label="Lead details">
+    <aside class="drawer" id="lead-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" tabindex="-1">
       <div class="drawer-head">
         <div><h3 id="drawer-title">Lead details</h3><p id="drawer-sub">Details</p></div>
         <button type="button" class="drawer-close" id="drawer-close" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
@@ -853,13 +854,13 @@
       </div>
     </div>
 
-    <div class="a-toast-host" id="toast-host"></div>
+    <div class="a-toast-host" id="toast-host" role="status" aria-live="polite" aria-atomic="false"></div>
   </div>
 
-  <script src="assets/js/calculators.js?v=20261120z40" defer></script>
-  <script src="assets/js/icons.js?v=20261118z22"></script>
-  <script src="assets/js/date-format.js?v=20261125h1"></script>
-  <script src="assets/js/backend.js?v=20261122z1"></script><script src="assets/js/admin.js?v=20261126b"></script><script src="assets/js/admin-sync.js?v=20261125a"></script>
+  <script src="assets/js/calculators.js?v=20261126e" defer></script>
+  <script src="assets/js/icons.js?v=20261126e"></script>
+  <script src="assets/js/date-format.js?v=20261126e"></script>
+  <script src="assets/js/backend.js?v=20261126e"></script><script src="assets/js/admin.js?v=20261126e"></script><script src="assets/js/admin-sync.js?v=20261126e"></script>
 </body>
 </html>
 

@@ -17,14 +17,14 @@ const DB_FILE = path.join(DATA_DIR, 'db.json');
 const TMP_FILE = path.join(DATA_DIR, 'db.tmp.json');
 const BACKUP_FILE = path.join(DATA_DIR, 'db.backup.json');
 
-const SECTIONS = ['testimonials', 'gallery', 'posts'];
+const SECTIONS = ['testimonials', 'gallery', 'posts', 'lenders'];
 const ADMIN_COLLECTIONS = ['leads', 'applications', 'products', 'partners', 'tasks', 'customers', 'documents', 'notifications'];
 const MAX_ENQUIRIES = 2000;
 const MAX_AUDIT = 2000;
 const MAX_ANALYTICS_EVENTS = 5000;
 
 function emptyContent() {
-  return { testimonials: [], gallery: [], posts: [], images: {} };
+  return { testimonials: [], gallery: [], posts: [], lenders: [], images: {} };
 }
 
 function emptyAdmin() {

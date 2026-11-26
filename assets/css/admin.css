@@ -4,19 +4,20 @@
    ========================================================================== */
 
 :root {
-  --navy: #0d294c;
-  --navy-2: #14375f;
-  --navy-deep: #071c34;
-  --navy-soft: #1e4a7a;
-  --gold: #d3a83b;
-  --gold-deep: #a77c1c;
-  --gold-light: #f0d99a;
-  --gold-soft: #fbf5e6;
-  --surface: #ffffff;
-  --surface-2: #f8fafc;
-  --bg: #f3f6fa;
-  --ink: #102a4c;
-  --muted: #5f7188;
+  /* Canonical brand tokens — these exact values are the design contract. */
+  --navy: #101F38;
+  --navy-2: #1B3154;
+  --navy-deep: #0A1425;
+  --navy-soft: #254269;
+  --gold: #C49A45;
+  --gold-deep: #9A7530;
+  --gold-light: #E8D5A8;
+  --gold-soft: #FCF8EE;
+  --surface: #FFFFFF;
+  --surface-2: #F9FAFC;
+  --bg: #F5F6F8;
+  --ink: #202938;
+  --muted: #667085;
   --muted-2: #8392a6;
   --line: #e0e8f1;
   --line-soft: #edf2f7;
@@ -39,7 +40,7 @@
   --shadow: 0 24px 60px -32px rgba(7, 28, 52, .38);
   --sans: 'Manrope', 'Segoe UI', system-ui, sans-serif;
   --serif: 'Manrope', 'Segoe UI', system-ui, sans-serif;
-  --ring: 0 0 0 3px rgba(211, 168, 59, .22);
+  --ring: 0 0 0 3px rgba(196, 154, 69, .22);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -72,7 +73,7 @@ p { margin: 0; }
 .icon-lg { width: 24px; height: 24px; }
 ::selection { background: var(--gold-light); color: var(--navy-deep); }
 :where(a, button, input, select, textarea, [role="button"], .a-btn, .icon-btn, .profile-btn, .sidebar-link):focus-visible {
-  outline: 3px solid rgba(211, 168, 59, .42);
+  outline: 3px solid rgba(196, 154, 69, .42);
   outline-offset: 2px;
 }
 
@@ -736,11 +737,10 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--g
 .as-publish-status[data-tone="warn"] { background: #8a5a10; }
 .skip-link { position: absolute; top: 8px; left: -9999px; z-index: 10000; padding: 10px 14px; border: 2px solid var(--gold); border-radius: 10px; background: #fff; color: var(--navy); font-weight: 700; }
 .skip-link:focus, .skip-link:focus-visible { left: 12px; outline: none; }
-.sidebar-scrim, .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(7,28,52,.34); opacity: 0; transition: opacity .25s; }
-.sidebar-overlay { z-index: 119; pointer-events: none; }
-.sidebar-overlay.open { opacity: 1; pointer-events: auto; }
-.sidebar-scrim { z-index: 110; }
+.sidebar-scrim { display: none; position: fixed; inset: 0; z-index: 110; background: rgba(10,20,37,.42); opacity: 0; transition: opacity .25s; }
 .sidebar-scrim.open { display: block; opacity: 1; }
+/* The legacy overlay id remains in the markup as an inert alias. */
+#sidebar-overlay { display: none !important; }
 .bottom-nav { display: none !important; }
 .admin-grid { min-width: 0; }
 
@@ -756,10 +756,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--g
 @media (max-width: 1024px) {
   .admin-sidebar { width: min(86vw, 320px); transform: translateX(-100%); transition: transform .25s ease; }
   .admin-sidebar.open { transform: none; }
-  .sidebar-overlay.open { display: block; }
   .admin-main { margin-left: 0; }
   .admin-burger { display: inline-flex !important; }
-  .bottom-nav { display: none !important; }
   .sidebar-close { display: inline-flex; }
   .topbar-search { width: min(280px, 34vw); }
   .settings-grid { grid-template-columns: 1fr; }

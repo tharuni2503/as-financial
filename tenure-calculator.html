@@ -17,15 +17,15 @@
   <meta name="twitter:description" content="Find an approximate loan tenure based on loan amount, interest rate and target EMI.">
   <meta name="twitter:image" content="https://as-financial.vercel.app/assets/img/hero-family-home.jpg">
   <meta name="twitter:image:alt" content="AS Financial Services and Solutions">
-  <meta name="theme-color" content="#10294B">
+  <meta name="theme-color" content="#101F38">
   <meta name="color-scheme" content="light">
   <link rel="canonical" href="https://as-financial.vercel.app/tenure-calculator.html">
   <link rel="icon" href="assets/img/brand/favicon.png" type="image/png">
   <link rel="alternate icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/img/brand/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261123g57"><link rel="stylesheet" href="assets/css/pro-light.css?v=20261123g57">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261126e"><link rel="stylesheet" href="assets/css/pro-light.css?v=20261126e">
 
 <script type="application/ld+json">
 {
@@ -178,7 +178,7 @@
         <div class="range-field"><div class="top"><label for="tn-emi">Target monthly EMI</label><output id="tn-emi-out">₹ 22,000</output></div><input id="tn-emi" type="range" min="1000" max="300000" step="500" value="22000"></div>
         <div class="calc-note-box">If the EMI is too low for the interest, repayment may not be feasible. Increase EMI or adjust inputs.</div>
       </div>
-      <div class="result-box" aria-live="polite"><div style="font-size:.8rem;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">Estimated tenure</div><div class="result-big" id="res-tenure">~ 156 months</div><div class="result-kv"><div class="row"><span>Approx. years</span><b id="res-years">~ 13.0 years</b></div><div class="row"><span>Total payable (approx.)</span><b id="res-total">₹ 34,32,000</b></div><div class="row"><span>Total interest (approx.)</span><b id="res-int">₹ 14,32,000</b></div></div><p class="calc-note" style="margin-top:14px">Indicative only. Estimates are based on values entered and may exclude fees, charges, taxes, or other costs unless shown. Actual figures depend on lender policy and your profile.</p><button type="button" class="btn btn-gold btn-block" data-popup-open="apply-popup" style="margin-top:16px">Talk to an advisor</button></div>
+      <div class="result-box" aria-live="polite"><div style="font-size:.8rem;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">Estimated tenure</div><div class="result-big" id="res-tenure">~ 166 months</div><div class="result-kv"><div class="row"><span>Approx. years</span><b id="res-years">~ 13.8 years</b></div><div class="row"><span>Total payable (approx.)</span><b id="res-total">₹ 36,52,000</b></div><div class="row"><span>Total interest (approx.)</span><b id="res-int">₹ 16,52,000</b></div></div><p class="calc-note" style="margin-top:14px">Indicative only. Estimates are based on values entered and may exclude fees, charges, taxes, or other costs unless shown. Actual figures depend on lender policy and your profile.</p><button type="button" class="btn btn-gold btn-block" data-popup-open="apply-popup" style="margin-top:16px">Talk to an advisor</button></div>
     </div></section>
     <section class="section section-white">
       <div class="container">
@@ -228,8 +228,8 @@
     <div class="popup-overlay" id="apply-popup" role="dialog" aria-modal="true" aria-labelledby="apply-title">
     <div class="popup">
       <button type="button" class="popup-close" data-popup-close aria-label="Close"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-close"></use></svg></button>
-      <span class="pill pill-gold" style="margin-bottom:12px"><span class="dot"></span> Free eligibility check</span>
-      <h3 id="apply-title">Let's find your best loan.</h3>
+      <span class="pill pill-gold" style="margin-bottom:12px"><span class="dot"></span> Indicative eligibility guidance</span>
+      <h3 id="apply-title">Let's explore your loan options.</h3>
       <p>Share a few details and an advisor will call you back during business hours with indicative options.</p>
       <form data-lead-form data-source="Tenure calculator">
         <input type="text" name="website" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0" aria-label="Website">
@@ -274,9 +274,9 @@
       </form>
     </div>
   </div>
-<script src="assets/js/icons.js?v=20261120z40" defer></script>
-  <script src="assets/js/backend.js?v=20261120z40" defer></script>
-  <script src="assets/js/main.js?v=20261123g57" defer></script>
+<script src="assets/js/icons.js?v=20261126e" defer></script>
+  <script src="assets/js/backend.js?v=20261126e" defer></script>
+  <script src="assets/js/main.js?v=20261126e" defer></script>
 
   <script>(function(){
     const inr=n=>'₹ '+Math.round(n).toLocaleString('en-IN');

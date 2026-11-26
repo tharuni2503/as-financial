@@ -10,7 +10,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
-const SECTIONS = ['testimonials', 'gallery', 'posts'];
+const SECTIONS = ['testimonials', 'gallery', 'posts', 'lenders'];
 const ADMIN_COLLECTIONS = ['leads', 'applications', 'products', 'partners', 'tasks', 'customers', 'documents', 'notifications'];
 const MAX_ENQUIRIES = 2000;
 const MAX_AUDIT = 2000;
@@ -96,7 +96,7 @@ async function migrate() {
 }
 
 function emptyContent() {
-  return { testimonials: [], gallery: [], posts: [], images: {} };
+  return { testimonials: [], gallery: [], posts: [], lenders: [], images: {} };
 }
 
 function emptyAdmin() {

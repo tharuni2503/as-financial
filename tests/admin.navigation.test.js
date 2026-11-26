@@ -126,3 +126,48 @@ test('notification open action uses only defined helpers', () => {
   assert.ok(js.includes("n.readAt = new Date().toISOString();"), 'read timestamp uses Date directly');
   assert.ok(js.includes("if (lead) { setView('leads'); openDrawer(lead.id); renderAll(); return; }"), 'open action can reach the drawer');
 });
+
+test('mobile sidebar has one scrim and keeps the burger state in sync', () => {
+  assert.equal((html.match(/id="sidebar-scrim"/g) || []).length, 1, 'one functional scrim exists');
+  assert.ok(html.includes('id="sidebar-overlay" aria-hidden="true" hidden'), 'legacy overlay id stays as a hidden alias');
+  assert.ok(html.includes('id="admin-burger" aria-label="Open menu" aria-expanded="false" aria-controls="admin-sidebar"'), 'burger exposes initial state and its controlled element');
+  assert.ok(js.includes('function setBurgerExpanded(open)'), 'burger state helper exists');
+  assert.ok(js.includes('setBurgerExpanded(true);'), 'opening the sidebar expands the burger');
+  assert.ok(js.includes('setBurgerExpanded(false);'), 'closing the sidebar collapses the burger');
+  assert.ok(js.includes("burger.setAttribute('aria-expanded', open ? 'true' : 'false')"), 'aria-expanded tracks the drawer');
+  assert.ok(/\.sidebar-scrim \{ display: none;/.test(css), 'scrim is hidden until opened');
+  assert.ok(/\.sidebar-scrim\.open \{ display: block;/.test(css), 'scrim opens with the drawer');
+  assert.ok(!/\.sidebar-overlay(?:\.open)?\s*\{/.test(css), 'dead sidebar-overlay rules were removed');
+});
+
+test('notification tabs are wired to a labelled tabpanel with keyboard navigation', () => {
+  for (const state of ['all', 'pending', 'unread', 'acknowledged', 'dismissed', 'completed', 'superseded']) {
+    assert.ok(html.includes('id="notif-tab-' + state + '"'), state + ' tab has a stable id');
+    assert.ok(html.includes('id="notif-tab-' + state + '" data-notif-state="' + state + '" role="tab"'), state + ' tab is a role=tab');
+    assert.ok(html.includes('id="notif-tab-' + state + '" data-notif-state="' + state + '" role="tab" aria-selected='), state + ' tab exposes selection state');
+  }
+  assert.ok(html.includes('aria-controls="notifications-list"'), 'tabs point at the single panel');
+  assert.ok(html.includes('id="notifications-list" role="tabpanel" aria-labelledby="notif-tab-all"'), 'panel is labelled by the active tab');
+  assert.ok(js.includes("panel.setAttribute('aria-labelledby', 'notif-tab-' + notificationStateFilter)"), 'panel label follows the active tab');
+  assert.ok(js.includes("if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'Home' && e.key !== 'End') return;"), 'tab list handles arrow/Home/End keys');
+  assert.ok(js.includes("e.key === 'Home' ? 0"), 'Home moves to the first tab');
+  assert.ok(js.includes("e.key === 'End' ? notifTabs.length - 1"), 'End moves to the last tab');
+  assert.ok(js.includes('notifTabs[next].focus();') && js.includes('notifTabs[next].click();'), 'keyboard movement activates the focused tab');
+});
+
+test('follow-up and notification links resolve leads without loading the whole feed', () => {
+  assert.ok(js.includes('function findOrFetchLead(id)'), 'narrow lead lookup helper exists');
+  assert.ok(js.includes("api.request('api/enquiries?q=' + encodeURIComponent(key) + '&limit=50')"), 'lookup uses the filtered enquiry endpoint');
+  assert.ok(js.includes('findOrFetchLead(id).then((lead) => {'), 'follow-up view resolves missing leads');
+  assert.ok(js.includes('findOrFetchLead(n.targetId).then((fresh) => {'), 'notification open resolves missing leads');
+  assert.ok(js.includes("toast('Open Enquiries and refresh to view full details.', 'error');"), 'a clear fallback remains when the lookup cannot find a lead');
+});
+
+test('notification badges prefer server counts without losing the offline fallback', () => {
+  assert.ok(js.includes('function serverPendingCount()'), 'server pending helper exists');
+  assert.ok(js.includes('const serverPending = serverPendingCount();'), 'badge uses the server pending count');
+  assert.ok(js.includes('const badge = serverPending !== null ? serverPending : (localPending || localUnread);'), 'local counts are only a fallback');
+  assert.ok(js.includes("visibleNotifs.filter(n => matchesNotificationState(n, 'unread')).length"), 'local unread count uses the canonical state filter');
+  assert.ok(js.includes("badge + ' pending'"), 'menu copy follows the authoritative badge');
+  assert.ok(js.includes('navNotif.textContent = String(counts.pending || 0);'), 'navigation badge stays server-authoritative');
+});

@@ -14,6 +14,12 @@ const DATA_SRC = /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=\s]+$/;
 const MAX_DATA_SRC = 3_000_000;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+const MAX_LENDERS = 80;
+const MAX_LENDER_NAME = 100;
+const MAX_LENDER_FIELD = 180;
+const MAX_BENEFIT = 240;
+const DEFAULT_LENDER_COLOR = '#163968';
+
 function clean(value) {
   // eslint-disable-next-line no-control-regex
   return String(value).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
@@ -83,6 +89,66 @@ function post(item, index) {
   };
 }
 
+function lenderFlag(value) {
+  return !(value === false || value === 'false' || value === 0 || value === '0');
+}
+
+function lenderStrings(value, maxItems, maxChars, label) {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) throw new HttpError(400, label + ' must be a list.');
+  return value.slice(0, maxItems)
+    .map((entry) => text(entry, maxChars, { label: label }))
+    .filter(Boolean)
+    .slice(0, maxItems);
+}
+
+// Accept both the verbose admin objects and the compact bundled lender keys.
+// Output carries both aliases so admin, public API and bundled renderers agree.
+function lender(item, index) {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) {
+    throw new HttpError(400, 'Invalid lender entry.');
+  }
+  const name = text(item.name || item.n, MAX_LENDER_NAME, { required: true, label: 'lender name' });
+  const rawCategory = text(item.category || item.c, 40).toLowerCase();
+  const category = (rawCategory === 'psu' || rawCategory === 'private' || rawCategory === 'nbfc')
+    ? rawCategory : 'nbfc';
+  const colorRaw = text(item.color || item.k, 40);
+  const color = /^#[0-9a-f]{3,8}$/i.test(colorRaw) ? colorRaw : DEFAULT_LENDER_COLOR;
+  const monoRaw = text(item.monogram || item.i, 8);
+  const monogram = (monoRaw || name.replace(/[^A-Za-z0-9]/g, '').slice(0, 2)).toUpperCase() || 'LN';
+  const logoRaw = text(item.logo || item.image || item.logoUrl || item.img, MAX_DATA_SRC + 32);
+  const logo = logoRaw ? source(logoRaw) : '';
+  const rate = text(item.rate || item.r, MAX_LENDER_FIELD);
+  const emi = text(item.emi, MAX_LENDER_FIELD);
+  const tenure = text(item.tenure || item.t, MAX_LENDER_FIELD);
+  const amount = text(item.amount || item.amt, MAX_LENDER_FIELD);
+  const fee = text(item.fee, MAX_LENDER_FIELD);
+  const benefits = lenderStrings(item.benefits || item.b, 8, MAX_BENEFIT, 'lender benefits');
+  const products = lenderStrings(item.products || item.p, 12, MAX_LENDER_FIELD, 'lender products')
+    .map((p) => p.toLowerCase().slice(0, 40));
+  const rawOrder = Number(item.order);
+  const order = Number.isFinite(rawOrder) ? Math.max(0, Math.min(10000, Math.floor(rawOrder))) : index + 1;
+
+  return {
+    id: text(item.id, 40) || 'LND-' + (index + 1),
+    name, n: name,
+    category, c: category,
+    monogram, i: monogram,
+    color, k: color,
+    logo,
+    rate, r: rate,
+    emi,
+    tenure, t: tenure,
+    amount, amt: amount,
+    fee,
+    benefits, b: benefits,
+    products, p: products,
+    active: lenderFlag(item.active),
+    published: lenderFlag(item.published),
+    order
+  };
+}
+
 function images(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new HttpError(400, 'Images must be an object.');
@@ -110,6 +176,8 @@ function content(section, payload) {
       return list(payload, 40, 'posters').map(galleryItem);
     case 'posts':
       return list(payload, 60, 'posts').map(post);
+    case 'lenders':
+      return list(payload, MAX_LENDERS, 'lenders').map(lender);
     case 'images':
       return images(payload);
     default:
@@ -135,7 +203,9 @@ function enquiry(payload) {
 
   const product = text(payload.product, 80, { required: true, label: 'loan type' });
   const amount = text(payload.amount, 40);
-  if (amount && !/^[\d,\s.\-₹INRLAKHSCRlakhscr]+$/.test(amount)) {
+  // Keep human-readable choices from the contact form (for example "Not sure yet"
+  // and "₹5 – 10 Lakh") valid while still excluding markup and unsafe characters.
+  if (amount && !/^[\d,\s.\-–₹A-Za-z/()]+$/.test(amount)) {
     throw new HttpError(400, 'Please enter a valid requested amount.');
   }
 
