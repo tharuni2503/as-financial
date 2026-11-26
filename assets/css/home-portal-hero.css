@@ -1,0 +1,139 @@
+/* ==========================================================================
+   Homepage-only portal hero adapted from the selected Superdesign animation.
+   The scroll-bound panels part, the image settles from its overscale, and the
+   split title opens. All layers are absolutely positioned inside the existing
+   hero figure, so the original image, caption, layout and content stay intact.
+   ========================================================================== */
+
+.hero-clean-frame[data-portal-hero] {
+  isolation: isolate;
+}
+
+.ph-portal {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  isolation: isolate;
+  opacity: var(--ph-opacity, 0);
+}
+
+.ph-portal-frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.ph-portal-image {
+  position: absolute;
+  inset: 0;
+  background: url('../img/hero-family-home.jpg') center / cover no-repeat;
+  transform: scale(var(--ph-scale, 1.22));
+  will-change: transform;
+}
+
+.ph-portal-duotone {
+  position: absolute;
+  inset: 0;
+  opacity: var(--ph-duo, 0);
+  background: linear-gradient(120deg, var(--navy-deep), var(--gold));
+  mix-blend-mode: overlay;
+  will-change: opacity;
+}
+
+.ph-portal-veil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 90% at 50% 40%, transparent 18%, rgba(11, 31, 58, .72) 78%);
+}
+
+/* The two panels part outward past the figure edge as the portal opens. */
+.ph-portal-corner {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 52vw;
+  background: var(--navy-deep);
+  z-index: 3;
+  will-change: transform;
+}
+
+.ph-portal-corner--left {
+  left: 0;
+  transform: translateX(var(--ph-left, 0%));
+}
+
+.ph-portal-corner--right {
+  right: 0;
+  transform: translateX(var(--ph-right, 0%));
+}
+
+.ph-portal-dot {
+  position: absolute;
+  z-index: 4;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.ph-portal-dot--a {
+  left: 50%;
+  top: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 24px var(--gold);
+  transform: translate(var(--ph-dot-a-x, 0vw), var(--ph-dot-a-y, 0vh));
+}
+
+.ph-portal-dot--b {
+  left: 50%;
+  top: 50%;
+  background: var(--navy-soft);
+  box-shadow: 0 0 24px var(--navy-soft);
+  transform: translate(var(--ph-dot-b-x, 0vw), var(--ph-dot-b-y, 0vh));
+}
+
+.ph-portal-title {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: 50%;
+  width: 92%;
+  transform: translate(-50%, -50%) scale(var(--ph-title-scale, 1));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .12em;
+  color: #fff;
+  font-family: var(--serif);
+  font-size: clamp(18px, 2.8vw, 38px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: var(--ph-tracking, -.03em);
+  text-align: center;
+  text-shadow: 0 2px 18px rgba(11, 31, 58, .78);
+  white-space: nowrap;
+  will-change: transform, letter-spacing;
+}
+
+.ph-portal-title span {
+  display: block;
+  will-change: transform;
+}
+
+.ph-portal-title span:first-child {
+  transform: translateX(var(--ph-half-left, 0%));
+}
+
+.ph-portal-title span:last-child {
+  transform: translateX(var(--ph-half-right, 0%));
+}
+
+/* Touch, small-screen and reduced-motion visitors keep the static hero. */
+@media (max-width: 700px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .ph-portal {
+    display: none !important;
+  }
+}

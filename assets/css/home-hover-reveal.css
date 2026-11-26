@@ -1,0 +1,102 @@
+/* ==========================================================================
+   Homepage-only hover reveal adapted from the selected Superdesign animation.
+   The gooey cursor mask reveals an alternate local image inside the existing
+   hero frame. It never changes the frame's size or the original content.
+   ========================================================================== */
+
+.hero-clean-frame[data-hover-reveal] {
+  isolation: isolate;
+}
+
+.hero-clean-frame[data-hover-reveal] .hero-clean-caption {
+  z-index: 3;
+}
+
+.hr-mask-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.hr-reveal,
+.hr-cursor {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .24s ease;
+}
+
+.hr-reveal {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  -webkit-mask: url(#hr-blob-mask);
+  mask: url(#hr-blob-mask);
+  -webkit-mask-mode: luminance;
+  mask-mode: luminance;
+}
+
+.home-hover-reveal-ready .hero-clean-frame[data-hover-reveal].is-hr-active .hr-reveal {
+  opacity: 1;
+}
+
+.hr-reveal-image {
+  position: absolute;
+  inset: 0;
+  background-image: url('../img/advisor.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+.hr-reveal-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(16, 31, 56, .06), rgba(16, 31, 56, .32));
+}
+
+.hr-reveal-label {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  max-width: calc(100% - 36px);
+  color: #fff;
+  font-size: .76rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  text-shadow: 0 1px 12px rgba(16, 31, 56, .55);
+}
+
+.hr-cursor {
+  position: absolute;
+  left: -100px;
+  top: -100px;
+  z-index: 4;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(255, 255, 255, .92);
+  border-radius: 50%;
+  mix-blend-mode: difference;
+  transform: translate(-50%, -50%);
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .home-hover-reveal-ready .hero-clean-frame[data-hover-reveal] {
+    cursor: none;
+  }
+
+  .home-hover-reveal-ready .hero-clean-frame[data-hover-reveal].is-hr-active .hr-cursor {
+    opacity: 1;
+  }
+}
+
+@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .hr-mask-svg,
+  .hr-reveal,
+  .hr-cursor {
+    display: none !important;
+  }
+}

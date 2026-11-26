@@ -23,8 +23,10 @@
   <link rel="stylesheet" href="assets/css/styles.css?v=20261126f">
   <link rel="stylesheet" href="assets/css/pro-light.css?v=20261126f">
   <link rel="stylesheet" href="assets/css/lenders.css?v=20261126f">
-  <link rel="stylesheet" href="assets/css/home-scroll-story.css?v=20261126f">
-  <noscript><style>.reveal,.reveal-zoom,.reveal-left,.reveal-right{opacity:1!important;transform:none!important}</style></noscript>
+  <link rel="stylesheet" href="assets/css/home-cinema.css?v=20261126f">
+  <link rel="stylesheet" href="assets/css/home-hover-reveal.css?v=20261126f">
+  <link rel="stylesheet" href="assets/css/home-portal-hero.css?v=20261126f">
+  <link rel="stylesheet" href="assets/css/home-aurora-hero.css?v=20261126f">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -217,53 +219,97 @@
   </div>
 
   <main id="main">
-    <!-- Stage 1: hero poster -->
-    <div class="story-stage story-stage--hero" data-story-stage="hero">
-      <section class="hero2 hero-clean" id="hero">
-        <div class="story-hero-art" data-story-hero-art aria-hidden="true"></div>
-        <div class="container hero2-grid hero-ambak">
-          <div class="hero2-copy reveal-left">
-            <span class="pill pill-gold"><span class="dot"></span> Loan guidance in Medipalli, Hyderabad</span>
-            <h1 data-story-hero-headline>Your Financial Goals, <span class="serif">Our Trusted Solutions.</span></h1>
-            <p class="hero2-lede" data-story-hero-lede>Discover reliable financial solutions designed around your needs and future goals.</p>
+    <!-- Hero -->
+    <div class="cine-stage cine-stage--hero" data-cine-stage="hero">
+    <section class="hero2 hero-clean" id="hero" data-aurora-hero>
+      <div class="au-aurora" aria-hidden="true">
+        <div class="au-blade au-core"></div>
+        <div class="au-blade au-b1"></div>
+        <div class="au-blade au-b2"></div>
+        <div class="au-blade au-b3"></div>
+        <div class="au-blade au-b4"></div>
+      </div>
+      <svg class="cine-contours cine-contours--hero" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <path pathLength="1" d="M-40 710 C 210 630 330 760 560 650 S 930 500 1160 590 S 1380 540 1500 450"></path>
+        <path class="gold" pathLength="1" d="M-40 770 C 240 690 380 810 620 700 S 980 560 1210 650 S 1410 600 1500 520"></path>
+        <path pathLength="1" d="M-40 830 C 270 750 420 860 680 750 S 1030 620 1260 700 S 1430 660 1500 600"></path>
+      </svg>
+      <div class="container hero2-grid hero-ambak">
+        <div class="hero2-copy reveal-left">
+          <span class="pill pill-gold"><span class="dot"></span> Loan guidance in Medipalli, Hyderabad</span>
+          <h1>Your Financial Goals, <span class="serif">Our Trusted Solutions.</span></h1>
+          <p class="hero2-lede">Discover reliable financial solutions designed around your needs and future goals.</p>
 
-            <div class="hero2-cta">
-              <button type="button" class="btn btn-primary btn-lg" data-popup-open="apply-popup">Apply Now <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
-              <a class="btn btn-outline btn-lg" href="loans.html">Explore Loans <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a>
-              <a class="btn btn-outline btn-lg" href="contact.html">Contact Us <svg class="icon icon-sm" aria-hidden="true"><use href="#i-phone"></use></svg></a>
-            </div>
-
-            <ul class="hero2-points" aria-label="What we help with">
-              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg> Home, personal &amp; business loans</li>
-              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg> Banks &amp; NBFC options</li>
-              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg> In-office &amp; phone support</li>
-            </ul>
+          <div class="hero2-cta">
+            <button type="button" class="btn btn-primary btn-lg" data-popup-open="apply-popup">Apply Now <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+            <a class="btn btn-outline btn-lg" href="loans.html">Explore Loans <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a>
+            <a class="btn btn-outline btn-lg" href="contact.html">Contact Us <svg class="icon icon-sm" aria-hidden="true"><use href="#i-phone"></use></svg></a>
           </div>
 
-          <div class="hero2-visual hero-clean-visual reveal-right" data-story-hero-visual>
-            <figure class="hero-clean-frame">
-              <img class="parallax-y" data-story-hero-image src="assets/img/hero-family-home.jpg" alt="Family discussing loan options with AS Financial Services and Solutions" width="1600" height="901" fetchpriority="high" decoding="async">
-              <figcaption class="hero-clean-caption">
-                <span class="hero-clean-caption-title">AS Financial Services &amp; Solutions</span>
-                <span>Panchavati Colony Road No. 1, Medipalli, Hyderabad</span>
-              </figcaption>
-            </figure>
-          </div>
+          <ul class="hero2-points" aria-label="What we help with">
+            <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg> Home, personal &amp; business loans</li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg> Banks &amp; NBFC options</li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg> In-office &amp; phone support</li>
+          </ul>
         </div>
-      </section>
+
+        <div class="hero2-visual hero-clean-visual reveal-right">
+          <figure class="hero-clean-frame" data-hover-reveal data-portal-hero>
+            <img class="parallax-y" src="assets/img/hero-family-home.jpg" alt="Family discussing loan options with AS Financial Services and Solutions" width="1600" height="901" fetchpriority="high" decoding="async">
+            <div class="ph-portal" aria-hidden="true">
+              <div class="ph-portal-frame"><div class="ph-portal-image"></div></div>
+              <div class="ph-portal-duotone"></div>
+              <div class="ph-portal-veil"></div>
+              <div class="ph-portal-corner ph-portal-corner--left"></div>
+              <div class="ph-portal-corner ph-portal-corner--right"></div>
+              <span class="ph-portal-dot ph-portal-dot--a"></span>
+              <span class="ph-portal-dot ph-portal-dot--b"></span>
+              <div class="ph-portal-title"><span>Your Financial Goals,</span><span>Our Trusted Solutions.</span></div>
+            </div>
+            <svg class="hr-mask-svg" aria-hidden="true" focusable="false">
+              <defs>
+                <filter id="hr-goo" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"></feGaussianBlur>
+                  <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo"></feColorMatrix>
+                  <feComposite in="SourceGraphic" in2="goo" operator="atop"></feComposite>
+                </filter>
+                <mask id="hr-blob-mask" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
+                  <rect width="100%" height="100%" fill="#000"></rect>
+                  <g filter="url(#hr-goo)">
+                    <circle class="hr-blob hr-blob--lead" cx="-400" cy="-400" r="140" fill="#fff"></circle>
+                    <circle class="hr-blob hr-blob--trail-a" cx="-400" cy="-400" r="95" fill="#fff"></circle>
+                    <circle class="hr-blob hr-blob--trail-b" cx="-400" cy="-400" r="55" fill="#fff"></circle>
+                  </g>
+                </mask>
+              </defs>
+            </svg>
+            <div class="hr-reveal" aria-hidden="true">
+              <div class="hr-reveal-image"></div>
+              <div class="hr-reveal-shade"></div>
+              <span class="hr-reveal-label">Local guidance, every step of the way</span>
+            </div>
+            <span class="hr-cursor" aria-hidden="true"></span>
+            <figcaption class="hero-clean-caption">
+              <span class="hero-clean-caption-title">AS Financial Services &amp; Solutions</span>
+              <span>Panchavati Colony Road No. 1, Medipalli, Hyderabad</span>
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
     </div>
 
     <!-- Stage 2: financial manifesto -->
-    <div class="story-stage story-stage--manifesto" data-story-stage="manifesto">
-      <div class="story-stage-inner story-manifesto-inner">
-        <svg class="story-contours story-contours--manifesto" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <div class="cine-stage cine-stage--manifesto" data-cine-stage="manifesto">
+      <div class="cine-stage-inner cine-manifesto-inner">
+        <svg class="cine-contours cine-contours--manifesto" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true" focusable="false">
           <path pathLength="1" d="M-40 180 C 220 260 380 120 620 220 S 1000 340 1240 230 S 1420 280 1500 340"></path>
           <path class="gold" pathLength="1" d="M-40 720 C 240 640 400 780 660 670 S 1040 540 1280 630 S 1440 590 1500 540"></path>
         </svg>
-        <div class="container story-manifesto-grid">
-          <div class="story-manifesto-type">
-            <p class="story-manifesto-copy story-manifesto-copy--ghost" data-story-manifesto-ghost aria-hidden="true">Your Financial Goals, Our Trusted Solutions.</p>
-            <p class="story-manifesto-copy story-manifesto-copy--front" data-story-manifesto-front>Your Financial Goals, Our Trusted Solutions.</p>
+        <div class="container cine-manifesto-grid">
+          <div class="cine-manifesto-type">
+            <p class="cine-manifesto-copy cine-manifesto-copy--ghost" aria-hidden="true">Your Financial Goals, Our Trusted Solutions.</p>
+            <p class="cine-manifesto-copy cine-manifesto-copy--front" data-cine-manifesto-front>Your Financial Goals, Our Trusted Solutions.</p>
           </div>
         </div>
       </div>
@@ -316,8 +362,8 @@
     </section>
 
     <!-- Products -->
-    <div class="story-stage story-stage--rail" data-story-stage="rail">
-      <section class="section section-cream sec-products" id="products">
+    <div class="cine-stage cine-stage--rail" data-cine-stage="rail">
+    <section class="section section-cream sec-products" id="products">
       <div class="container">
         <div class="section-head center reveal">
           <div class="eyebrow center">Our offerings</div>
@@ -325,10 +371,10 @@
           <p>From your first home to your next business milestone &mdash; explore what we can arrange with our bank and NBFC partners.</p>
         </div>
 
-        <div class="story-rail-progress" data-story-rail-progress aria-hidden="true"><span></span></div>
+        <div class="cine-rail-progress" aria-hidden="true"><span></span></div>
 
-        <div class="pgrid-wrap" data-story-rail-viewport>
-          <div class="pgrid" id="products-grid" data-story-rail-track>
+        <div class="pgrid-wrap">
+        <div class="pgrid" id="products-grid">
           <article class="pcard reveal" data-content-img="home-loan">
             <div class="pcard-media"><img height="853" width="1280" src="assets/img/home-loan.jpg" alt="Modern family home" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
@@ -437,7 +483,7 @@
               <div class="pcard-foot"><span>Subject to lender policy</span><a href="loans.html#insurance">Explore <svg class="icon" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a></div>
             </div>
           </article>
-          </div>
+        </div>
         </div>
         <div class="more-wrap">
           <button class="btn btn-outline" type="button" data-products-more aria-controls="products-grid" aria-expanded="false">Show more offerings (8 more)</button>
@@ -453,20 +499,20 @@
           <ul><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Instant loans (subject to eligibility)</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Gold loans</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Balance transfer (top-up)</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Leased rental discounting loans</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Single document loans</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Agriculture loans</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>Cash salary profiles</span></li><li><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>CIBIL deviations (550+)</span></li></ul>
         </div>
       </div>
-      </section>
+    </section>
     </div>
 
-    <!-- Stage 4: enquiry journey -->
-    <div class="story-stage story-stage--journey" data-story-stage="journey">
-      <section class="section section-cream sec-process" id="process-home" data-story-journey-document>
+    <!-- Process -->
+    <div class="cine-stage cine-stage--packet" data-cine-stage="packet">
+    <section class="section section-cream sec-process" id="process-home" data-cine-packet-document>
       <div class="container">
         <div class="section-head center reveal">
           <div class="eyebrow center">How it works</div>
           <h2>Simple steps, <span class="serif">steady support.</span></h2>
           <p>A clear process with guidance at each stage &mdash; from enquiry to the next milestone.</p>
-            <span class="story-journey-phase" data-story-journey-phase aria-hidden="true"></span>
-          </div>
-          <div class="story-journey-connector" data-story-journey-connector aria-hidden="true"><span></span></div>
+          <span class="cine-packet-phase" data-cine-packet-phase aria-hidden="true"></span>
+        </div>
+        <div class="cine-packet-connector" aria-hidden="true"><span></span></div>
         <ol class="process-flow" aria-label="Loan process steps">
           <li class="process-step reveal">
             <div class="process-step-top"><span class="process-num">01</span><span class="process-line" aria-hidden="true"></span></div>
@@ -494,8 +540,8 @@
             <p>Stay informed as your application progresses toward disbursal.</p>
           </li>
         </ol>
-        </div>
-      </section>
+      </div>
+    </section>
     </div>
 
     <!-- Plan smarter: calculators -->
@@ -887,37 +933,37 @@
     </section>
 
     <!-- Stage 5: financial guidance and planning -->
-    <div class="story-stage story-stage--guidance" data-story-stage="guidance">
-      <div class="story-stage-inner story-guidance-inner">
-        <div class="story-guidance-art" data-story-guidance-art aria-hidden="true">
-          <svg class="story-contours story-contours--guidance" viewBox="0 0 1440 900" preserveAspectRatio="none" focusable="false">
+    <div class="cine-stage cine-stage--season" data-cine-stage="season">
+      <div class="cine-stage-inner cine-season-inner">
+        <div class="cine-season-art" aria-hidden="true">
+          <svg class="cine-contours cine-contours--season" viewBox="0 0 1440 900" preserveAspectRatio="none" focusable="false">
             <path pathLength="1" d="M-40 250 C 200 190 360 300 600 230 S 980 120 1220 210 S 1410 180 1500 130"></path>
             <path class="gold" pathLength="1" d="M-40 420 C 220 360 380 470 640 390 S 1020 280 1260 360 S 1440 330 1500 290"></path>
             <path pathLength="1" d="M-40 590 C 240 530 400 640 660 560 S 1040 450 1280 530 S 1440 500 1500 460"></path>
           </svg>
         </div>
-        <div class="container story-guidance-grid">
-          <div class="story-guidance-heading">
+        <div class="container cine-season-grid">
+          <div class="cine-season-heading">
             <div class="eyebrow">Guidance &amp; planning</div>
             <h2>Borrow <span class="serif">smarter.</span></h2>
             <p>Simple explanations of paperwork, rates and terms that matter when choosing a loan.</p>
-            <div class="story-guidance-index" aria-hidden="true"><span></span><span></span><span></span></div>
+            <div class="cine-season-index" aria-hidden="true"><span></span><span></span><span></span></div>
           </div>
-          <div class="story-guidance-chapters">
-            <article class="story-chapter is-active" data-story-chapter="0">
-              <span class="story-chapter-label">01 / Explore</span>
+          <div class="cine-season-chapters">
+            <article class="cine-chapter is-active" data-cine-chapter="0">
+              <span class="cine-chapter-label">01 / Explore</span>
               <h3>Loans for every <span class="serif">goal in life.</span></h3>
               <p>From your first home to your next business milestone &mdash; explore what we can arrange with our bank and NBFC partners.</p>
               <a class="btn btn-outline" href="loans.html">Explore Loans <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
             </article>
-            <article class="story-chapter" data-story-chapter="1">
-              <span class="story-chapter-label">02 / Plan</span>
+            <article class="cine-chapter" data-cine-chapter="1">
+              <span class="cine-chapter-label">02 / Plan</span>
               <h3>What will this <span class="serif">actually cost me?</span></h3>
               <p>Estimate EMI, affordability, down payment and balance transfer savings with quick, indicative calculators.</p>
               <a class="btn btn-outline" href="#calculator">Calculate EMI <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a>
             </article>
-            <article class="story-chapter" data-story-chapter="2">
-              <span class="story-chapter-label">03 / Talk</span>
+            <article class="cine-chapter" data-cine-chapter="2">
+              <span class="cine-chapter-label">03 / Talk</span>
               <h3>A local partner for your <span class="serif">loan journey.</span></h3>
               <p>AS Financial Services and Solutions in Medipalli, Hyderabad helps customers explore loan options and understand the process with clear guidance and support.</p>
               <a class="btn btn-outline" href="contact.html">Contact us <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
@@ -1054,7 +1100,10 @@
   <script src="assets/js/backend.js?v=20261126f" defer></script><script src="assets/js/main.js?v=20261126f" defer></script>  <script src="assets/js/lenders.js?v=20261126f" defer></script>
   <script src="assets/js/assistant.js?v=20261126f" defer></script>
   <script src="assets/js/lenders-ui.js?v=20261126f" defer></script>
-  <script src="assets/js/home-scroll-story.js?v=20261126f" defer></script>
+  <script src="assets/js/home-cinema.js?v=20261126f" defer></script>
+  <script src="assets/js/home-hover-reveal.js?v=20261126f" defer></script>
+  <script src="assets/js/home-portal-hero.js?v=20261126f" defer></script>
+  <script src="assets/js/home-aurora-hero.js?v=20261126f" defer></script>
 
   <script>
     /* Subtle layered-depth parallax for the hero (pure CSS transforms, no WebGL) */
