@@ -12,8 +12,8 @@ const html = read('index.html');
 const css = read('assets/css/pro-light.css');
 
 test('homepage loads the polished stylesheet with a fresh cache key', () => {
-  assert.match(html, /assets\/css\/styles\.css\?v=20261126e/, 'core stylesheet cache-busted');
-  assert.match(html, /assets\/css\/pro-light\.css\?v=20261126e/, 'theme stylesheet cache-busted');
+  assert.match(html, /assets\/css\/styles\.css\?v=20261126f/, 'core stylesheet cache-busted');
+  assert.match(html, /assets\/css\/pro-light\.css\?v=20261126f/, 'theme stylesheet cache-busted');
   const coreAt = html.indexOf('assets/css/styles.css');
   const themeAt = html.indexOf('assets/css/pro-light.css');
   assert.ok(coreAt > -1 && themeAt > coreAt, 'pro-light still overrides the core stylesheet');

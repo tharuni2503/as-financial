@@ -173,6 +173,25 @@
     var timers = [];
     var observers = [];
     var destroyed = false;
+    var chromeEls = [
+      document.querySelector('.topbar'),
+      document.querySelector('.site-header'),
+      document.querySelector('.live-ticker')
+    ];
+
+    /* Pinned sections use the real bottom edge of the fixed chrome rather than
+       a guessed custom-property total. */
+    function measureChrome() {
+      var bottom = 0;
+      chromeEls.forEach(function (el) {
+        if (!el) return;
+        var style = window.getComputedStyle(el);
+        if (style.position !== 'fixed' && style.position !== 'sticky') return;
+        var rect = el.getBoundingClientRect();
+        bottom = Math.max(bottom, rect.bottom || 0);
+      });
+      if (bottom > 0) setVar(document.body, '--story-chrome-h', Math.ceil(bottom) + 'px');
+    }
 
     function listen(target, type, fn, options) {
       target.addEventListener(type, fn, options);
@@ -252,9 +271,11 @@
     window.__homeScrollStoryState = state;
 
     function measure() {
+      var wasStatic = state.staticMode;
       var scrollY = window.scrollY || window.pageYOffset || 0;
-      var viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+      measureChrome();
       state.staticMode = (window.innerWidth || document.documentElement.clientWidth) <= MOBILE_BREAKPOINT;
+      if (wasStatic !== state.staticMode) state.chapter = -1;
 
       stageList.forEach(function (item) {
         var el = item.el;
@@ -277,9 +298,19 @@
       state.railOverflow = track && railViewport
         ? railOverflow(track.scrollWidth, railViewport.clientWidth)
         : 0;
+      state.railCardCount = track ? track.querySelectorAll('.pcard').length : 0;
+      state.visibleRailCards = track
+        ? Array.prototype.filter.call(track.querySelectorAll('.pcard'), function (card) {
+            return window.getComputedStyle(card).display !== 'none';
+          }).length
+        : 0;
       state.headlineFit = headline ? textFitOverflow(headline.scrollWidth, headline.clientWidth) : 0;
 
       if (manifestoFront && manifestoGhost) {
+        /* getBoundingClientRect includes the previous correction; clear it
+           first so repeated measurements cannot drift the duplicate text. */
+        setVar(stages.manifesto, '--story-manifesto-x', '0px');
+        setVar(stages.manifesto, '--story-manifesto-y', '0px');
         state.manifestoAlignment = alignmentDelta(
           manifestoFront.getBoundingClientRect(),
           manifestoGhost.getBoundingClientRect()
@@ -299,13 +330,14 @@
 
       var heroProgress = progress.hero || 0;
       var fitCap = Math.min(state.headlineFit || 0, 120);
-      var heroY = -Math.max(18, 42 - fitCap * 0.18) * easeInOut(clamp(heroProgress / 0.85));
-      var heroScale = Math.max(0.9, 1 - 0.065 * easeOut(clamp((heroProgress - 0.08) / 0.92)) - fitCap * 0.0005);
-      setVar(stages.hero, '--story-hero-headline-y', heroY.toFixed(2) + 'px');
-      setVar(stages.hero, '--story-hero-lede-y', (heroY * 0.4).toFixed(2) + 'px');
+      var heroShift = 18 * easeInOut(clamp(heroProgress / 0.85));
+      var heroScale = Math.max(0.94, 1 - 0.045 * easeOut(clamp((heroProgress - 0.08) / 0.92)) - fitCap * 0.00025);
+      /* No headline translate: the poster can scale but never clip the first
+         line. Only the supporting copy and image use gentle parallax. */
+      setVar(stages.hero, '--story-hero-lede-y', (-heroShift * 0.4).toFixed(2) + 'px');
       setVar(stages.hero, '--story-hero-headline-scale', heroScale.toFixed(3));
       setVar(stages.hero, '--story-hero-alpha', (1 - easeIn(clamp((heroProgress - 0.48) / 0.52))).toFixed(3));
-      setVar(stages.hero, '--story-hero-image-y', (heroY * -0.55).toFixed(2) + 'px');
+      setVar(stages.hero, '--story-hero-image-y', (heroShift * 0.55).toFixed(2) + 'px');
       setVar(stages.hero, '--story-hero-image-scale', (1 + 0.035 * easeInOut(heroProgress)).toFixed(3));
       setVar(stages.hero, '--story-hero-line', easeOut(clamp(heroProgress / 0.72)).toFixed(3));
 
@@ -323,12 +355,9 @@
 
       var journeyProgress = progress.journey || 0;
       var journeyDraw = clamp(journeyProgress / JOURNEY_COMPLETE);
-      setVar(stages.journey, '--story-journey-alpha', easeOut(clamp(journeyProgress / 0.16)).toFixed(3));
-      setVar(stages.journey, '--story-journey-enter', ((1 - easeOut(clamp(journeyProgress / 0.32))) * 34).toFixed(2) + 'px');
-      setVar(stages.journey, '--story-journey-scale', (0.965 + 0.035 * easeOut(clamp(journeyProgress / 0.36))).toFixed(3));
-      setVar(stages.journey, '--story-journey-cut', (100 * (1 - easeInOut(journeyDraw))).toFixed(2) + '%');
+      /* The flow and every step are visible from the first frame; progress
+         only fills the meter and highlights milestones. */
       setVar(stages.journey, '--story-journey-meter', (journeyDraw * 100).toFixed(2) + '%');
-      setVar(stages.journey, '--story-journey-copy-x', ((1 - easeOut(clamp((journeyProgress - 0.15) / 0.6))) * 18).toFixed(2) + 'px');
 
       var milestone = milestoneFor(journeyProgress, steps.length || 5, JOURNEY_COMPLETE);
       if (milestone !== state.milestone) {
@@ -358,6 +387,7 @@
           var active = index === chapter;
           item.classList.toggle('is-active', active);
           item.setAttribute('aria-hidden', state.staticMode || active ? 'false' : 'true');
+          if ('inert' in item) item.inert = !active && !state.staticMode;
         });
         chapterDots.forEach(function (dot, index) {
           dot.classList.toggle('is-active', index === chapter);
@@ -440,6 +470,12 @@
       created.forEach(function (el) {
         if (el.parentNode) el.parentNode.removeChild(el);
       });
+      chapters.forEach(function (item) {
+        item.classList.remove('is-active');
+        item.setAttribute('aria-hidden', 'false');
+        if ('inert' in item) item.inert = false;
+      });
+      document.body.style.removeProperty('--story-chrome-h');
       root.classList.remove('home-scroll-story-ready');
       window.__homeScrollStoryDestroy = null;
     }

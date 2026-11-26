@@ -103,8 +103,8 @@ test('old cinema implementation is fully superseded', () => {
   assert.equal(exists('assets/css/home-scroll-story.css'), true);
   assert.equal(exists('assets/js/home-scroll-story.js'), true);
   assert.doesNotMatch(html, /home-cinema/);
-  assert.match(html, /assets\/css\/home-scroll-story\.css\?v=20261126e/);
-  assert.match(html, /assets\/js\/home-scroll-story\.js\?v=20261126e/);
+  assert.match(html, /assets\/css\/home-scroll-story\.css\?v=20261126f/);
+  assert.match(html, /assets\/js\/home-scroll-story\.js\?v=20261126f/);
 });
 
 test('hero poster uses independent transform and opacity variables', () => {
@@ -113,8 +113,9 @@ test('hero poster uses independent transform and opacity variables', () => {
   assert.match(html, /data-story-hero-image/);
   assert.match(html, /data-story-hero-art/);
   assert.match(html, /Your Financial Goals, <span class="serif">Our Trusted Solutions\.<\/span>/);
-  assert.match(css, /translate3d\(0, var\(--story-hero-headline-y, 0px\), 0\) scale\(var\(--story-hero-headline-scale, 1\)\)/);
-  assert.match(css, /opacity: var\(--story-hero-alpha, 1\)/);
+  assert.match(css, /transform: scale\(var\(--story-hero-headline-scale, 1\)\)/);
+  assert.doesNotMatch(css, /--story-hero-headline-y/);
+  assert.doesNotMatch(js, /--story-hero-headline-y/);
   assert.match(css, /translate3d\(0, var\(--story-hero-lede-y, 0px\), 0\)/);
   assert.match(css, /translate3d\(0, var\(--story-hero-image-y, 0px\), 0\) scale\(var\(--story-hero-image-scale, 1\)\)/);
 });
@@ -136,6 +137,7 @@ test('manifesto uses an exactly aligned duplicate and bottom-up wipe', () => {
   assert.match(css, /grid-area: 1 \/ 1/);
   assert.match(css, /clip-path: inset\(var\(--story-manifesto-wipe, 100%\) 0 0 0\)/);
   assert.match(css, /translate3d\(var\(--story-manifesto-x, 0px\), var\(--story-manifesto-y, 0px\), 0\)/);
+  assert.match(js, /setVar\(stages\.manifesto, '--story-manifesto-x', '0px'\)/);
   assert.match(js, /setVar\(stages\.manifesto, '--story-manifesto-x'/);
 });
 
@@ -145,6 +147,9 @@ test('rail reuses all twelve genuine loan products with a progress indicator', (
   assert.match(html, /data-story-rail-progress/);
   assert.match(css, /transform: scaleX\(var\(--story-rail-progress, 0\)\)/);
   assert.match(css, /display: flex;\s*flex-wrap: nowrap;\s*width: max-content;/);
+  assert.match(css, /padding: 6px clamp\(12px, 2vw, 24px\) 14px;/);
+  assert.match(css, /\.pgrid-wrap:not\(\[data-story-rail-viewport\]\) \{\s*overflow: visible;/);
+  assert.match(js, /state\.visibleRailCards/);
 });
 
 test('journey document uses only five genuine process milestones', () => {
@@ -155,7 +160,9 @@ test('journey document uses only five genuine process milestones', () => {
   });
   assert.match(html, /data-story-journey-document/);
   assert.match(html, /data-story-journey-phase/);
-  assert.match(css, /clip-path: inset\(0 0 var\(--story-journey-cut, 100%\) 0\)/);
+  assert.doesNotMatch(css, /--story-journey-cut/);
+  assert.doesNotMatch(css, /--story-journey-alpha/);
+  assert.match(css, /\.process-step \{\s*position: relative;\s*min-width: 0;\s*opacity: 1;/);
   assert.match(css, /width: var\(--story-journey-meter, 0%\)/);
   assert.match(js, /step\.classList\.toggle\('is-story-milestone', index <= milestone\)/);
   assert.doesNotMatch(js, /approved|approval confirmed|application submitted|customer name/i);
@@ -168,7 +175,9 @@ test('guidance uses parallax contours and three existing homepage chapters', () 
   assert.match(html, /href="contact\.html"/);
   assert.match(css, /translate3d\(0, var\(--story-guidance-y, 0px\), 0\) scale\(var\(--story-guidance-scale, 1\)\)/);
   assert.match(css, /stroke-dashoffset: calc\(1 - var\(--story-guidance-line, 0\)\)/);
+  assert.doesNotMatch(css, /transition: opacity \.5s ease, transform \.5s ease, visibility/);
   assert.match(js, /item\.classList\.toggle\('is-active', active\)/);
+  assert.match(js, /item\.inert = !active && !state\.staticMode/);
 });
 
 /* ---------- engine, reveals, responsive and accessibility ---------- */
@@ -199,8 +208,16 @@ test('reduced motion and no-JS states keep all content visible', () => {
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /html:not\(\.home-scroll-story-ready\) \.story-manifesto-copy--ghost \{\s*display: none;/);
   assert.match(css, /html:not\(\.home-scroll-story-ready\) \.story-contours path/);
+  const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
+  assert.match(reduced, /\.page-home \.story-chapter \{/);
+  assert.match(reduced, /\.page-home \.story-stage--journey \.process-step/);
+  assert.match(reduced, /overflow-x: auto !important/);
+  assert.doesNotMatch(reduced, /\.page-home \.story-stage > \* \{\s*position: static/);
+  assert.match(reduced, /\.page-home \.story-guidance-art \{\s*inset: 0 !important;/);
+  assert.doesNotMatch(reduced, /html\.home-scroll-story-ready/);
   assert.match(css, /clip-path: none !important/);
   assert.match(css, /position: static !important/);
+  assert.match(html, /<noscript><style>\.reveal,\.reveal-zoom,\.reveal-left,\.reveal-right\{opacity:1!important;transform:none!important\}<\/style><\/noscript>/);
   assert.doesNotMatch(html, /home-scroll-story-ready/);
 });
 
@@ -218,8 +235,17 @@ test('tablet and mobile stages shorten or drop pinning safely', () => {
   assert.match(css, /overflow-x: auto/);
   assert.match(css, /-webkit-overflow-scrolling: touch/);
   assert.match(css, /touch-action: pan-x pan-y/);
+  assert.match(css, /\.page-home \.hero2-copy\.reveal-left/);
+  assert.match(css, /@media \(max-width: 700px\) \{[\s\S]*?\.page-home \.story-manifesto-copy \{\s*max-width: 100%;/);
   assert.match(css, /@media \(max-width: 430px\)/);
   assert.doesNotMatch(css, /overflow-x: hidden/);
+});
+
+test('sticky chrome offsets are measured and used for anchors', () => {
+  assert.match(css, /\.page-home \[id\] \{\s*scroll-margin-top: calc\(var\(--story-chrome-h\) \+ 12px\);/);
+  assert.match(js, /function measureChrome\(\)/);
+  assert.match(js, /setVar\(document\.body, '--story-chrome-h'/);
+  assert.match(js, /document\.querySelector\('\.live-ticker'\)/);
 });
 
 test('new CSS is scoped to the homepage and does not suppress document overflow', () => {

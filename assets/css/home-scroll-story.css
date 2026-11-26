@@ -11,6 +11,11 @@
   --story-chrome-h: calc(var(--topbar-h, 30px) + var(--header-h, 68px) + var(--ticker-h, 0px));
 }
 
+/* Anchored navigation must clear the full fixed topbar + header + ticker. */
+.page-home [id] {
+  scroll-margin-top: calc(var(--story-chrome-h) + 12px);
+}
+
 /* The live ticker is intentionally wider than its viewport and scrolls on its
    own. Paint containment keeps that overflow inside the ticker instead of
    contributing to the document's scrollable width when motion is reduced. */
@@ -139,12 +144,14 @@ html.home-scroll-story-ready .page-home .story-stage--hero .hero2-grid {
   width: 100%;
 }
 
+/* The headline never moves vertically or fades: only a gentle scale is used so
+   the first line cannot be clipped by the pinned poster. */
 html.home-scroll-story-ready .page-home .story-stage--hero .hero2 h1 {
   transform-origin: left center;
-  transform: translate3d(0, var(--story-hero-headline-y, 0px), 0) scale(var(--story-hero-headline-scale, 1));
-  opacity: var(--story-hero-alpha, 1);
+  transform: scale(var(--story-hero-headline-scale, 1));
+  opacity: 1;
   overflow-wrap: break-word;
-  will-change: transform, opacity;
+  will-change: transform;
 }
 
 html.home-scroll-story-ready .page-home .story-stage--hero .hero2-lede {
@@ -246,6 +253,16 @@ html.home-scroll-story-ready .page-home .story-stage--rail .pgrid-wrap {
   overflow: hidden;
 }
 
+/* main.js adds an outer navigation wrap around the marked viewport. Keep that
+   wrapper from becoming a second clipping/scrolling container. */
+html.home-scroll-story-ready .page-home .story-stage--rail .pgrid-wrap:not([data-story-rail-viewport]) {
+  overflow: visible;
+}
+
+html.home-scroll-story-ready .page-home .story-stage--rail .pgrid-wrap[data-story-rail-viewport] {
+  scroll-padding-inline: clamp(12px, 2vw, 24px);
+}
+
 html.home-scroll-story-ready .page-home .story-stage--rail .pgrid-nav,
 html.home-scroll-story-ready .page-home .story-stage--rail .pgrid-dots {
   display: none !important;
@@ -256,7 +273,7 @@ html.home-scroll-story-ready .page-home .story-stage--rail #products-grid {
   flex-wrap: nowrap;
   width: max-content;
   gap: 20px;
-  padding: 6px 0 14px;
+  padding: 6px clamp(12px, 2vw, 24px) 14px;
   transform: translate3d(var(--story-rail-x, 0px), 0, 0);
   will-change: transform;
 }
@@ -319,6 +336,8 @@ html.home-scroll-story-ready .page-home .story-stage--journey .section-head p {
   background: var(--gold);
 }
 
+/* The document is always legible. Scroll progress only advances the meter and
+   milestone highlight, never hides the whole process flow. */
 html.home-scroll-story-ready .page-home .story-stage--journey .process-flow {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -330,9 +349,8 @@ html.home-scroll-story-ready .page-home .story-stage--journey .process-flow {
   border: 1px solid rgba(196, 154, 69, .35);
   border-radius: 4px;
   position: relative;
-  opacity: var(--story-journey-alpha, 0);
-  transform: translate3d(0, var(--story-journey-enter, 34px), 0) scale(var(--story-journey-scale, .965));
-  clip-path: inset(0 0 var(--story-journey-cut, 100%) 0);
+  opacity: 1;
+  transform: none;
 }
 
 html.home-scroll-story-ready .page-home .story-stage--journey .process-flow::after {
@@ -347,9 +365,9 @@ html.home-scroll-story-ready .page-home .story-stage--journey .process-flow::aft
 html.home-scroll-story-ready .page-home .story-stage--journey .process-step {
   position: relative;
   min-width: 0;
-  opacity: 0;
-  transform: translate3d(var(--story-journey-copy-x, 18px), 0, 0);
-  transition: opacity .45s ease, transform .45s ease;
+  opacity: 1;
+  transform: none;
+  transition: color .35s ease;
 }
 
 html.home-scroll-story-ready .page-home .story-stage--journey .process-step.is-story-milestone {
@@ -450,19 +468,19 @@ html.home-scroll-story-ready .page-home .story-stage--guidance .story-stage-inne
   min-height: clamp(300px, 38vh, 390px);
 }
 
+/* No visibility transition: the incoming chapter is always painted. Inactive
+   chapters are also made inert by the controller so links cannot be tabbed. */
 html.home-scroll-story-ready .page-home .story-chapter {
   position: absolute;
   inset: 0;
   opacity: 0;
-  visibility: hidden;
   pointer-events: none;
-  transform: translate3d(0, 14px, 0);
-  transition: opacity .5s ease, transform .5s ease, visibility .5s ease;
+  transform: translate3d(0, 10px, 0);
+  transition: opacity .35s ease, transform .35s ease;
 }
 
 html.home-scroll-story-ready .page-home .story-chapter.is-active {
   opacity: 1;
-  visibility: visible;
   pointer-events: auto;
   transform: none;
 }
@@ -565,17 +583,30 @@ html:not(.home-scroll-story-ready) .story-chapter {
     opacity: 1 !important;
   }
 
-  html.home-scroll-story-ready .page-home .story-stage--rail .pgrid-wrap {
+  /* The reveal wrapper itself must not leave the hero invisible before the
+     shared IntersectionObserver runs on small screens. */
+  .page-home .hero2-copy.reveal-left,
+  .page-home .hero2-visual.reveal-right {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  html.home-scroll-story-ready .page-home .story-stage--rail .pgrid-wrap[data-story-rail-viewport] {
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
+    scroll-padding-inline: clamp(12px, 4vw, 20px);
     touch-action: pan-x pan-y;
   }
 
-  html.home-scroll-story-ready .page-home .story-stage--rail .pgrid-wrap::-webkit-scrollbar {
+  html.home-scroll-story-ready .page-home .story-stage--rail .pgrid-wrap[data-story-rail-viewport]::-webkit-scrollbar {
     display: none;
+  }
+
+  html.home-scroll-story-ready .page-home .story-stage--rail .pgrid-wrap:not([data-story-rail-viewport]) {
+    overflow: visible;
   }
 
   html.home-scroll-story-ready .page-home .story-stage--rail #products-grid {
@@ -624,13 +655,20 @@ html:not(.home-scroll-story-ready) .story-chapter {
     display: none;
   }
 
-  html.home-scroll-story-ready .page-home .story-manifesto-copy {
+  /* Mobile typography must also apply with reduced motion or no controller. */
+  .page-home .story-manifesto-copy {
     max-width: 100%;
-    font-size: clamp(2rem, 9.4vw, 3rem);
+    font-size: clamp(1.9rem, 8.6vw, 2.75rem);
+    line-height: 1.12;
   }
 
   html.home-scroll-story-ready .page-home .story-manifesto-copy--front {
     clip-path: none !important;
+  }
+
+  html.home-scroll-story-ready .page-home .story-manifesto-copy--front,
+  html.home-scroll-story-ready .page-home .story-manifesto-copy--ghost {
+    transform: none !important;
   }
 
   .page-home .story-finline {
@@ -648,37 +686,45 @@ html:not(.home-scroll-story-ready) .story-chapter {
   }
 }
 
-/* ---------- reduced motion: all chapters, steps and text remain visible ---------- */
+/* ---------- reduced motion: all chapters, steps and text remain visible ----------
+   These rules are deliberately NOT gated by .home-scroll-story-ready: the JS
+   controller stays disabled under reduced motion, so that class is absent. */
 
 @media (prefers-reduced-motion: reduce) {
-  html.home-scroll-story-ready .page-home .story-stage {
+  .page-home .story-stage {
     height: auto !important;
   }
 
-  html.home-scroll-story-ready .page-home .story-stage > *,
-  html.home-scroll-story-ready .page-home .story-stage-inner {
+  /* Do not force #process-home to static: its decorative pseudo-elements are
+     absolutely positioned against it. The sticky rules are already gated by
+     .home-scroll-story-ready, which is absent under reduced motion. */
+  .page-home .story-stage > * {
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  .page-home .story-stage-inner {
     position: static !important;
     min-height: 0 !important;
-    overflow: visible;
+    /* Decorative contours extend past their viewBox; clip them here so they
+       cannot enlarge the document in reduced-motion mode. */
+    overflow: clip !important;
   }
 
-  html.home-scroll-story-ready .page-home .story-stage-inner {
-    overflow: hidden;
-  }
-
-  html.home-scroll-story-ready .page-home .story-guidance-inner {
+  .page-home .story-guidance-inner {
     position: relative !important;
+    overflow: clip !important;
   }
 
-  html.home-scroll-story-ready .page-home .story-stage--hero .hero2 h1,
-  html.home-scroll-story-ready .page-home .story-stage--hero .hero2-lede,
-  html.home-scroll-story-ready .page-home .story-stage--hero .hero2-visual img,
-  html.home-scroll-story-ready .page-home .story-manifesto-type,
-  html.home-scroll-story-ready .page-home .story-manifesto-copy--front,
-  html.home-scroll-story-ready .page-home .story-stage--rail #products-grid,
-  html.home-scroll-story-ready .page-home .story-stage--journey .process-flow,
-  html.home-scroll-story-ready .page-home .story-stage--journey .process-step,
-  html.home-scroll-story-ready .page-home .story-chapter {
+  .page-home .story-stage--hero .hero2 h1,
+  .page-home .story-stage--hero .hero2-lede,
+  .page-home .story-stage--hero .hero2-visual img,
+  .page-home .story-manifesto-type,
+  .page-home .story-manifesto-copy--front,
+  .page-home .story-stage--rail #products-grid,
+  .page-home .story-stage--journey .process-flow,
+  .page-home .story-stage--journey .process-step,
+  .page-home .story-chapter {
     transform: none !important;
     opacity: 1 !important;
     visibility: visible !important;
@@ -686,23 +732,41 @@ html:not(.home-scroll-story-ready) .story-chapter {
     transition: none !important;
   }
 
-  html.home-scroll-story-ready .page-home .story-guidance-chapters {
-    display: grid;
-    gap: 28px;
-    min-height: 0;
+  .page-home .story-manifesto-copy--ghost {
+    display: none !important;
   }
 
-  html.home-scroll-story-ready .page-home .story-chapter {
+  .page-home .story-stage--rail .pgrid-wrap[data-story-rail-viewport] {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-inline: clamp(12px, 4vw, 20px);
+  }
+
+  .page-home .story-stage--rail .pgrid-wrap:not([data-story-rail-viewport]) {
+    overflow: visible !important;
+  }
+
+  .page-home .story-guidance-chapters {
+    display: grid !important;
+    gap: 28px;
+    min-height: 0 !important;
+  }
+
+  .page-home .story-chapter {
     position: static !important;
     pointer-events: auto !important;
   }
 
-  html.home-scroll-story-ready .page-home .story-contours path,
-  html.home-scroll-story-ready .page-home .story-finline__line {
+  .page-home .story-contours path,
+  .page-home .story-finline__line {
     stroke-dashoffset: 0 !important;
   }
 
-  html.home-scroll-story-ready .page-home .story-guidance-art {
+  .page-home .story-guidance-art {
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
     transform: none !important;
   }
 }

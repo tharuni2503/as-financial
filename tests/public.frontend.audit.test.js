@@ -60,11 +60,11 @@ test('every local stylesheet and script uses the current cache key', () => {
     const refs = html.match(/(?:href|src)="assets\/(?:css|js)\/[^"]+"/g) || [];
     assert.ok(refs.length > 0, `${file} loads local assets`);
     for (const ref of refs) {
-      assert.match(ref, /\?v=20261126e/, `${file} stale cache key on ${ref}`);
+      assert.match(ref, /\?v=20261126f/, `${file} stale cache key on ${ref}`);
     }
     const keys = html.match(/\?v=[0-9A-Za-z]+/g) || [];
     for (const key of keys) {
-      assert.equal(key, '?v=20261126e', `${file} has an out-of-date cache key ${key}`);
+      assert.equal(key, '?v=20261126f', `${file} has an out-of-date cache key ${key}`);
     }
   }
 });
