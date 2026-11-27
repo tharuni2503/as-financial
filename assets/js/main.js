@@ -169,13 +169,6 @@
     const path = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
     const is = (p) => path === p;
     const onHome = is('index.html') || is('');
-    const hasApplyPopup = !!document.getElementById('apply-popup');
-    const applyCta = hasApplyPopup
-      ? '<button type="button" class="btn btn-gold" data-popup-open="apply-popup">Apply Now <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>'
-      : '<a class="btn btn-gold" href="contact.html">Apply Now <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>';
-    const mobileApplyCta = hasApplyPopup
-      ? '<button type="button" class="btn btn-gold btn-block" data-popup-open="apply-popup">Apply for a loan</button>'
-      : '<a class="btn btn-gold btn-block" href="contact.html">Apply for a loan</a>';
     const nav = '' +
       '<a class="nav-link" href="index.html"' + (onHome ? ' aria-current="page"' : '') + '>Home</a>' +
       '<div class="nav-item">' +
@@ -203,18 +196,18 @@
       '<a class="nav-link" href="contact.html"' + (is('contact.html') ? ' aria-current="page"' : '') + '>Contact</a>';
 
     const headerHtml = '<div class="container header-inner">' +
-      '<a class="brand" href="index.html" aria-label="AS Financial Services &amp; Solutions &mdash; home"><img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions &mdash; Your Goals, Our Solutions" width="200" height="51" decoding="async" fetchpriority="high"></a>' +
+      '<a class="brand" href="index.html" aria-label="AS Financial Services &amp; Solutions &mdash; home"><img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions &mdash; Your Goals, Our Solutions" width="200" height="51" decoding="async" loading="lazy"></a>' +
       '<nav class="nav" aria-label="Primary">' + nav + '</nav>' +
       '<div class="header-actions">' +
         '<a class="header-phone" href="tel:+919182703079" data-setting="phone"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg><span><small>Talk to an advisor</small><strong>91827 03079</strong></span></a>' +
-        applyCta +
+        '<button type="button" class="btn btn-gold" data-popup-open="apply-popup">Apply Now <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>' +
         '<a class="header-call-btn" href="tel:+919182703079" data-setting="phone" aria-label="Call advisor"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg></a>' +
         '<button type="button" class="menu-toggle" data-menu-open aria-label="Open menu" aria-expanded="false" aria-controls="mobile-nav"><svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg></button>' +
       '</div>' +
     '</div>';
 
     const mobileHtml = '<div class="mobile-nav-head">' +
-        '<a class="brand" href="index.html"><img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions &mdash; Your Goals, Our Solutions" width="200" height="51" decoding="async" fetchpriority="high"></a>' +
+        '<a class="brand" href="index.html"><img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions &mdash; Your Goals, Our Solutions" width="200" height="51" decoding="async" loading="lazy"></a>' +
         '<button type="button" class="menu-toggle" data-menu-close aria-label="Close menu"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>' +
       '</div>' +
       '<a class="m-link" href="index.html"' + (onHome ? ' aria-current="page"' : '') + '>Home</a>' +
@@ -226,7 +219,7 @@
       '<a class="m-link" href="about.html"' + (is('about.html') ? ' aria-current="page"' : '') + '>About Us</a>' +
       '<a class="m-link" href="contact.html"' + (is('contact.html') ? ' aria-current="page"' : '') + '>Contact</a>' +
       '<div class="m-cta">' +
-        mobileApplyCta +
+        '<button type="button" class="btn btn-gold btn-block" data-popup-open="apply-popup">Apply for a loan</button>' +
         '<a class="btn btn-outline btn-block" href="tel:+919182703079" data-setting="phone"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-phone"></use></svg> Call 91827 03079</a>' +
       '</div>' +
       '<div class="m-contact">' +
@@ -468,20 +461,7 @@
     if (!btn || !panel) return;
     item.classList.toggle('open', open);
     btn.setAttribute('aria-expanded', String(open));
-    if (open) {
-      panel.hidden = false;
-      panel.style.maxHeight = panel.scrollHeight + 'px';
-    } else {
-      panel.style.maxHeight = '0px';
-      const finish = () => {
-        if (item.classList.contains('open')) return;
-        panel.hidden = true;
-        panel.removeEventListener('transitionend', onEnd);
-      };
-      const onEnd = (event) => { if (event.target === panel && event.propertyName === 'max-height') finish(); };
-      panel.addEventListener('transitionend', onEnd);
-      setTimeout(finish, 400);
-    }
+    panel.style.maxHeight = open ? panel.scrollHeight + 'px' : '';
   }
   document.querySelectorAll('.faq-item').forEach(item => {
     const btn = item.querySelector('.faq-q');
@@ -496,6 +476,16 @@
         });
       }
       asSetFaqState(item, !isOpen);
+    });
+    item.addEventListener('mouseenter', () => {
+      if (item.classList.contains('open')) return;
+      const parent = item.parentElement;
+      if (parent) {
+        parent.querySelectorAll('.faq-item.open').forEach(other => {
+          if (other !== item) asSetFaqState(other, false);
+        });
+      }
+      asSetFaqState(item, true);
     });
   });
 
@@ -588,23 +578,7 @@
       schedule: root.querySelector('[data-schedule]') || (isFull ? document.querySelector('[data-schedule]') : null)
     };
 
-    const unitButtons = Array.prototype.slice.call(root.querySelectorAll('[data-tenure-unit]'));
-    const initialUnitButton = unitButtons.filter(btn => btn.classList.contains('active'))[0];
-    let unit = (initialUnitButton && initialUnitButton.dataset.tenureUnit) || 'years';
-    root.dataset.defaultTenureUnit = unit;
-    ['min', 'max', 'step'].forEach(attr => {
-      const key = 'default' + attr.charAt(0).toUpperCase() + attr.slice(1);
-      if (tenure.hasAttribute(attr)) tenure.dataset[key] = tenure.getAttribute(attr);
-    });
-
-    function syncUnitButtons() {
-      unitButtons.forEach(btn => {
-        const active = btn.dataset.tenureUnit === unit;
-        btn.classList.toggle('active', active);
-        btn.setAttribute('aria-pressed', String(active));
-      });
-    }
-    syncUnitButtons();
+    let unit = 'years';
 
     function paintRange(el) {
       const min = parseFloat(el.min), max = parseFloat(el.max), val = parseFloat(el.value);
@@ -670,9 +644,11 @@
     rate.addEventListener('input', calc);
     tenure.addEventListener('input', calc);
 
-    unitButtons.forEach(btn => {
+    root.querySelectorAll('[data-tenure-unit]').forEach(btn => {
       btn.addEventListener('click', () => {
-        unit = btn.dataset.tenureUnit === 'months' ? 'months' : 'years';
+        root.querySelectorAll('[data-tenure-unit]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        unit = btn.dataset.tenureUnit;
         const current = parseFloat(tenure.value) || 0;
         if (unit === 'months') {
           tenure.min = 12; tenure.max = 360; tenure.step = 6;
@@ -681,15 +657,8 @@
           tenure.min = 1; tenure.max = 30; tenure.step = 1;
           tenure.value = Math.max(1, Math.round(current / 12));
         }
-        syncUnitButtons();
         calc();
       });
-    });
-
-    root.addEventListener('calc:reset', () => {
-      unit = root.dataset.defaultTenureUnit || 'years';
-      syncUnitButtons();
-      calc();
     });
 
     calc();
@@ -715,12 +684,12 @@
   window.asSaveLead = saveLead;
 
   /* Inline validation helpers */
-  function fieldErrorEl(control, create) {
+  function fieldErrorEl(control) {
     const field = control.closest('.field');
     const host = field || (control.closest('.full') || control.parentElement);
     if (!host) return null;
     let el = host.querySelector('.field-error');
-    if (!el && create !== false) {
+    if (!el) {
       el = document.createElement('span');
       el.className = 'field-error';
       el.setAttribute('role', 'alert');
@@ -729,26 +698,9 @@
     }
     return el;
   }
-  function describedIds(control) {
-    return (control.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean);
-  }
-  function addDescribedBy(control, id) {
-    const ids = describedIds(control);
-    if (ids.indexOf(id) === -1) ids.push(id);
-    control.setAttribute('aria-describedby', ids.join(' '));
-  }
-  function removeDescribedBy(control, id) {
-    const ids = describedIds(control).filter(value => value !== id);
-    if (ids.length) control.setAttribute('aria-describedby', ids.join(' '));
-    else control.removeAttribute('aria-describedby');
-  }
   function clearFieldError(control) {
-    const el = fieldErrorEl(control, false);
-    if (el) {
-      el.textContent = '';
-      el.classList.remove('show');
-      removeDescribedBy(control, el.id);
-    }
+    const el = fieldErrorEl(control);
+    if (el) { el.textContent = ''; el.classList.remove('show'); }
     control.removeAttribute('aria-invalid');
     const field = control.closest('.field');
     if (field) field.classList.remove('has-error');
@@ -761,7 +713,7 @@
       el.textContent = message;
       el.classList.add('show');
       control.setAttribute('aria-invalid', 'true');
-      addDescribedBy(control, el.id);
+      control.setAttribute('aria-describedby', el.id);
     }
     const field = control.closest('.field');
     if (field) field.classList.add('has-error');
@@ -772,10 +724,7 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
   }
   function phoneDigits(value) {
-    const digits = String(value || '').replace(/\D/g, '');
-    if ((digits.length === 12 || digits.length === 13) && digits.indexOf('91') === 0) return digits.slice(2);
-    if (digits.length === 13 && digits.indexOf('091') === 0) return digits.slice(3);
-    return digits;
+    return (value || '').replace(/[^\d]/g, '').replace(/^91(?=\d{10}$)/, '');
   }
 
   const TURNSTILE_SITE_KEY = (window.AS_TURNSTILE_SITE_KEY || (document.querySelector('meta[name="turnstile-site-key"]') || {}).content || '').trim();
@@ -896,7 +845,7 @@
       let firstInvalid = null;
 
       form.querySelectorAll('.field-error').forEach(el => { el.textContent = ''; el.classList.remove('show'); });
-      form.querySelectorAll('[aria-invalid="true"]').forEach(clearFieldError);
+      form.querySelectorAll('[aria-invalid="true"]').forEach(el => el.removeAttribute('aria-invalid'));
 
       const nameField = form.querySelector('[name="name"]');
       const phoneField = form.querySelector('[name="phone"]');
@@ -911,8 +860,8 @@
         if (!digits) {
           showFieldError(phoneField, 'Please enter your mobile number.');
           firstInvalid = firstInvalid || phoneField;
-        } else if (!/^[6-9]\d{9}$/.test(digits)) {
-          showFieldError(phoneField, 'Enter a valid 10-digit Indian mobile number (with or without +91).');
+        } else if (!/^\d{10,13}$/.test(digits)) {
+          showFieldError(phoneField, 'Enter a valid 10-digit mobile number (with or without +91).');
           firstInvalid = firstInvalid || phoneField;
         }
       }
@@ -1087,10 +1036,8 @@
     }
     popupLastFocus = null;
   }
-  window.ASApplyPopup = { open: openPopup, close: closePopup };
-  // Ensure Apply Now / Request a call / Get a call back CTAs open the same apply popup,
-  // but only on pages that actually contain the popup. Otherwise preserve their links.
-  if (document.getElementById('apply-popup')) document.querySelectorAll('a, button').forEach(el => {
+  // Ensure Apply Now / Request a call / Get a call back CTAs open the same apply popup
+  document.querySelectorAll('a, button').forEach(el => {
     if (el.closest('#apply-popup')) return;
     if (el.matches('[data-popup-open]')) return;
     if (el.type === 'submit' && el.closest('form')) return;
@@ -1192,20 +1139,11 @@
           Array.prototype.forEach.call(control.options, (opt, i) => { if (opt.defaultSelected) idx = i; });
           control.selectedIndex = idx;
         } else {
-          if (control.type === 'range') {
-            ['min', 'max', 'step'].forEach(attr => {
-              const key = 'default' + attr.charAt(0).toUpperCase() + attr.slice(1);
-              const value = control.dataset[key];
-              if (value != null) control.setAttribute(attr, value);
-            });
-          }
           control.value = control.defaultValue;
         }
         control.dispatchEvent(new Event('input', { bubbles: true }));
         control.dispatchEvent(new Event('change', { bubbles: true }));
       });
-      const calcRoot = btn.closest('[data-calculator]') || host.closest('[data-calculator]');
-      if (calcRoot) calcRoot.dispatchEvent(new CustomEvent('calc:reset', { bubbles: true }));
       const run = host.querySelector('[data-calc-run]');
       if (run) run.click();
       asToast('Calculator inputs restored to their default values.');
@@ -1316,7 +1254,6 @@
       return;
     }
 
-    if (section) section.hidden = false;
     grid.innerHTML = published.map((item) => {
       const meta = [item.product, item.location].filter(Boolean).map(esc).join(' · ');
       return '<article class="testi-card">' +

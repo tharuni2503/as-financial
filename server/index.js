@@ -143,7 +143,7 @@ app.use((req, res, next) => {
     "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com",
-    "connect-src 'self' https://challenges.cloudflare.com https://www.google-analytics.com https://region1.google-analytics.com",
+    "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://challenges.cloudflare.com https://www.google-analytics.com https://region1.google-analytics.com",
     "frame-src 'self' https://challenges.cloudflare.com https://www.google.com https://maps.google.com",
   ].join('; '));
   if (cookieSecure(req)) res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');

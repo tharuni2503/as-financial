@@ -1,0 +1,43 @@
+/* ==========================================================================
+   Public frontend: static presentation.
+
+   The site is restored to its pre-cinematic layout. This final layer removes
+   the remaining legacy motion (parallax, reveal fades, tickers, hover
+   transitions and loading spinners) so every public page renders immediately
+   and stays still. Admin styling is intentionally unaffected.
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+html {
+  scroll-behavior: auto !important;
+}
+
+.reveal,
+.reveal-left,
+.reveal-right,
+.reveal-up,
+[data-reveal],
+[data-rev] {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+}
+
+.parallax-y {
+  transform: none !important;
+  will-change: auto !important;
+}
+
+.marquee-track,
+.live-ticker-marquee,
+.live-ticker-dot,
+.live-ticker-badge::after {
+  animation: none !important;
+}

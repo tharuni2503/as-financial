@@ -50,7 +50,7 @@
     }
 
     // Tabs
-    var tabs = Array.prototype.slice.call(root.querySelectorAll('[role="tablist"] [role="tab"][data-calc-tab]'));
+    var tabs = Array.prototype.slice.call(root.querySelectorAll('[data-calc-tab]'));
     var panels = Array.prototype.slice.call(root.querySelectorAll('[data-calc-panel]'));
     function activate(tabId) {
       tabs.forEach(function (t) {
@@ -67,19 +67,6 @@
     }
     tabs.forEach(function (t) {
       t.addEventListener('click', function () { activate(t.getAttribute('data-calc-tab')); });
-      t.addEventListener('keydown', function (event) {
-        var index = tabs.indexOf(t);
-        var target = index;
-        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') target = (index + 1) % tabs.length;
-        else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') target = (index - 1 + tabs.length) % tabs.length;
-        else if (event.key === 'Home') target = 0;
-        else if (event.key === 'End') target = tabs.length - 1;
-        else return;
-        event.preventDefault();
-        var next = tabs[target];
-        activate(next.getAttribute('data-calc-tab'));
-        next.focus();
-      });
     });
 
     // EMI
@@ -211,27 +198,9 @@
     }, 50);
   }
 
-  // Keep aria-pressed in sync with the active state of toggle-style calculator buttons.
-  function initPressedButtons() {
-    var buttons = Array.prototype.slice.call(document.querySelectorAll('[data-tenure-unit], [data-preset]'));
-    function sync() {
-      buttons.forEach(function (b) {
-        b.setAttribute('aria-pressed', b.classList.contains('active') ? 'true' : 'false');
-      });
-    }
-    if (!buttons.length) return;
-    buttons.forEach(function (b) { b.addEventListener('click', sync); });
-    sync();
-  }
-
-  function onReady() {
-    initTabbedCalculators();
-    initPressedButtons();
-  }
-
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', onReady);
+    document.addEventListener('DOMContentLoaded', initTabbedCalculators);
   } else {
-    onReady();
+    initTabbedCalculators();
   }
 })();

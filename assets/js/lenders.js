@@ -33,7 +33,7 @@ window.AS_LENDERS = {
       "i": "SB",
       "k": "#1f6fb5",
       "r": "7.25% – 8.45%*",
-      "emi": "From ~₹682/₹1L*",
+      "emi": "From ~₹791/₹1L*",
       "t": "Up to 30 years",
       "amt": "₹5 L – ₹10 Cr+*",
       "fee": "As per lender schedule*",

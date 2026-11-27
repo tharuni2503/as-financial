@@ -18,7 +18,7 @@
   <meta name="twitter:description" content="Calculate monthly EMI, total interest and repayment details for your loan.">
   <meta name="twitter:image" content="https://as-financial.vercel.app/assets/img/hero-family-home.jpg">
   <meta name="twitter:image:alt" content="AS Financial Services and Solutions">
-  <meta name="theme-color" content="#101F38">
+  <meta name="theme-color" content="#10294B">
   <meta name="color-scheme" content="light">
   <link rel="canonical" href="https://as-financial.vercel.app/emi-calculator.html">
   <link rel="icon" href="assets/img/brand/favicon.png" type="image/png">
@@ -26,9 +26,9 @@
   <link rel="apple-touch-icon" href="assets/img/brand/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261126f">
-  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261126f">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261123g57">
+  <link rel="stylesheet" href="assets/css/pro-light.css?v=20261123g57">
 
 <script type="application/ld+json">
 {
@@ -38,7 +38,7 @@
       "@type": "WebPage",
       "@id": "https://as-financial.vercel.app/emi-calculator.html",
       "url": "https://as-financial.vercel.app/emi-calculator.html",
-      "name": "EMI Calculator | Plan Your Loan Repayment – AS Financial",
+      "name": "EMI Calculator | Plan Your Loan Repayment &ndash; AS Financial",
       "description": "Free EMI calculator for home, personal and business loans. See your monthly EMI, total interest and year-by-year amortisation schedule.",
       "isPartOf": {
         "@id": "https://as-financial.vercel.app/#website"
@@ -96,14 +96,15 @@
   ]
 }
 </script>
+  <link rel="stylesheet" href="assets/css/no-motion.css?v=20261127a">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
-  <div class="topbar" role="region" aria-label="Contact and hours"><div class="container"><div class="topbar-left"><span class="topbar-item"><svg class="icon" aria-hidden="true"><use href="#i-pin"></use></svg> <span class="full">Medipalli, Hyderabad</span></span><span class="topbar-item"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg> <span class="full" data-setting="hours">Mon &ndash; Sat &middot; 9:30 AM &ndash; 7:00 PM</span></span></div><div class="topbar-right"><a class="topbar-item" href="tel:+919182703079" data-setting="phone" aria-label="Call +91 91827 03079"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg> 91827 03079</a><a class="topbar-item" href="admin.html"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg> Admin</a></div></div></div>
+  <div class="topbar"><div class="container"><div class="topbar-left"><span class="topbar-item"><svg class="icon" aria-hidden="true"><use href="#i-pin"></use></svg> <span class="full">Medipalli, Hyderabad</span></span><span class="topbar-item"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg> <span class="full" data-setting="hours">Mon &ndash; Sat &middot; 9:30 AM &ndash; 7:00 PM</span></span></div><div class="topbar-right"><a class="topbar-item" href="tel:+919182703079" data-setting="phone" aria-label="Call +91 91827 03079"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg> 91827 03079</a><a class="topbar-item" href="admin.html"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg> Admin</a></div></div></div>
 
     <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="index.html" aria-label="AS Financial Services &amp; Solutions — home">
+      <a class="brand" href="index.html" aria-label="AS Financial home">
         <img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions &mdash; Your Goals, Our Solutions" width="200" height="51" decoding="async" loading="eager">
       </a>
       <nav class="nav" aria-label="Primary">
@@ -177,7 +178,7 @@
         <div class="breadcrumb"><a href="index.html">Home</a><span>/</span><span>EMI calculator</span></div>
         <div class="eyebrow">Plan with confidence</div>
         <h1>Know your EMI <span class="serif">before you commit.</span></h1>
-        <p>Adjust the loan amount, interest rate and tenure to see your monthly outgo, total interest and year-wise repayment schedule. Then talk to us about options that may improve them.</p>
+        <p>Adjust the loan amount, interest rate and tenure to see your monthly outgo, total interest and year-wise repayment schedule. Then talk to us about beating these numbers.</p>
       </div>
     </section>
 
@@ -208,16 +209,16 @@
             </div>
 
             <div style="display:flex;gap:8px;margin-bottom:26px">
-              <button class="partner-tab active" data-tenure-unit="years" type="button" aria-pressed="false">Years</button>
-              <button class="partner-tab" data-tenure-unit="months" type="button" aria-pressed="false">Months</button>
+              <button class="partner-tab active" data-tenure-unit="years" type="button">Years</button>
+              <button class="partner-tab" data-tenure-unit="months" type="button">Months</button>
             </div>
 
             <h3 style="font-size:1rem;margin-bottom:10px">Quick presets</h3>
             <div style="display:flex;gap:8px;flex-wrap:wrap" id="preset-row">
-              <button class="partner-tab" type="button" data-preset="home" aria-pressed="false">Home loan</button>
-              <button class="partner-tab" type="button" data-preset="personal" aria-pressed="false">Personal loan</button>
-              <button class="partner-tab" type="button" data-preset="business" aria-pressed="false">Business loan</button>
-              <button class="partner-tab" type="button" data-preset="education" aria-pressed="false">Education loan</button>
+              <button class="partner-tab" type="button" data-preset="home">Home loan</button>
+              <button class="partner-tab" type="button" data-preset="personal">Personal loan</button>
+              <button class="partner-tab" type="button" data-preset="business">Business loan</button>
+              <button class="partner-tab" type="button" data-preset="education">Education loan</button>
             </div>
 
             <div class="hr"></div>
@@ -228,14 +229,14 @@
           </div>
 
           <!-- Results -->
-          <div class="calc-side" aria-live="polite">
+          <div class="calc-side">
             <div class="calc-panel" style="padding:26px">
-              <div class="calc-result-label" style="color:#7A5F14">Your monthly EMI</div>
-              <div class="calc-emi" style="color:var(--navy)"><span data-out="emi" role="status">₹34,713</span><small style="color:var(--muted)">/ month</small></div>
+              <div class="calc-result-label" style="color:var(--gold-deep)">Your monthly EMI</div>
+              <div class="calc-emi" style="color:var(--navy)"><span data-out="emi">₹34,713</span><small style="color:var(--muted)">/ month</small></div>
               <div class="calc-breakdown" style="margin:20px 0 0">
                 <div class="calc-row" style="border-color:var(--line)"><span style="color:var(--muted)">Principal</span><b style="color:var(--navy)" data-out="principal">₹40,00,000</b></div>
-                <div class="calc-row" style="border-color:var(--line)"><span style="color:var(--muted)">Total interest</span><b style="color:var(--navy)" data-out="interest">₹43,31,103</b></div>
-                <div class="calc-row" style="border:0"><span style="color:var(--muted)">Total payable</span><b style="color:var(--navy)" data-out="total">₹83,31,103</b></div>
+                <div class="calc-row" style="border-color:var(--line)"><span style="color:var(--muted)">Total interest</span><b style="color:var(--navy)" data-out="interest">₹43,31,146</b></div>
+                <div class="calc-row" style="border:0"><span style="color:var(--muted)">Total payable</span><b style="color:var(--navy)" data-out="total">₹83,31,146</b></div>
                 <p class="calc-note" style="margin-top:14px">Indicative only. Estimates are based on values entered and may exclude fees, charges, taxes, or other costs unless shown. Actual figures depend on lender policy and your profile.</p>
               </div>
             </div>
@@ -260,8 +261,8 @@
             </div>
 
             <div class="calc-panel" style="padding:24px;background:linear-gradient(160deg,#FBF7EA,#F3EDDA);border:1px solid var(--line);color:var(--ink)">
-              <h3 style="color:var(--navy);font-size:1rem;margin-bottom:4px">Explore a lower EMI</h3>
-              <p style="font-size:.8rem;color:var(--muted);margin-bottom:16px">We can help you explore options that may lower it, subject to lender terms and eligibility.</p>
+              <h3 style="color:var(--navy);font-size:1rem;margin-bottom:4px">Get a lower EMI</h3>
+              <p style="font-size:.8rem;color:var(--muted);margin-bottom:16px">We compare leading banks and NBFCs and negotiate on your behalf — free of cost.</p>
               <button type="button" class="btn btn-gold btn-block" data-popup-open="apply-popup">Talk to an advisor <svg class="icon icon-sm" aria-hidden="true"><use href="#i-phone"></use></svg></button>
             </div>
           </div>
@@ -283,9 +284,9 @@
           <table class="schedule-table" style="min-width:560px">
             <thead><tr><th>Year</th><th>Principal paid</th><th>Interest paid</th><th>Balance</th></tr></thead>
             <tbody data-schedule>
-              <tr><td>Year 1</td><td>₹79,609</td><td>₹3,36,946</td><td>₹39,20,391</td></tr>
-              <tr><td>Year 2</td><td>₹86,646</td><td>₹3,29,909</td><td>₹38,33,745</td></tr>
-              <tr><td>Year 3</td><td>₹94,305</td><td>₹3,22,251</td><td>₹37,39,440</td></tr>
+              <tr><td>Year 1</td><td>₹67,348</td><td>₹3,49,212</td><td>₹39,32,652</td></tr>
+              <tr><td>Year 2</td><td>₹73,138</td><td>₹3,43,422</td><td>₹38,59,514</td></tr>
+              <tr><td>Year 3</td><td>₹79,425</td><td>₹3,37,135</td><td>₹37,80,089</td></tr>
             </tbody>
           </table>
         </div>
@@ -301,9 +302,9 @@
           <h2>Three numbers that <span class="serif">change everything.</span></h2>
         </div>
         <div class="benefits-grid">
-          <div class="benefit"><div class="b-icon"><svg class="icon" aria-hidden="true"><use href="#i-wallet"></use></svg></div><h3>Plan EMIs around 40–50% of income</h3><p>Many lenders cap total EMIs at roughly 40–50% of net monthly income. We help you see where you stand.</p></div>
+          <div class="benefit"><div class="b-icon"><svg class="icon" aria-hidden="true"><use href="#i-wallet"></use></svg></div><h3>Keep EMIs under 40%</h3><p>Lenders prefer total EMIs below 40–45% of your net monthly income. We help you structure it.</p></div>
           <div class="benefit"><div class="b-icon"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg></div><h3>Shorter tenure, lower cost</h3><p>Extending tenure reduces EMI but raises total interest. We model both options for you.</p></div>
-          <div class="benefit"><div class="b-icon"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg></div><h3>Part-prepay when possible</h3><p>An extra EMI payment each year can reduce total interest and may shorten tenure. We check prepayment terms with the lender.</p></div>
+          <div class="benefit"><div class="b-icon"><svg class="icon" aria-hidden="true"><use href="#i-trending-up"></use></svg></div><h3>Part-prepay when possible</h3><p>Even one extra EMI a year can cut years off your loan. We check prepayment terms with the lender.</p></div>
           <div class="benefit"><div class="b-icon"><svg class="icon" aria-hidden="true"><use href="#i-transfer"></use></svg></div><h3>Review your rate yearly</h3><p>When repo rates fall, your old loan may not follow. A balance transfer could reduce your EMI.</p></div>
         </div>
       </div>
@@ -326,8 +327,8 @@
       <div class="container cta-inner">
         <div>
           <span class="pill pill-soft"><span class="dot"></span> Numbers done. Now let's talk.</span>
-          <h2 style="margin-top:16px">The calculator shows the EMI. <span class="serif">We can help you explore options that may lower it.</span></h2>
-          <p>Share your profile and an advisor can walk you through indicative options and eligibility.</p>
+          <h2 style="margin-top:16px">The calculator shows the EMI. <span class="serif" >We can lower it.</span></h2>
+          <p>Share your profile and we will bring you real offers from lenders who want your business.</p>
         </div>
         <div class="cta-actions">
           <button type="button" class="btn btn-gold btn-lg" data-popup-open="apply-popup">Check my offers <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
@@ -341,7 +342,7 @@
     <div class="container">
       <div class="footer-compact">
         <div class="footer-compact-brand">
-          <a class="footer-brand-name" href="index.html" aria-label="AS Financial Services &amp; Solutions — home">AS Financial Services <span>&amp; Solutions</span></a>
+          <a class="footer-brand-name" href="index.html" aria-label="AS Financial home">AS Financial Services <span>&amp; Solutions</span></a>
           <p>Loan assistance in Medipalli, Hyderabad. Guidance for home, personal, business and other loan needs.</p>
         </div>
         <div class="footer-compact-contact">
@@ -375,8 +376,8 @@
       <div class="popup-overlay" id="apply-popup" role="dialog" aria-modal="true" aria-labelledby="apply-title">
     <div class="popup">
       <button type="button" class="popup-close" data-popup-close aria-label="Close"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-close"></use></svg></button>
-      <span class="pill pill-gold" style="margin-bottom:12px"><span class="dot"></span> Indicative eligibility guidance</span>
-      <h3 id="apply-title">Let's explore your loan options.</h3>
+      <span class="pill pill-gold" style="margin-bottom:12px"><span class="dot"></span> Free eligibility check</span>
+      <h3 id="apply-title">Let's find your best loan.</h3>
       <p>Share a few details and an advisor will call you back during business hours with indicative options.</p>
       <form data-lead-form data-source="EMI calculator page">
         <input type="text" name="website" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0" aria-label="Website">
@@ -421,8 +422,8 @@
       </form>
     </div>
   </div>
-<script src="assets/js/icons.js?v=20261126f" defer></script>
-  <script src="assets/js/backend.js?v=20261126f" defer></script><script src="assets/js/main.js?v=20261126f" defer></script>
+<script src="assets/js/icons.js?v=20261120z40" defer></script>
+  <script src="assets/js/backend.js?v=20261120z40" defer></script><script src="assets/js/main.js?v=20261123g57" defer></script>
   <script>
     /* EMI page presets */
     (function () {
@@ -432,18 +433,6 @@
         business: { amount: 2500000, rate: 13, years: 7 },
         education: { amount: 1500000, rate: 9.5, years: 10 }
       };
-      const pressedButtons = Array.from(document.querySelectorAll('[data-tenure-unit], [data-preset]'));
-      const syncPressed = () => {
-        pressedButtons.forEach(b => b.setAttribute('aria-pressed', b.classList.contains('active') ? 'true' : 'false'));
-      };
-      // main.js owns the Years/Months .active toggle; sync aria-pressed after its handler runs.
-      const bindPressedSync = () => {
-        syncPressed();
-        document.querySelectorAll('[data-tenure-unit]').forEach(btn => btn.addEventListener('click', syncPressed));
-      };
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindPressedSync);
-      else bindPressedSync();
-
       document.querySelectorAll('[data-preset]').forEach(btn => {
         btn.addEventListener('click', () => {
           const p = presets[btn.dataset.preset];
@@ -459,11 +448,8 @@
           amount.dispatchEvent(new Event('input'));
           rate.dispatchEvent(new Event('input'));
           tenure.dispatchEvent(new Event('input'));
-          document.querySelectorAll('[data-preset]').forEach(b => {
-            const active = b === btn;
-            b.classList.toggle('active', active);
-            b.setAttribute('aria-pressed', active ? 'true' : 'false');
-          });
+          document.querySelectorAll('[data-preset]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
         });
       });
     })();
