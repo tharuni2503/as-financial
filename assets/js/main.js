@@ -169,6 +169,13 @@
     const path = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
     const is = (p) => path === p;
     const onHome = is('index.html') || is('');
+    const hasApplyPopup = !!document.getElementById('apply-popup');
+    const applyCta = hasApplyPopup
+      ? '<button type="button" class="btn btn-gold" data-popup-open="apply-popup">Apply Now <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>'
+      : '<a class="btn btn-gold" href="contact.html">Apply Now <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>';
+    const mobileApplyCta = hasApplyPopup
+      ? '<button type="button" class="btn btn-gold btn-block" data-popup-open="apply-popup">Apply for a loan</button>'
+      : '<a class="btn btn-gold btn-block" href="contact.html">Apply for a loan</a>';
     const nav = '' +
       '<a class="nav-link" href="index.html"' + (onHome ? ' aria-current="page"' : '') + '>Home</a>' +
       '<div class="nav-item">' +
@@ -200,7 +207,7 @@
       '<nav class="nav" aria-label="Primary">' + nav + '</nav>' +
       '<div class="header-actions">' +
         '<a class="header-phone" href="tel:+919182703079" data-setting="phone"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg><span><small>Talk to an advisor</small><strong>91827 03079</strong></span></a>' +
-        '<button type="button" class="btn btn-gold" data-popup-open="apply-popup">Apply Now <svg class="icon icon-sm" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>' +
+        applyCta +
         '<a class="header-call-btn" href="tel:+919182703079" data-setting="phone" aria-label="Call advisor"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg></a>' +
         '<button type="button" class="menu-toggle" data-menu-open aria-label="Open menu" aria-expanded="false" aria-controls="mobile-nav"><svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg></button>' +
       '</div>' +
@@ -219,7 +226,7 @@
       '<a class="m-link" href="about.html"' + (is('about.html') ? ' aria-current="page"' : '') + '>About Us</a>' +
       '<a class="m-link" href="contact.html"' + (is('contact.html') ? ' aria-current="page"' : '') + '>Contact</a>' +
       '<div class="m-cta">' +
-        '<button type="button" class="btn btn-gold btn-block" data-popup-open="apply-popup">Apply for a loan</button>' +
+        mobileApplyCta +
         '<a class="btn btn-outline btn-block" href="tel:+919182703079" data-setting="phone"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-phone"></use></svg> Call 91827 03079</a>' +
       '</div>' +
       '<div class="m-contact">' +
@@ -461,7 +468,20 @@
     if (!btn || !panel) return;
     item.classList.toggle('open', open);
     btn.setAttribute('aria-expanded', String(open));
-    panel.style.maxHeight = open ? panel.scrollHeight + 'px' : '';
+    if (open) {
+      panel.hidden = false;
+      panel.style.maxHeight = panel.scrollHeight + 'px';
+    } else {
+      panel.style.maxHeight = '0px';
+      const finish = () => {
+        if (item.classList.contains('open')) return;
+        panel.hidden = true;
+        panel.removeEventListener('transitionend', onEnd);
+      };
+      const onEnd = (event) => { if (event.target === panel && event.propertyName === 'max-height') finish(); };
+      panel.addEventListener('transitionend', onEnd);
+      setTimeout(finish, 400);
+    }
   }
   document.querySelectorAll('.faq-item').forEach(item => {
     const btn = item.querySelector('.faq-q');
@@ -1067,8 +1087,10 @@
     }
     popupLastFocus = null;
   }
-  // Ensure Apply Now / Request a call / Get a call back CTAs open the same apply popup
-  document.querySelectorAll('a, button').forEach(el => {
+  window.ASApplyPopup = { open: openPopup, close: closePopup };
+  // Ensure Apply Now / Request a call / Get a call back CTAs open the same apply popup,
+  // but only on pages that actually contain the popup. Otherwise preserve their links.
+  if (document.getElementById('apply-popup')) document.querySelectorAll('a, button').forEach(el => {
     if (el.closest('#apply-popup')) return;
     if (el.matches('[data-popup-open]')) return;
     if (el.type === 'submit' && el.closest('form')) return;

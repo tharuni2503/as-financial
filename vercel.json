@@ -2,8 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "trailingSlash": false,
   "redirects": [
-    { "source": "/calculators", "destination": "/guides#calculators", "permanent": true },
-    { "source": "/calculators.html", "destination": "/guides#calculators", "permanent": true }
+    { "source": "/calculators", "destination": "/index.html#calculator", "permanent": true },
+    { "source": "/calculators.html", "destination": "/index.html#calculator", "permanent": true }
   ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/api" }

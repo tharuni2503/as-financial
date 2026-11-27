@@ -32,44 +32,64 @@
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "FinancialService",
-  "name": "AS Financial Services and Solutions",
-  "description": "Loan assistance and financial services guidance in Medipalli, Hyderabad for home, personal, business, mortgage, education and other loan needs.",
-  "telephone": "+919182703079",
-  "email": "asfinancialservicesandsolution@gmail.com",
-  "address": {
-    "@type": "PostalAddress",
-    "streetAddress": "Panchavati Colony Road No. 1",
-    "addressLocality": "Medipalli, Hyderabad",
-    "addressRegion": "Telangana",
-    "postalCode": "500098",
-    "addressCountry": "IN"
-  },
-  "geo": {
-    "@type": "GeoCoordinates",
-    "latitude": 17.4063233,
-    "longitude": 78.6054798
-  },
-  "openingHoursSpecification": [
+  "@graph": [
     {
-      "@type": "OpeningHoursSpecification",
-      "dayOfWeek": [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday"
+      "@type": "WebPage",
+      "@id": "https://as-financial.vercel.app/#webpage",
+      "url": "https://as-financial.vercel.app/",
+      "name": "AS Financial Services and Solutions | Loan Assistance in Medipalli, Hyderabad",
+      "isPartOf": { "@id": "https://as-financial.vercel.app/#website" },
+      "about": { "@id": "https://as-financial.vercel.app/#org" }
+    },
+    {
+      "@type": "FinancialService",
+      "@id": "https://as-financial.vercel.app/#org",
+      "name": "AS Financial Services and Solutions",
+      "description": "Loan assistance and financial services guidance in Medipalli, Hyderabad for home, personal, business, mortgage, education and other loan needs.",
+      "telephone": "+919182703079",
+      "email": "asfinancialservicesandsolution@gmail.com",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Panchavati Colony Road No. 1",
+        "addressLocality": "Medipalli, Hyderabad",
+        "addressRegion": "Telangana",
+        "postalCode": "500098",
+        "addressCountry": "IN"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 17.4063233,
+        "longitude": 78.6054798
+      },
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday"
+          ],
+          "opens": "09:30",
+          "closes": "19:00"
+        }
       ],
-      "opens": "09:30",
-      "closes": "19:00"
+      "areaServed": {
+        "@type": "City",
+        "name": "Hyderabad"
+      },
+      "currenciesAccepted": "INR"
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://as-financial.vercel.app/#website",
+      "url": "https://as-financial.vercel.app/",
+      "name": "AS Financial Services and Solutions",
+      "publisher": { "@id": "https://as-financial.vercel.app/#org" }
     }
-  ],
-  "areaServed": {
-    "@type": "City",
-    "name": "Hyderabad"
-  },
-  "currenciesAccepted": "INR"
+  ]
 }
 </script>
 
@@ -159,7 +179,7 @@
   </div>
 
   <!-- Announcement -->
-  <div class="topbar">
+  <div class="topbar" role="region" aria-label="Contact and hours">
     <div class="container">
       <div class="topbar-left">
         <span class="topbar-item"><svg class="icon" aria-hidden="true"><use href="#i-pin"></use></svg> <span class="full">Medipalli, Hyderabad</span></span>
@@ -481,7 +501,7 @@
             </div>
           </article>
           <article class="pcard reveal" data-content-img="instant-loan">
-            <div class="pcard-media"><img src="assets/img/gallery/instant.jpg" alt="Instant loan approval" loading="lazy" decoding="async"></div>
+            <div class="pcard-media"><img src="assets/img/gallery/instant.jpg" alt="Instant loan approval" width="659" height="782" loading="lazy" decoding="async"></div>
             <div class="pcard-body">
               <div class="pcard-head"><span class="pcard-ico"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg></span><h3>Instant Loans</h3></div>
               <p class="tag">Indicative timelines, subject to lender policy</p>
@@ -904,19 +924,19 @@
           </div>
           <div class="faq-item">
             <button type="button" class="faq-q" aria-expanded="false" id="home-faq-q2" aria-controls="home-faq-a2">Will checking my eligibility affect my credit score? <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></button>
-            <div class="faq-a" id="home-faq-a2" role="region" aria-labelledby="home-faq-q2"><div>An initial discussion or soft check typically does not impact your credit score. Formal lender applications may involve checks as per lender process &mdash; we can explain this before submission.</div></div>
+            <div class="faq-a" hidden id="home-faq-a2" role="region" aria-labelledby="home-faq-q2"><div>An initial discussion or soft check typically does not impact your credit score. Formal lender applications may involve checks as per lender process &mdash; we can explain this before submission.</div></div>
           </div>
           <div class="faq-item">
             <button type="button" class="faq-q" aria-expanded="false" id="home-faq-q3" aria-controls="home-faq-a3">I have a low CIBIL score or no ITR. Can I still get a loan? <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></button>
-            <div class="faq-a" id="home-faq-a3" role="region" aria-labelledby="home-faq-q3"><div>Possibilities depend on lender policies and your overall profile. Share your details with us and we can discuss available options and what documents may help.</div></div>
+            <div class="faq-a" hidden id="home-faq-a3" role="region" aria-labelledby="home-faq-q3"><div>Possibilities depend on lender policies and your overall profile. Share your details with us and we can discuss available options and what documents may help.</div></div>
           </div>
           <div class="faq-item">
             <button type="button" class="faq-q" aria-expanded="false" id="home-faq-q4" aria-controls="home-faq-a4">How long does approval and disbursal take? <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></button>
-            <div class="faq-a" id="home-faq-a4" role="region" aria-labelledby="home-faq-q4"><div>Timelines vary by loan type, lender and document readiness. We will guide you on the expected steps and help coordinate during the process.</div></div>
+            <div class="faq-a" hidden id="home-faq-a4" role="region" aria-labelledby="home-faq-q4"><div>Timelines vary by loan type, lender and document readiness. We will guide you on the expected steps and help coordinate during the process.</div></div>
           </div>
           <div class="faq-item">
             <button type="button" class="faq-q" aria-expanded="false" id="home-faq-q5" aria-controls="home-faq-a5">What happens after I submit an enquiry? <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></button>
-            <div class="faq-a" id="home-faq-a5" role="region" aria-labelledby="home-faq-q5"><div>We review your requirement, contact you to understand your profile, discuss possible options with relevant lenders, and share a checklist of documents/next steps if you choose to proceed. The process and outcomes depend on lender policies and your profile.</div></div>
+            <div class="faq-a" hidden id="home-faq-a5" role="region" aria-labelledby="home-faq-q5"><div>We review your requirement, contact you to understand your profile, discuss possible options with relevant lenders, and share a checklist of documents/next steps if you choose to proceed. The process and outcomes depend on lender policies and your profile.</div></div>
           </div>
 
         </div>
@@ -1018,7 +1038,7 @@
     <div class="container">
       <div class="footer-compact">
         <div class="footer-compact-brand">
-          <a class="footer-brand-name" href="index.html" aria-label="AS Financial home">AS Financial Services <span>&amp; Solutions</span></a>
+          <a class="footer-brand-name" href="index.html" aria-label="AS Financial Services &amp; Solutions — home">AS Financial Services <span>&amp; Solutions</span></a>
           <p>Loan assistance in Medipalli, Hyderabad. Guidance for home, personal, business and other loan needs.</p>
         </div>
         <div class="footer-compact-contact">
@@ -1046,7 +1066,7 @@
 
   <!-- AI Assistant -->
   <div class="as-assistant" id="as-assistant">
-    <button type="button" class="as-assistant-launcher" id="as-assistant-launcher" aria-label="Open AI assistant" aria-expanded="false" aria-controls="as-assistant-panel">
+    <button type="button" class="as-assistant-launcher" id="as-assistant-launcher" aria-label="Open AI assistant — Ask AI" aria-expanded="false" aria-controls="as-assistant-panel">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3z"/><path d="M19 15l.9 2.1 2.1.9-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z"/></svg>
       <span>Ask AI</span>
     </button>

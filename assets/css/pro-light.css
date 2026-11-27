@@ -2602,3 +2602,27 @@ body.page-home #why-us .split-media img {
     letter-spacing: .08em;
   }
 }
+
+/* ---------- Verified frontend audit corrections ---------- */
+@media (min-width: 769px) and (max-width: 1199px) {
+  .container { padding-inline: 24px; }
+}
+@media (min-width: 769px) {
+  .container-narrow { width: min(880px, 100%); }
+}
+body.page-home #process-home { padding: clamp(56px, 5vw, 72px) 0; }
+@media (max-width: 768px) { body.page-home #process-home { padding: 48px 0; } }
+@media (max-width: 560px) { body.page-home #process-home { padding: 42px 0; } }
+.form-grid .field textarea { min-height: 120px; }
+.blog-tag,
+.calc-result-label,
+body.page-home .blog-tag { color: #7A5F14; }
+input[type="range"]:focus-visible {
+  outline: 3px solid rgba(196, 154, 69, .55);
+  outline-offset: 4px;
+}
+.lp2-search:focus-within {
+  border-color: #C49A45;
+  box-shadow: 0 0 0 3px rgba(196, 154, 69, .25);
+}
+.lp2-search input:focus { outline: 0; box-shadow: none; }

@@ -70,6 +70,7 @@
       '<input name="name" type="text" placeholder="Your name" aria-label="Your name" required maxlength="80">' +
       '<input name="phone" type="tel" placeholder="Mobile number" aria-label="Mobile number" inputmode="tel" autocomplete="tel" required maxlength="20">' +
       '<select name="product" aria-label="Loan type"><option value="General enquiry">Loan type</option><option>Home Loan</option><option>Personal Loan</option><option>Business Loan</option><option>Loan Against Property</option><option>Vehicle Loan</option><option>Balance Transfer</option></select>' +
+      '<label class="as-consent"><input type="checkbox" name="consent" required> I agree to be contacted about this enquiry.</label>' +
       '<button type="submit">Request callback</button>' +
       '</form>' + contactCta(), 'bot', true);
     const mini = document.getElementById('as-lead-mini');
@@ -83,7 +84,9 @@
       if (digits.length === 13 && digits.indexOf('091') === 0) digits = digits.slice(3);
       if (name.length < 2) { addMsg('Please enter your name.', 'bot'); return; }
       if (!/^[6-9]\d{9}$/.test(digits)) { addMsg('Please enter a valid 10-digit Indian mobile number.', 'bot'); return; }
-      const payload = { name, phone, email:'', product: fd.get('product')||'General enquiry', amount:'', income:'', employment:'', city:'Hyderabad', message:'Callback requested from AI assistant', source:'AI Assistant', consent:true, website:'' };
+      const consent = mini.querySelector('[name="consent"]');
+      if (!consent || !consent.checked) { addMsg('Please confirm that you agree to be contacted about this enquiry.', 'bot'); return; }
+      const payload = { name, phone, email:'', product: fd.get('product')||'General enquiry', amount:'', income:'', employment:'', city:'Hyderabad', message:'Callback requested from AI assistant', source:'AI Assistant', consent: true, website:'' };
       try {
         const api = window.ASBackend;
         const res = api ? await api.enquire(payload) : null;

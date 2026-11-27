@@ -97,11 +97,11 @@
 <body>
 
   <a class="skip-link" href="#main">Skip to content</a>
-  <div class="topbar"><div class="container"><div class="topbar-left"><span class="topbar-item"><svg class="icon" aria-hidden="true"><use href="#i-pin"></use></svg> <span class="full">Medipalli, Hyderabad</span></span><span class="topbar-item"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg> <span class="full" data-setting="hours">Mon &ndash; Sat &middot; 9:30 AM &ndash; 7:00 PM</span></span></div><div class="topbar-right"><a class="topbar-item" href="tel:+919182703079" data-setting="phone" aria-label="Call +91 91827 03079"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg> 91827 03079</a><a class="topbar-item" href="admin.html"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg> Admin</a></div></div></div>
+  <div class="topbar" role="region" aria-label="Contact and hours"><div class="container"><div class="topbar-left"><span class="topbar-item"><svg class="icon" aria-hidden="true"><use href="#i-pin"></use></svg> <span class="full">Medipalli, Hyderabad</span></span><span class="topbar-item"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg> <span class="full" data-setting="hours">Mon &ndash; Sat &middot; 9:30 AM &ndash; 7:00 PM</span></span></div><div class="topbar-right"><a class="topbar-item" href="tel:+919182703079" data-setting="phone" aria-label="Call +91 91827 03079"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg> 91827 03079</a><a class="topbar-item" href="admin.html"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg> Admin</a></div></div></div>
 
     <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="index.html" aria-label="AS Financial home">
+      <a class="brand" href="index.html" aria-label="AS Financial Services &amp; Solutions — home">
         <img class="brand-logo" src="assets/img/brand/logo-full.png" alt="AS Financial Services and Solutions &mdash; Your Goals, Our Solutions" width="200" height="51" decoding="async" loading="eager">
       </a>
       <nav class="nav" aria-label="Primary">
@@ -200,7 +200,7 @@
     <div class="container">
       <div class="footer-compact">
         <div class="footer-compact-brand">
-          <a class="footer-brand-name" href="index.html" aria-label="AS Financial home">AS Financial Services <span>&amp; Solutions</span></a>
+          <a class="footer-brand-name" href="index.html" aria-label="AS Financial Services &amp; Solutions — home">AS Financial Services <span>&amp; Solutions</span></a>
           <p>Loan assistance in Medipalli, Hyderabad. Guidance for home, personal, business and other loan needs.</p>
         </div>
         <div class="footer-compact-contact">
@@ -280,7 +280,7 @@
   <script src="assets/js/backend.js?v=20261126f" defer></script>
   <script src="assets/js/main.js?v=20261126f" defer></script>
 
-  <script>(function(){const inr=n=>'₹ '+Math.round(n).toLocaleString('en-IN');function emi(P,rY,n){const r=rY/12/100;if(r===0)return P/n;return P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1)}const ids=['br-price','br-down','br-rate','br-years','br-maint','br-rent'];function g(id){return document.getElementById(id)}function calc(){const price=+g('br-price').value,down=Math.min(+g('br-down').value,price),rate=+g('br-rate').value,years=+g('br-years').value,maint=+g('br-maint').value,rent=+g('br-rent').value;g('br-price-out').textContent=inr(price);g('br-down-out').textContent=inr(down);g('br-rate-out').textContent=rate.toFixed(2)+'%';g('br-years-out').textContent=years+' years';g('br-maint-out').textContent=inr(maint);g('br-rent-out').textContent=inr(rent);const loan=Math.max(0,price-down),e=emi(loan,rate,years*12),buy=e+maint,diff=buy-rent;g('res-emi').textContent=inr(e);g('res-buy').textContent=inr(buy);g('res-rent').textContent=inr(rent);g('res-diff').textContent=diff>=0?('Buying costs '+inr(diff)+' more/mo'):('Renting costs '+inr(Math.abs(diff))+' more/mo');}ids.forEach(id=>g(id).addEventListener('input',calc));calc();})();</script>
+  <script>(function(){const inr=n=>'₹ '+Math.round(n).toLocaleString('en-IN');function emi(P,rY,n){const r=rY/12/100;if(r===0)return P/n;return P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1)}const ids=['br-price','br-down','br-rate','br-years','br-maint','br-rent'];function g(id){return document.getElementById(id)}function calc(){const price=+g('br-price').value,down=Math.min(+g('br-down').value,price);g('br-down').value=down;const rate=+g('br-rate').value,years=+g('br-years').value,maint=+g('br-maint').value,rent=+g('br-rent').value;g('br-price-out').textContent=inr(price);g('br-down-out').textContent=inr(down);g('br-rate-out').textContent=rate.toFixed(2)+'%';g('br-years-out').textContent=years+' years';g('br-maint-out').textContent=inr(maint);g('br-rent-out').textContent=inr(rent);const loan=Math.max(0,price-down),e=emi(loan,rate,years*12),buy=e+maint,diff=buy-rent;g('res-emi').textContent=inr(e);g('res-buy').textContent=inr(buy);g('res-rent').textContent=inr(rent);g('res-diff').textContent=diff>=0?('Buying costs '+inr(diff)+' more/mo'):('Renting costs '+inr(Math.abs(diff))+' more/mo');}ids.forEach(id=>g(id).addEventListener('input',calc));calc();})();</script>
 
 </body>
 </html>

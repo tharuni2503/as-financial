@@ -936,6 +936,7 @@ app.get('/api/admin/store', requireSession, requireRole('staff', 'admin', 'super
     ok: true,
     updatedAt: stats.updatedAt,
     leads: admin.leads || [],
+    applications: admin.applications || [],
     products: admin.products || [],
     partners: admin.partners || [],
     tasks: admin.tasks || [],
@@ -1638,6 +1639,26 @@ function notificationActorMeta(req) {
     role: String(session.role || '')
   };
 }
+
+const LENDER_LOGO_DIR = path.join(ROOT, 'assets', 'img', 'lenders');
+function resolveLenderLogo(name) {
+  const needle = String(name || '').toLowerCase().replace(/&amp;/g, '&').replace(/[^a-z0-9]+/g, ' ').trim();
+  if (!needle || !/^[a-z0-9 ]{2,80}$/.test(needle)) return '';
+  let files = [];
+  try { files = fsSync.readdirSync(LENDER_LOGO_DIR); } catch (_) { return ''; }
+  let best = '';
+  for (const file of files) {
+    if (!/\.(svg|png|jpe?g|webp)$/i.test(file)) continue;
+    const key = file.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
+    if (needle === key) return 'assets/img/lenders/' + file;
+    if ((needle.includes(key) || key.includes(needle)) && !best) best = 'assets/img/lenders/' + file;
+  }
+  return best;
+}
+
+app.post('/api/admin/resolve-logo', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res) => {
+  res.json({ ok: true, logo: resolveLenderLogo(req.body && req.body.name) });
+}));
 
 app.post('/api/admin/:collection', requireSession, requireRole('staff', 'admin', 'super_admin'), requireCsrf, asyncRoute(async (req, res, next) => {
   const collection = String(req.params.collection || '').toLowerCase();

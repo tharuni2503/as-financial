@@ -240,8 +240,10 @@
         state.seasonChapter = activeChapter;
         chapters.forEach(function (chapter, index) {
           var active = index === activeChapter;
+          var exposed = state.staticMode || active;
           chapter.classList.toggle('is-active', active);
-          chapter.setAttribute('aria-hidden', state.staticMode || active ? 'false' : 'true');
+          chapter.setAttribute('aria-hidden', exposed ? 'false' : 'true');
+          chapter.inert = !exposed;
         });
         chapterDots.forEach(function (dot, index) {
           dot.classList.toggle('is-active', index === activeChapter);

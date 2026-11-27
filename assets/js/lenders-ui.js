@@ -279,10 +279,15 @@
       var sel = pop.querySelector('#ap-product, [name="product"]');
       if (msg) msg.value = 'Interested in options from ' + lender + '. Please share suitable loan options for my profile.';
       if (sel) setApplyProduct(sel, prodKey);
-      pop.classList.add('open');
-      document.body.style.overflow = 'hidden';
-      var first = pop.querySelector('input, select, textarea, button');
-      if (first) setTimeout(function(){ try{ first.focus(); }catch(e){} }, 120);
+      if (window.ASApplyPopup && typeof window.ASApplyPopup.open === 'function') {
+        window.ASApplyPopup.open('apply-popup');
+      } else {
+        pop.classList.add('open');
+        pop.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        var first = pop.querySelector('input, select, textarea, button');
+        if (first) setTimeout(function(){ try{ first.focus(); }catch(e){} }, 120);
+      }
     }
   });
 
